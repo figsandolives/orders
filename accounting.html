@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>قسم المحاسبة - تسجيل الدخول</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+    <div class="container" id="login-page">
+        <h1>تسجيل الدخول - قسم المحاسبة</h1>
+        <form id="login-form">
+            <div class="form-group">
+                <label for="employeeCode">أدخل رمز الدخول:</label>
+                <input type="password" id="employeeCode" required>
+            </div>
+            <button type="submit" class="btn">تسجيل الدخول</button>
+            <p id="login-message" class="error-message"></p>
+        </form>
+    </div>
+
+    <div class="container hidden" id="dashboard-page">
+        <div class="dashboard-header">
+            <button class="btn search-btn" id="open-search-modal-btn">بحث عن طلب</button>
+            <h1 id="welcome-message">مرحباً [اسم الموظف]</h1>
+            <div class="date-filter-group">
+                <label for="filter-date">التاريخ:</label>
+                <input type="date" id="filter-date">
+                <span id="current-display-date"></span>
+            </div>
+        </div>
+
+        <div class="filter-controls">
+            <select id="delegate-filter" class="form-control">
+                <option value="all">جميع المناديب</option>
+            </select>
+        </div>
+
+        <h2 id="normal-invoices-title" class="table-section-title">فواتير عادية</h2>
+        <div class="table-container">
+            <table id="normal-invoices-table">
+                <thead>
+                    <tr>
+                        <th>نوع الطلب</th>
+                        <th>رقم الفاتورة</th>
+                        <th>اسم العميل</th>
+                        <th>رقم هاتف العميل</th>
+                        <th>المنطقة</th>
+                        <th>قيمة الفاتورة</th>
+                        <th>قيمة التوصيل</th>
+                        <th>طريقة الدفع</th>
+                        <th>المندوب</th>
+                        <th>توقيع المندوب</th>
+                        <th>اسم الموظف</th>
+                        <th>تاريخ التسليم</th>
+                    </tr>
+                </thead>
+                <tbody id="normal-orders-table-body">
+                </tbody>
+            </table>
+        </div>
+
+        <h2 id="site-invoices-title" class="table-section-title">فواتير الموقع</h2>
+        <div class="table-container">
+            <table id="site-invoices-table">
+                <thead>
+                    <tr>
+                        <th>نوع الطلب</th>
+                        <th>رقم الفاتورة</th>
+                        <th>اسم العميل</th>
+                        <th>رقم هاتف العميل</th>
+                        <th>المنطقة</th>
+                        <th>قيمة الفاتورة</th>
+                        <th>قيمة التوصيل</th>
+                        <th>طريقة الدفع</th>
+                        <th>المندوب</th>
+                        <th>توقيع المندوب</th>
+                        <th>اسم الموظف</th>
+                        <th>تاريخ التسليم</th>
+                    </tr>
+                </thead>
+                <tbody id="site-orders-table-body">
+                </tbody>
+            </table>
+        </div>
+
+        <div id="free-work-section" class="free-work-section hidden">
+            <h3>الأعمال المجانية للمندوب: <span id="free-work-delegate-name"></span></h3>
+            <ul id="free-work-list">
+            </ul>
+            <p id="no-free-work-message" class="hidden">لا توجد أعمال مجانية لهذا المندوب.</p>
+        </div>
+
+        <div class="export-buttons">
+          <button class="btn" id="export-current-pdf">تحميل الصفحة الحالية PDF</button>
+          <button class="btn" id="export-all-delegates-pdf">تحميل جميع صفحات المناديب PDF</button>
+        </div>
+    </div>
+
+    <div class="modal" id="search-modal">
+        <div class="modal-content">
+            <span class="close-button search-close-button">&times;</span>
+            <h2>البحث عن طلب</h2>
+            <div class="search-options">
+                <button class="btn" id="search-by-invoice-btn">البحث برقم الفاتورة</button>
+                <button class="btn" id="search-by-phone-btn">البحث برقم هاتف العميل</button>
+            </div>
+            <div id="search-input-area" class="form-group hidden">
+                <label for="search-term">أدخل قيمة البحث:</label>
+                <input type="text" id="search-term" placeholder="أدخل رقم الفاتورة أو رقم الهاتف" required>
+                <button class="btn" id="execute-search-btn">بحث</button>
+            </div>
+            <div class="search-results-container">
+                <h3>نتائج البحث:</h3>
+                <table class="search-results-table">
+                    <thead>
+                        <tr>
+                            <th>نوع الطلب</th>
+                            <th>رقم الفاتورة</th>
+                            <th>اسم العميل</th>
+                            <th>رقم هاتف العميل</th>
+                            <th>المنطقة</th>
+                            <th>قيمة الفاتورة</th>
+                            <th>قيمة التوصيل</th>
+                            <th>طريقة الدفع</th>
+                            <th>المندوب</th>
+                            <th>توقيع المندوب</th>
+                            <th>تاريخ التسليم</th>
+                            <th>اسم الموظف</th>
+                        </tr>
+                    </thead>
+                    <tbody id="search-results-body">
+                    </tbody>
+                </table>
+                <p id="no-search-results" class="hidden error-message">لا توجد نتائج مطابقة.</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="accounting.js"></script>
+</body>
+</html>
