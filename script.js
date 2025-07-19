@@ -865,7 +865,10 @@ accountingLogoutBtn.addEventListener('click', () => {
 
     // PDF Generation
     downloadCurrentPdfBtn.addEventListener('click', () => {
+        const { jsPDF } = window.jspdf; // تأكد أن هذا السطر موجود أو أضفه لتعريف jsPDF
         const doc = new jspdf.jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+        console.log("jsPDF doc object:", doc);
+        console.log("Available fonts via doc.internal.getFontList():", doc.internal.getFontList());
         const selectedDate = accountingDatePicker.value;
         const selectedRep = accountingRepresentativeFilter.value;
         const reportTitle = `كشف حساب المندوب "${selectedRep || 'جميع المناديب'}" بتاريخ "${formatDate(selectedDate)}"`;
