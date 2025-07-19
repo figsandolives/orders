@@ -899,7 +899,7 @@ downloadCurrentPdfBtn.addEventListener('click', () => {
                     return { image: cell.querySelector('img').src, imgWidth: 20, imgHeight: 10 };
                 }
                 return cell.textContent;
-            }).reverse(); // Reverse cell order for RTL
+            });
         });
 
         doc.autoTable({
@@ -1022,7 +1022,7 @@ downloadAllRepsPdfBtn.addEventListener('click', async () => {
                     order.clientName,
                     [order.invoiceNumber1, order.invoiceNumber2, order.invoiceNumber3].filter(Boolean).join(', '),
                     order.orderType
-                ].reverse();
+                ];
             });
 
             if (tableData.length > 0) {
