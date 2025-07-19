@@ -94,6 +94,12 @@
         .editable-cell:hover {
             background-color: #f0f0f0;
         }
+        .editable-cell input, .editable-cell select, .editable-cell textarea {
+            border: 1px solid #a0aec0;
+            padding: 0.25rem;
+            border-radius: 0.25rem;
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
+        }
     </style>
 </head>
 <body class="flex flex-col min-h-screen">
@@ -722,7 +728,8 @@
                     `;
                 });
                 html += `</div>`;
-                if (currentOrderData[question.id] === 'يوجد' || (currentOrderData[question.id] && currentOrderData[question.id].length > 0 && Array.isArray(currentOrderData[question.id]))) {
+                // Only show freeWorksInputs and addFreeWorkBtn if 'يوجد' is selected or was previously selected
+                if (currentOrderData[question.id] === 'يوجد' || (currentOrderData.freeWorksDetails && currentOrderData.freeWorksDetails.length > 0)) {
                     html += `<div id="freeWorksInputs"></div>`;
                     html += `<button id="addFreeWorkBtn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-xl mt-2">اضافة عمل مجاني جديد</button>`;
                 }
@@ -819,6 +826,7 @@
                 currentOrderData.deliveryValue = 0;
                 currentOrderData.paymentMethod = 'رابط';
             }
+            // Update the form fields if they exist in the current view
             const deliveryValueElement = document.getElementById('deliveryValue');
             if (deliveryValueElement) deliveryValueElement.value = currentOrderData.deliveryValue;
             const invoiceValueElement = document.getElementById('invoiceValue');
@@ -831,23 +839,25 @@
             const selectedOption = document.querySelector('input[name="freeWorks"]:checked');
             if (!selectedOption) return; // Null check
             const freeWorksOption = selectedOption.value;
-            const freeWorksInputsDiv = document.getElementById('freeWorksInputs');
-            const addFreeWorkBtn = document.getElementById('addFreeWorkBtn');
+            let freeWorksInputsDiv = document.getElementById('freeWorksInputs');
+            let addFreeWorkBtn = document.getElementById('addFreeWorkBtn');
 
             if (freeWorksOption === 'يوجد') {
                 if (!freeWorksInputsDiv) {
-                    const div = document.createElement('div');
-                    div.id = 'freeWorksInputs';
-                    orderFormContent.appendChild(div);
-                    const btn = document.createElement('button');
-                    btn.id = 'addFreeWorkBtn';
-                    btn.className = 'bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-xl mt-2';
-                    btn.textContent = 'اضافة عمل مجاني جديد';
-                    btn.addEventListener('click', () => addFreeWorkInput());
-                    orderFormContent.appendChild(btn);
+                    freeWorksInputsDiv = document.createElement('div');
+                    freeWorksInputsDiv.id = 'freeWorksInputs';
+                    orderFormContent.appendChild(freeWorksInputsDiv);
                 }
-                if (document.getElementById('freeWorksInputs') && document.getElementById('freeWorksInputs').children.length === 0) {
-                    addFreeWorkInput();
+                if (!addFreeWorkBtn) {
+                    addFreeWorkBtn = document.createElement('button');
+                    addFreeWorkBtn.id = 'addFreeWorkBtn';
+                    addFreeWorkBtn.className = 'bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-xl mt-2';
+                    addFreeWorkBtn.textContent = 'اضافة عمل مجاني جديد';
+                    addFreeWorkBtn.addEventListener('click', () => addFreeWorkInput());
+                    orderFormContent.appendChild(addFreeWorkBtn);
+                }
+                if (freeWorksInputsDiv.children.length === 0 && (!currentOrderData.freeWorksDetails || currentOrderData.freeWorksDetails.length === 0)) {
+                    addFreeWorkInput(); // Add one input if 'يوجد' is selected and no existing details
                 }
             } else {
                 if (freeWorksInputsDiv) freeWorksInputsDiv.remove();
@@ -964,6 +974,8 @@
             if (signatureCanvas) initSignaturePad(); // Null check
             if (currentOrderData.signatureImage && signaturePad) {
                 signaturePad.fromDataURL(currentOrderData.signatureImage);
+            } else if (signaturePad) {
+                signaturePad.clear(); // Clear if no existing signature
             }
         }
 
@@ -1009,12 +1021,13 @@
                     <td class="editable-cell" data-key="${order.key}" data-field="paymentMethod">${order.paymentMethod || ''}</td>
                     <td class="editable-cell" data-key="${order.key}" data-field="employeeName">${order.employeeName || ''}</td>
                     <td class="editable-cell" data-key="${order.key}" data-field="delivererName">${order.delivererName || ''}</td>
-                    <td>
+                    <td data-key="${order.key}" data-field="signatureImage">
                         ${order.signatureImage ? `<img src="${order.signatureImage}" alt="Signature" class="w-20 h-10 object-contain mx-auto">` : 'لا يوجد'}
+                        <!-- Removed change signature button as per user request -->
                     </td>
-                    <td>${Array.isArray(order.freeWorksDetails) && order.freeWorksDetails.length > 0 ? order.freeWorksDetails.join(', ') : 'لا يوجد'}</td>
-                    <td>${order.dateTime || ''}</td>
-                    <td>${order.notes || ''}</td>
+                    <td class="editable-cell" data-key="${order.key}" data-field="freeWorks">${Array.isArray(order.freeWorksDetails) && order.freeWorksDetails.length > 0 ? order.freeWorksDetails.join(', ') : 'لا يوجد'}</td>
+                    <td data-key="${order.key}" data-field="dateTime">${order.dateTime || ''}</td>
+                    <td class="editable-cell" data-key="${order.key}" data-field="notes">${order.notes || ''}</td>
                     <td>
                         <button class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded-xl delete-order-btn" data-key="${order.key}">حذف</button>
                     </td>
@@ -1033,52 +1046,196 @@
                 });
             });
 
+            // Change to dblclick for editable cells
             document.querySelectorAll('.editable-cell').forEach(cell => {
-                cell.addEventListener('click', (e) => {
-                    const key = e.target.dataset.key;
-                    const field = e.target.dataset.field;
-                    editOrderField(key, field, e.target.textContent);
+                cell.addEventListener('dblclick', async (e) => {
+                    // Ensure we don't activate edit on a cell already being edited
+                    if (e.currentTarget.querySelector('input, select, textarea')) {
+                        return; // Already in edit mode
+                    }
+
+                    const orderKey = e.currentTarget.dataset.key;
+                    const orderRef = ref(db, `artifacts/${appId}/public/data/orders/${orderKey}`);
+                    const snapshot = await get(orderRef);
+                    if (!snapshot.exists()) {
+                        showMessageModal('الطلب غير موجود!');
+                        return;
+                    }
+                    const orderData = snapshot.val();
+                    activateInlineEdit(e.currentTarget, orderData); // Pass the cell and full order data
                 });
             });
+
+            // Removed listener for change signature button as per user request
+            // document.querySelectorAll('.change-signature-btn').forEach(button => {
+            //     button.addEventListener('click', async (e) => {
+            //         const orderKey = e.target.dataset.key;
+            //         const orderRef = ref(db, `artifacts/${appId}/public/data/orders/${orderKey}`);
+            //         const snapshot = await get(orderRef);
+            //         if (!snapshot.exists()) {
+            //             showMessageModal('الطلب غير موجود!');
+            //             return;
+            //         }
+            //         currentOrderData = snapshot.val(); // Load current order data for signature
+            //         currentOrderKeyForEdit = orderKey;
+            //         showSignatureModal(); // Open the signature modal
+            //     });
+            // });
         }
 
-        async function editOrderField(key, field, currentValue) {
-            const orderRef = ref(db, `artifacts/${appId}/public/data/orders/${key}`);
+        // Function to open the full order edit modal (used for search results)
+        async function openFullOrderEditModal(orderKey) {
+            const orderRef = ref(db, `artifacts/${appId}/public/data/orders/${orderKey}`);
             const snapshot = await get(orderRef);
             if (!snapshot.exists()) {
                 showMessageModal('الطلب غير موجود!');
                 return;
             }
             currentOrderData = snapshot.val();
-            currentOrderKeyForEdit = key;
+            currentOrderKeyForEdit = orderKey;
+            currentQuestionIndex = 0; // Start from the first question for full edit
 
-            const questionIndex = orderFormQuestions.findIndex(q => q.id === field);
-            if (questionIndex !== -1) {
-                if (newOrderModal) showModal('newOrderModal'); // Null check
-                currentQuestionIndex = questionIndex;
-                renderQuestion();
+            showModal('newOrderModal');
+            renderQuestion(); // Start the multi-step form with existing data
+        }
 
-                if (field === 'delivererName') {
-                    const originalDeliverer = currentOrderData.delivererName;
-                    setTimeout(() => {
-                        const selectElement = document.getElementById('delivererName');
-                        if (selectElement) {
-                            selectElement.addEventListener('change', () => {
-                                if (selectElement.value !== originalDeliverer) {
-                                    showConfirmationModal('هل تريد تغيير توقيع المندوب؟', (confirmed) => {
-                                        if (confirmed) {
-                                            currentOrderData.signatureImage = null;
-                                            showSignatureModal();
-                                        }
-                                    });
-                                }
-                            });
-                        }
-                    }, 100);
-                }
-            } else {
-                showMessageModal('لا يمكن تعديل هذا الحقل مباشرة.');
+        // Function to activate inline editing for a cell
+        async function activateInlineEdit(cellElement, orderData) {
+            let fieldName = cellElement.dataset.field; // This might change for 'freeWorks'
+            const originalValue = cellElement.textContent.trim();
+            const orderKey = cellElement.dataset.key; // Get orderKey again from dataset
+
+            // Store original content to revert if needed, and to compare for changes
+            cellElement.setAttribute('data-original-value', originalValue);
+            cellElement.classList.add('editing');
+
+            let inputElement;
+            const question = orderFormQuestions.find(q => q.id === fieldName);
+
+            if (question && question.type === 'select') {
+                inputElement = document.createElement('select');
+                question.options.forEach(option => {
+                    const optionElem = document.createElement('option');
+                    optionElem.value = option;
+                    optionElem.textContent = option;
+                    inputElement.appendChild(optionElem);
+                });
+                inputElement.value = originalValue;
+            } else if (fieldName === 'invoiceValue' || fieldName === 'deliveryValue' || fieldName === 'phoneNumber') {
+                inputElement = document.createElement('input');
+                inputElement.type = 'number';
+                inputElement.value = originalValue;
+            } else if (fieldName === 'notes') {
+                inputElement = document.createElement('textarea');
+                inputElement.value = originalValue;
+                inputElement.style.width = '100%';
+                inputElement.style.minHeight = '60px'; // Adjust height as needed
+            } else if (fieldName === 'freeWorks') {
+                // Special handling for freeWorks: edit freeWorksDetails as a comma-separated string
+                inputElement = document.createElement('input');
+                inputElement.type = 'text';
+                inputElement.value = Array.isArray(orderData.freeWorksDetails) && orderData.freeWorksDetails.length > 0 ? orderData.freeWorksDetails.join(', ') : '';
+                inputElement.placeholder = 'أدخل الأعمال المجانية مفصولة بفواصل';
+                fieldName = 'freeWorksDetails'; // Change fieldName for saving to the correct Firebase field
+            } else if (fieldName === 'invoiceNumber') {
+                // For invoiceNumber, allow editing as a single text field
+                inputElement = document.createElement('input');
+                inputElement.type = 'text';
+                inputElement.value = originalValue;
             }
+            else {
+                inputElement = document.createElement('input');
+                inputElement.type = 'text';
+                inputElement.value = originalValue;
+            }
+
+            inputElement.className = 'w-full p-1 border rounded-md text-right'; // Tailwind classes for input
+            cellElement.innerHTML = ''; // Clear cell content
+            cellElement.appendChild(inputElement);
+            inputElement.focus();
+
+            const saveChanges = async () => {
+                const newValue = inputElement.value.trim();
+                const originalStoredValue = cellElement.getAttribute('data-original-value');
+                
+                // Remove event listeners to prevent multiple calls
+                inputElement.removeEventListener('blur', saveChanges);
+                inputElement.removeEventListener('keydown', handleKeydown); // Remove the named function listener
+
+                let updateData = {};
+                let displayValue = newValue; // Value to display after saving
+                let shouldShowSignatureModal = false;
+
+                if (fieldName === 'freeWorksDetails') {
+                    const newFreeWorksDetails = newValue.split(',').map(s => s.trim()).filter(Boolean);
+                    const originalFreeWorksDetails = Array.isArray(orderData.freeWorksDetails) ? orderData.freeWorksDetails.join(', ') : '';
+
+                    if (newFreeWorksDetails.join(', ') !== originalFreeWorksDetails) {
+                        updateData = {
+                            freeWorksDetails: newFreeWorksDetails,
+                            freeWorks: newFreeWorksDetails.length > 0 ? 'يوجد' : 'لا يوجد'
+                        };
+                        displayValue = newFreeWorksDetails.length > 0 ? newFreeWorksDetails.join(', ') : 'لا يوجد';
+                    } else {
+                        displayValue = originalStoredValue; // No change, revert to original display
+                    }
+                } else if (fieldName === 'delivererName' && newValue !== originalStoredValue) {
+                    // Special handling for delivererName change
+                    updateData[fieldName] = newValue;
+                    updateData.signatureImage = null; // Clear signature if deliverer changes
+                    shouldShowSignatureModal = true;
+                    displayValue = newValue;
+                }
+                else if (newValue !== originalStoredValue) {
+                    // Convert to number if applicable
+                    let valueToSave = newValue;
+                    if (['invoiceValue', 'deliveryValue', 'phoneNumber'].includes(fieldName)) {
+                        valueToSave = Number(newValue);
+                        if (isNaN(valueToSave)) {
+                            showMessageModal('الرجاء إدخال قيمة رقمية صحيحة.');
+                            // Revert to original value and stop
+                            cellElement.textContent = originalStoredValue;
+                            cellElement.classList.remove('editing');
+                            return;
+                        }
+                    }
+                    updateData[fieldName] = valueToSave;
+                    displayValue = valueToSave; // Use the saved value for display
+                } else {
+                    displayValue = originalStoredValue; // No change, revert to original display
+                }
+
+                if (Object.keys(updateData).length > 0) {
+                    try {
+                        const orderRef = ref(db, `artifacts/${appId}/public/data/orders/${orderKey}`);
+                        await update(orderRef, updateData);
+                        // No need for showMessageModal here, as onValue listener will re-render the table
+                        // showMessageModal('تم تحديث الحقل بنجاح!');
+                    } catch (error) {
+                        console.error("Error updating order field:", error);
+                        showMessageModal("حدث خطأ أثناء تحديث الحقل: " + error.message);
+                        displayValue = originalStoredValue; // Revert on error
+                    }
+                }
+                cellElement.textContent = displayValue; // Update cell with final display value
+                cellElement.classList.remove('editing');
+
+                if (shouldShowSignatureModal) {
+                    currentOrderData = { ...orderData, ...updateData }; // Update currentOrderData with the new deliverer name and cleared signature
+                    currentOrderKeyForEdit = orderKey; // Ensure correct order key is set
+                    showSignatureModal();
+                }
+            };
+
+            const handleKeydown = (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault(); // Prevent new line in textarea or form submission
+                    inputElement.blur(); // Trigger blur to save changes
+                }
+            };
+
+            inputElement.addEventListener('blur', saveChanges);
+            inputElement.addEventListener('keydown', handleKeydown);
         }
 
         async function deleteOrder(key) {
@@ -1282,12 +1439,6 @@
             }
         }
 
-        // Removed applyRtlForJsPdf as jspdf-arabic plugin handles it.
-        // function applyRtlForJsPdf(doc, text, x, y, options = {}) {
-        //     const reversedText = text.split('').reverse().join('');
-        //     doc.text(reversedText, x, y, { align: 'right', ...options });
-        // }
-
         async function generatePdfForDeliverer(doc, delivererName, date, orders, includeTitle = true) {
             const margin = 10;
             let y = margin;
@@ -1395,6 +1546,59 @@
                 });
             }
             return y;
+        }
+
+        // Function to render search results (used by both secretariat and accounting search)
+        function renderSearchResults(orders) {
+            if (!searchResultsTableBody) return; // Null check
+            searchResultsTableBody.innerHTML = '';
+            if (orders.length === 0) {
+                searchResultsTableBody.innerHTML = `<tr><td colspan="15" class="text-center py-4 text-gray-500">لا توجد نتائج بحث.</td></tr>`;
+                if (searchResultsDiv) searchResultsDiv.classList.remove('hidden'); // Ensure it's visible to show "no results"
+                return;
+            }
+
+            orders.forEach(order => {
+                const row = document.createElement('tr');
+                // Determine if actions column should be visible based on currentSearchContext
+                const actionsColumnHtml = currentSearchContext === 'secretariat' ?
+                    `<td><button class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-3 rounded-xl edit-search-result-btn" data-key="${order.key}">تعديل</button></td>` :
+                    '';
+
+                row.innerHTML = `
+                    <td>${order.orderType || ''}</td>
+                    <td>${order.invoiceNumber || ''}</td>
+                    <td>${order.clientName || ''}</td>
+                    <td>${order.phoneNumber || ''}</td>
+                    <td>${order.area || ''}</td>
+                    <td>${order.invoiceValue || 0}</td>
+                    <td>${order.deliveryValue || 0}</td>
+                    <td>${order.paymentMethod || ''}</td>
+                    <td>${order.employeeName || ''}</td>
+                    <td>${order.delivererName || ''}</td>
+                    <td>
+                        ${order.signatureImage ? `<img src="${order.signatureImage}" alt="Signature" class="w-20 h-10 object-contain mx-auto">` : 'لا يوجد'}
+                    </td>
+                    <td>${Array.isArray(order.freeWorksDetails) && order.freeWorksDetails.length > 0 ? order.freeWorksDetails.join(', ') : 'لا يوجد'}</td>
+                    <td>${order.dateTime || ''}</td>
+                    <td>${order.notes || ''}</td>
+                    ${actionsColumnHtml}
+                `;
+                searchResultsTableBody.appendChild(row);
+            });
+
+            if (searchResultsDiv) searchResultsDiv.classList.remove('hidden'); // Show results table
+
+            // Add event listeners for edit buttons in search results (only for secretariat)
+            if (currentSearchContext === 'secretariat') {
+                document.querySelectorAll('.edit-search-result-btn').forEach(button => {
+                    button.addEventListener('click', async (e) => {
+                        const orderKey = e.target.dataset.key;
+                        await openFullOrderEditModal(orderKey); // Open full edit modal for search results
+                        closeModal('searchOrderModal'); // Close search modal after opening edit modal
+                    });
+                });
+            }
         }
 
         // Main initialization function
