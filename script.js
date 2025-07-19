@@ -155,35 +155,35 @@ if (document.getElementById('secretary-login-btn')) {
     secretaryLoginBtn.addEventListener('click', () => {
         const code = secretaryLoginCodeInput.value;
         if (employees[code]) {
-    // تسجيل الدخول المجهول في Firebase Authentication
-    firebase.auth().signInAnonymously()
-        .then(() => {
-            currentUser = { code: code, name: employees[code] };
-            currentDashboard = 'secretary';
-            sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
-            sessionStorage.setItem('currentDashboard', currentDashboard);
-            showSecretaryDashboard();
-            secretaryLoginErrorMessage.textContent = '';
-        })
-        .catch((error) => {
-            console.error("Error signing in anonymously:", error);
-            secretaryLoginErrorMessage.textContent = 'حدث خطأ في تسجيل الدخول. الرجاء المحاولة مرة أخرى.';
-        });
-} else {
-    secretaryLoginErrorMessage.textContent = 'رمز الدخول غير صحيح.';
-}
+            // تسجيل الدخول المجهول في Firebase Authentication
+            firebase.auth().signInAnonymously()
+                .then(() => {
+                    currentUser = { code: code, name: employees[code] };
+                    currentDashboard = 'secretary';
+                    sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+                    sessionStorage.setItem('currentDashboard', currentDashboard);
+                    showSecretaryDashboard();
+                    secretaryLoginErrorMessage.textContent = '';
+                })
+                .catch((error) => {
+                    console.error("Error signing in anonymously:", error);
+                    secretaryLoginErrorMessage.textContent = 'حدث خطأ في تسجيل الدخول. الرجاء المحاولة مرة أخرى.';
+                });
+        } else {
+            secretaryLoginErrorMessage.textContent = 'رمز الدخول غير صحيح.';
+        }
     });
 
-secretaryLogoutBtn.addEventListener('click', () => {
-    firebase.auth().signOut(); // تسجيل الخروج من Firebase Auth
-    currentUser = null;
-    currentDashboard = null;
-    sessionStorage.removeItem('currentUser');
-    sessionStorage.removeItem('currentDashboard');
-    secretaryDashboard.style.display = 'none';
-    secretaryLoginContainer.style.display = 'block';
-    secretaryLoginCodeInput.value = ''; // Clear input on logout
-});
+    secretaryLogoutBtn.addEventListener('click', () => {
+        firebase.auth().signOut(); // تسجيل الخروج من Firebase Auth
+        currentUser = null;
+        currentDashboard = null;
+        sessionStorage.removeItem('currentUser');
+        sessionStorage.removeItem('currentDashboard');
+        secretaryDashboard.style.display = 'none';
+        secretaryLoginContainer.style.display = 'block';
+        secretaryLoginCodeInput.value = ''; // Clear input on logout
+    });
 
     const showSecretaryDashboard = () => {
         secretaryLoginContainer.style.display = 'none';
@@ -257,7 +257,8 @@ secretaryLogoutBtn.addEventListener('click', () => {
     addNewOrderBtn.addEventListener('click', () => {
         newOrderModal.style.display = 'block';
         newOrderForm.reset(); // Clear form for new entry
-        // Reset visibility of fields
+
+        // Reset visibility of fields to default (for 'عادية')
         invoiceValueLabel.style.display = 'block';
         invoiceValueInput.style.display = 'block';
         deliveryValueLabel.style.display = 'block';
@@ -265,47 +266,99 @@ secretaryLogoutBtn.addEventListener('click', () => {
         paymentMethodLabel.style.display = 'block';
         paymentMethodSelect.style.display = 'block';
         freeWorkTextContainer.style.display = 'none'; // Hide free work text initially
+
+        // Ensure all relevant fields are required by default for 'عادية'
+        invoiceValueInput.setAttribute('required', 'true');
+        deliveryValueInput.setAttribute('required', 'true');
+        paymentMethodSelect.setAttribute('required', 'true');
+        document.getElementById('free-work-text').removeAttribute('required'); // Remove required for free work text by default
+
+        // Clear values and set default option for order type
+        invoiceValueInput.value = '';
+        deliveryValueInput.value = '';
+        paymentMethodSelect.value = ''; // أو 'كاش' كقيمة افتراضية
+        orderTypeSelect.value = ''; // Reset order type to default empty option
+        // Do NOT dispatch change event here. Let the user select first.
     });
 
+    // *** تعديل: معالج حدث التغيير لنوع الطلب ***
     orderTypeSelect.addEventListener('change', () => {
         const selectedType = orderTypeSelect.value;
+
+        // إعادة ضبط جميع الحقول إلى حالتها الافتراضية أولاً
+        invoiceValueLabel.style.display = 'block';
+        invoiceValueInput.style.display = 'block';
+        deliveryValueLabel.style.display = 'block';
+        deliveryValueInput.style.display = 'block';
+        paymentMethodLabel.style.display = 'block';
+        paymentMethodSelect.style.display = 'block';
+
+        // إعادة تعيين سمات required إلى true افتراضيًا، ثم تعديلها حسب النوع
+        invoiceValueInput.setAttribute('required', 'true');
+        deliveryValueInput.setAttribute('required', 'true');
+        paymentMethodSelect.setAttribute('required', 'true');
+
         if (selectedType === 'موقع') {
-            deliveryValueLabel.style.display = 'none';
-            deliveryValueInput.style.display = 'none';
-            paymentMethodLabel.style.display = 'none';
-            paymentMethodSelect.style.display = 'none';
-            invoiceValueInput.required = true;
+            deliveryValueInput.value = 2; // قيمة التوصيل 2
+            paymentMethodSelect.value = 'مدفوع'; // طريقة الدفع مدفوع
+
+            // إزالة سمة required للحقول التي يتم ملؤها تلقائياً
+            deliveryValueInput.removeAttribute('required');
+            paymentMethodSelect.removeAttribute('required');
+
+            // قيمة الفاتورة لا تزال مطلوبة للموقع
+            // invoiceValueInput.setAttribute('required', 'true'); // هذا السطر يمكن إزالته لأنه افتراضيًا مطلوب
         } else if (selectedType === 'اشتراك') {
+            invoiceValueInput.value = 0; // قيمة الفاتورة 0
+            deliveryValueInput.value = 0; // قيمة التوصيل 0
+            paymentMethodSelect.value = 'مدفوع'; // طريقة الدفع مدفوع
+
+            // إزالة سمة required للحقول التي يتم ملؤها تلقائياً أو إخفائها
+            invoiceValueInput.removeAttribute('required');
+            deliveryValueInput.removeAttribute('required');
+            paymentMethodSelect.removeAttribute('required');
+
+            // إخفاء الحقول غير ذات الصلة
             invoiceValueLabel.style.display = 'none';
             invoiceValueInput.style.display = 'none';
             deliveryValueLabel.style.display = 'none';
             deliveryValueInput.style.display = 'none';
             paymentMethodLabel.style.display = 'none';
             paymentMethodSelect.style.display = 'none';
-            invoiceValueInput.required = false; // Not required for subscriptions
-        } else { // عادية
-            invoiceValueLabel.style.display = 'block';
-            invoiceValueInput.style.display = 'block';
-            deliveryValueLabel.style.display = 'block';
-            deliveryValueInput.style.display = 'block';
-            paymentMethodLabel.style.display = 'block';
-            paymentMethodSelect.style.display = 'block';
-            invoiceValueInput.required = true;
+        } else { // 'عادية'
+            // تأكد من مسح أي قيم تلقائية سابقة
+            invoiceValueInput.value = '';
+            deliveryValueInput.value = '';
+            paymentMethodSelect.value = ''; // أو 'كاش' كقيمة افتراضية
+            // الحقول تظل مطلوبة افتراضياً كما تم تعيينها في بداية الدالة
         }
     });
 
     freeWorkOption.addEventListener('change', () => {
+        const freeWorkTextInput = document.getElementById('free-work-text');
         if (freeWorkOption.value === 'نعم') {
             freeWorkTextContainer.style.display = 'block';
-            document.getElementById('free-work-text').required = true;
+            freeWorkTextInput.setAttribute('required', 'true'); // جعل حقل النص مطلوبًا
         } else {
             freeWorkTextContainer.style.display = 'none';
-            document.getElementById('free-work-text').required = false;
+            freeWorkTextInput.removeAttribute('required'); // إزالة سمة مطلوب
+            freeWorkTextInput.value = ''; // مسح القيمة عند إخفائه
         }
     });
 
+    // *** تعديل: معالج حدث الإرسال للنموذج (لا تغييرات جوهرية هنا، فقط إزالة المنطق المكرر) ***
     newOrderForm.addEventListener('submit', (e) => {
         e.preventDefault();
+
+        // تحقق من صلاحية النموذج يدوياً إذا لزم الأمر، أو اعتمد على التحقق الافتراضي للمتصفح
+        // إذا كنت تستخدم setAttribute/removeAttribute بشكل صحيح، يجب أن يعمل التحقق الافتراضي.
+        if (!newOrderForm.checkValidity()) {
+            // إذا كان النموذج غير صالح، المتصفح سيعرض رسائل الخطأ الخاصة به
+            // يمكنك إضافة رسالة خطأ مخصصة هنا إذا أردت
+            console.log("النموذج غير صالح. الرجاء مراجعة الحقول المطلوبة.");
+            return; // إيقاف الإرسال إذا كان النموذج غير صالح
+        }
+
 
         const orderType = orderTypeSelect.value;
         const invoiceNumber1 = document.getElementById('invoice-number-1').value;
@@ -314,6 +367,7 @@ secretaryLogoutBtn.addEventListener('click', () => {
         const clientName = document.getElementById('client-name').value;
         const phoneNumber = document.getElementById('phone-number').value;
         const region = document.getElementById('region').value;
+        // القيم تؤخذ مباشرة من المدخلات بعد التعبئة التلقائية
         let invoiceValue = parseFloat(invoiceValueInput.value) || 0;
         let deliveryValue = parseFloat(deliveryValueInput.value) || 0;
         let paymentMethod = paymentMethodSelect.value;
@@ -322,19 +376,6 @@ secretaryLogoutBtn.addEventListener('click', () => {
         const freeWorkText = document.getElementById('free-work-text').value;
         const dateTime = formatDateTime(new Date());
         const date = formatDate(new Date());
-
-        // Logic for "فاتورة موقع" and "اشتراك"
-        if (orderType === 'موقع') {
-            if (invoiceValue > 0) {
-                invoiceValue -= 2;
-                deliveryValue = 2;
-            }
-            paymentMethod = paymentMethodSelect.value || ''; // Ensure it's not null if hidden
-        } else if (orderType === 'اشتراك') {
-            invoiceValue = 0;
-            deliveryValue = 0;
-            paymentMethod = 'مدفوع';
-        }
 
         const orderData = {
             orderType,
@@ -371,14 +412,14 @@ secretaryLogoutBtn.addEventListener('click', () => {
             orderData.signature = signatureData;
             database.ref('orders').push(orderData)
                 .then(() => {
-                    alert('تم تسليم الطلب بنجاح!');
+                    alert('تم تسليم الطلب بنجاح!'); // استخدم modal مخصص بدلاً من alert
                     signatureModal.style.display = 'none';
                     newOrderForm.reset();
                     loadSecretaryOrders(new Date()); // Reload orders for today
                 })
                 .catch((error) => {
                     console.error("Error adding order: ", error);
-                    alert('حدث خطأ أثناء تسليم الطلب.');
+                    alert('حدث خطأ أثناء تسليم الطلب.'); // استخدم modal مخصص بدلاً من alert
                 });
         };
     });
@@ -391,7 +432,7 @@ secretaryLogoutBtn.addEventListener('click', () => {
 
     saveSignatureBtn.addEventListener('click', () => {
         if (signaturePad.isEmpty()) {
-            alert("الرجاء التوقيع قبل الحفظ.");
+            alert("الرجاء التوقيع قبل الحفظ."); // استخدم modal مخصص بدلاً من alert
         } else {
             const signatureData = signaturePad.toDataURL(); // Get signature as base64 image
             if (currentSignatureCallback) {
@@ -417,7 +458,7 @@ secretaryLogoutBtn.addEventListener('click', () => {
         document.getElementById('free-work-option').value = currentOrderData.freeWorkOption;
         document.getElementById('free-work-text').value = currentOrderData.freeWorkText || '';
 
-        // Trigger change event to update visibility of fields based on order type
+        // Trigger change event to update visibility and required attributes of fields based on order type
         orderTypeSelect.dispatchEvent(new Event('change'));
         freeWorkOption.dispatchEvent(new Event('change'));
 
@@ -425,6 +466,12 @@ secretaryLogoutBtn.addEventListener('click', () => {
         newOrderForm.querySelector('.submit-btn').textContent = 'تحديث الطلب';
         newOrderForm.onsubmit = (e) => {
             e.preventDefault();
+
+            // تحقق من صلاحية النموذج يدوياً
+            if (!newOrderForm.checkValidity()) {
+                console.log("النموذج غير صالح. الرجاء مراجعة الحقول المطلوبة.");
+                return; // إيقاف الإرسال إذا كان النموذج غير صالح
+            }
 
             const updatedOrderData = {
                 orderType: document.getElementById('order-type').value,
@@ -445,18 +492,6 @@ secretaryLogoutBtn.addEventListener('click', () => {
                 date: currentOrderData.date
             };
 
-            // Apply special logic for "فاتورة موقع" and "اشتراك"
-            if (updatedOrderData.orderType === 'موقع') {
-                if (updatedOrderData.invoiceValue > 0) {
-                    updatedOrderData.invoiceValue -= 2;
-                    updatedOrderData.deliveryValue = 2;
-                }
-            } else if (updatedOrderData.orderType === 'اشتراك') {
-                updatedOrderData.invoiceValue = 0;
-                updatedOrderData.deliveryValue = 0;
-                updatedOrderData.paymentMethod = 'مدفوع';
-            }
-
             // Check if representative changed, if so, re-sign
             if (updatedOrderData.representative !== currentOrderData.representative) {
                 newOrderModal.style.display = 'none';
@@ -470,7 +505,7 @@ secretaryLogoutBtn.addEventListener('click', () => {
                     updatedOrderData.signature = signatureData;
                     database.ref('orders/' + orderId).update(updatedOrderData)
                         .then(() => {
-                            alert('تم تحديث الطلب بنجاح وتغيير التوقيع!');
+                            alert('تم تحديث الطلب بنجاح وتغيير التوقيع!'); // استخدم modal مخصص بدلاً من alert
                             signatureModal.style.display = 'none';
                             newOrderForm.reset();
                             // Reset form submit handler
@@ -480,7 +515,7 @@ secretaryLogoutBtn.addEventListener('click', () => {
                         })
                         .catch((error) => {
                             console.error("Error updating order with new signature: ", error);
-                            alert('حدث خطأ أثناء تحديث الطلب.');
+                            alert('حدث خطأ أثناء تحديث الطلب.'); // استخدم modal مخصص بدلاً من alert
                         });
                 };
             } else {
@@ -488,7 +523,7 @@ secretaryLogoutBtn.addEventListener('click', () => {
                 updatedOrderData.signature = currentOrderData.signature;
                 database.ref('orders/' + orderId).update(updatedOrderData)
                     .then(() => {
-                        alert('تم تحديث الطلب بنجاح!');
+                        alert('تم تحديث الطلب بنجاح!'); // استخدم modal مخصص بدلاً من alert
                         newOrderModal.style.display = 'none';
                         newOrderForm.reset();
                         // Reset form submit handler
@@ -498,24 +533,44 @@ secretaryLogoutBtn.addEventListener('click', () => {
                     })
                     .catch((error) => {
                         console.error("Error updating order: ", error);
-                        alert('حدث خطأ أثناء تحديث الطلب.');
+                        alert('حدث خطأ أثناء تحديث الطلب.'); // استخدم modal مخصص بدلاً من alert
                     });
             }
         };
     };
 
     const confirmDeleteOrder = (orderId) => {
-        if (confirm('هل أنت متأكد من حذف هذا الطلب؟')) {
+        // *** تعديل: استخدام modal مخصص بدلاً من confirm() ***
+        const confirmationModal = document.createElement('div');
+        confirmationModal.classList.add('modal');
+        confirmationModal.innerHTML = `
+            <div class="modal-content">
+                <h3>تأكيد الحذف</h3>
+                <p>هل أنت متأكد من حذف هذا الطلب؟</p>
+                <button id="confirm-delete-yes">نعم</button>
+                <button id="confirm-delete-no">لا</button>
+            </div>
+        `;
+        document.body.appendChild(confirmationModal);
+        confirmationModal.style.display = 'block';
+
+        document.getElementById('confirm-delete-yes').onclick = () => {
             database.ref('orders/' + orderId).remove()
                 .then(() => {
-                    alert('تم حذف الطلب بنجاح!');
+                    alert('تم حذف الطلب بنجاح!'); // استخدم modal مخصص بدلاً من alert
                     loadSecretaryOrders(new Date()); // Reload orders
+                    confirmationModal.remove(); // إزالة المودال بعد التأكيد
                 })
                 .catch((error) => {
                     console.error("Error removing order: ", error);
-                    alert('حدث خطأ أثناء حذف الطلب.');
+                    alert('حدث خطأ أثناء حذف الطلب.'); // استخدم modal مخصص بدلاً من alert
+                    confirmationModal.remove(); // إزالة المودال حتى لو كان هناك خطأ
                 });
-        }
+        };
+
+        document.getElementById('confirm-delete-no').onclick = () => {
+            confirmationModal.remove(); // إزالة المودال عند الإلغاء
+        };
     };
 
     searchOrderBtn.addEventListener('click', () => {
