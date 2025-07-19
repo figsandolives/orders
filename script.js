@@ -48,15 +48,23 @@ const formatDate = (date) => {
     return `${day}/${month}/${year}`;
 };
 
-// Helper function to format date and time
 const formatDateTime = (date) => {
     const d = new Date(date);
     const day = String(d.getDate()).padStart(2, '0');
-    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0'); // Month is 0-indexed
     const year = d.getFullYear();
-    const hours = String(d.getHours()).padStart(2, '0');
+
+    let hours = d.getHours();
     const minutes = String(d.getMinutes()).padStart(2, '0');
-    return `${day}/${month}/${year} ${hours}:${minutes}`;
+    const ampm = hours >= 12 ? 'م' : 'ص'; // 'م' for PM, 'ص' for AM
+
+    hours = hours % 12; // Convert to 12-hour format
+    hours = hours ? hours : 12; // The hour '0' should be '12'
+
+    // Add leading zero if less than 10 (optional, but common for consistency with minutes)
+    const formattedHours = String(hours).padStart(2, '0');
+
+    return `${day}/${month}/${year} ${formattedHours}:${minutes} ${ampm}`;
 };
 
 // Store current user and dashboard
