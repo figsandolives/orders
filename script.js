@@ -865,16 +865,13 @@ accountingLogoutBtn.addEventListener('click', () => {
 
 // PDF Generation
 downloadCurrentPdfBtn.addEventListener('click', () => {
-    // *** التعديل 1: أضف dir: 'rtl' إلى كائن jsPDF ***
-    const doc = new jspdf.jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4', dir: 'rtl' });
+    const doc = new jspdf.jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
     const selectedDate = accountingDatePicker.value;
     const selectedRep = accountingRepresentativeFilter.value;
-    // قم بعكس عنوان التقرير لضمان ظهوره بشكل صحيح مع RTL align: 'center'
     const reportTitle = `كشف حساب المندوب "${selectedRep || 'جميع المناديب'}" بتاريخ "${formatDate(selectedDate)}"`;
 
     doc.setFont('Amiri', 'normal'); // Set font for Arabic support (ensure 'Amiri' is loaded or available)
     doc.setFontSize(14);
-    // مع dir: 'rtl' في jsPDF، text() سيتعامل مع الـ align بشكل صحيح لـ RTL
     doc.text(reportTitle, doc.internal.pageSize.getWidth() / 2, 10, { align: 'center' });
 
     const addTable = (tableBodyId, title) => {
@@ -889,57 +886,20 @@ downloadCurrentPdfBtn.addEventListener('click', () => {
             'ملاحظات', 'التاريخ والوقت', 'الأعمال المجانية', 'توقيع المندوب', 'المندوب', 'الموظف',
             'طريقة الدفع', 'قيمة التوصيل', 'قيمة الفاتورة', 'المنطقة', 'رقم الهاتف',
             'اسم العميل', 'رقم الفاتورة', 'نوع الفاتورة'
-        ]; // هذا الترتيب هو من اليمين لليسار بصرياً في الـ PDF (آخر عمود هو الأيمن)
+        ]; // Reversed for RTL display in PDF autoTable
 
         const data = rows.map(row => {
-            // قم بإنشاء الصف بالترتيب الذي يتوافق مع الرؤوس (من اليمين لليسار بصرياً)
-            // هذا يعني أن أول عنصر هنا هو الأيمن بصرياً، وآخر عنصر هو الأيسر بصرياً.
-            // بما أن الـ HTML table لديك غالباً ما يتم قراءتها من اليسار لليمين DOMياً
-            // تحتاج للتأكد من مطابقة ترتيب الأعمدة في الـ data مع الـ header.
-            // بناءً على ترتيب الـ header الذي أرسلته:
-            // header[0] = 'ملاحظات' (المفروض تكون أقصى اليسار)
-            // header[13] = 'نوع الفاتورة' (المفروض تكون أقصى اليمين)
-            // لذا يجب أن تكون البيانات بترتيب مطابق للـ header وليس عكسها
-            // سنقوم بإزالة .reverse() من هنا ليتوافق ترتيب البيانات مع ترتيب الرؤوس
-            // ونفترض أن data.column.index === 3 ما زال صحيحاً للتوقيع.
-            return [
-                // 'ملاحظات' - index 0
-                cell.querySelector('.notes-field') ? cell.querySelector('.notes-field').value : cell.textContent,
-                // 'التاريخ والوقت' - index 1
-                cell.textContent, // تأكد من الحصول على التاريخ والوقت الصحيح من الخلية
-                // 'الأعمال المجانية' - index 2
-                cell.textContent, // تأكد من الحصول على الأعمال المجانية الصحيحة
-                // 'توقيع المندوب' - index 3
-                cell.querySelector('img') ? { image: cell.querySelector('img').src, imgWidth: 20, imgHeight: 10 } : 'لا يوجد',
-                // ... وهكذا لبقية الأعمدة بالترتيب المعرّف في الـ header
-                cell.textContent, // المندوب
-                cell.textContent, // الموظف
-                cell.textContent, // طريقة الدفع
-                cell.textContent, // قيمة التوصيل
-                cell.textContent, // قيمة الفاتورة
-                cell.textContent, // المنطقة
-                cell.textContent, // رقم الهاتف
-                cell.textContent, // اسم العميل
-                cell.textContent, // رقم الفاتورة
-                cell.textContent // نوع الفاتورة
-            ];
-            // *** قم بتعديل هذا الجزء ليعكس طريقة قراءتك للبيانات من الـ HTML table body ***
-            // بما أنك تستخدم `Array.from(row.cells).map(cell => { ... }).reverse();`
-            // فهذا يعني أنك تقرأ خلايا الـ HTML بترتيبها الطبيعي ثم تعكسها.
-            // إذا كانت الخلايا في الـ HTML مرتبة من اليمين لليسار بصرياً (CSS dir:rtl),
-            // فـ `row.cells[0]` سيكون "نوع الفاتورة".
-            // بعد `.reverse()`، سيصبح "ملاحظات" هو `data[0]` و "نوع الفاتورة" هو `data[13]`.
-            // وهذا يتوافق مع ترتيب الـ `header`. لذا الكود الحالي كان صحيحاً لهذا الجزء.
-            // سنبقي الـ `.reverse()` كما هي.
             return Array.from(row.cells).map(cell => {
                 if (cell.querySelector('.notes-field')) {
                     return cell.querySelector('.notes-field').value;
                 }
                 if (cell.querySelector('img')) {
+                    // Pass image data, autoTable will handle it in didDrawCell
+                    // Adjust width/height if 20x10mm is not suitable
                     return { image: cell.querySelector('img').src, imgWidth: 20, imgHeight: 10 };
                 }
                 return cell.textContent;
-            }).reverse(); // Keep this reverse() as it seems to align data with header.
+            }).reverse(); // Reverse cell order for RTL
         });
 
         doc.autoTable({
@@ -947,13 +907,17 @@ downloadCurrentPdfBtn.addEventListener('click', () => {
             body: data,
             startY: doc.autoTable.previous.finalY + 20 || 20,
             theme: 'grid',
-            headStyles: { fillColor: [233, 236, 239], textColor: [73, 80, 87], font: 'Amiri', fontStyle: 'bold', fontSize: 9, halign: 'right' },
-            bodyStyles: { font: 'Amiri', fontSize: 8, halign: 'right' },
-            // *** التعديل 2: أضف dir: 'rtl' إلى styles الجدول ***
-            styles: { cellPadding: 2, fontSize: 8, overflow: 'linebreak', halign: 'right', cellWidth: 'wrap', dir: 'rtl' },
+            headStyles: { fillColor: [233, 236, 239], textColor: [73, 80, 87], font: 'Amiri', fontStyle: 'bold', fontSize: 9 }, // Increased font size for headers slightly
+            bodyStyles: { font: 'Amiri', fontSize: 8 }, // Decreased body font size for better fit
             didDrawCell: function (data) {
-                if (data.cell.raw && data.cell.raw.image && data.column.index === 3) {
+                // Check if it's the 'توقيع المندوب' column (index 3 in reversed header, or 10 if not reversed)
+                // It's safer to check data.column.index and the type of content
+                // Based on reversed header, 'توقيع المندوب' is at index 3.
+                // Or you can check if data.cell.raw is an object with 'image' property.
+
+                if (data.cell.raw && data.cell.raw.image && data.column.index === 3) { // Ensure it's the signature column (index based on reversed data)
                     const img = data.cell.raw;
+                    // Calculate x and y to center the image within the cell
                     const imgX = data.cell.x + (data.cell.contentWidth / 2) - (img.imgWidth / 2);
                     const imgY = data.cell.y + (data.cell.contentHeight / 2) - (img.imgHeight / 2);
 
@@ -961,14 +925,16 @@ downloadCurrentPdfBtn.addEventListener('click', () => {
                 }
             },
             columnStyles: {
-                // قد تحتاج لزيادة عرض عمود التوقيع إذا كان 20mm لا يكفي
-                // 3: { cellWidth: 25 },
+                // Optionally, set specific widths for columns if needed for better control
+                // For example, allocate more space for the signature column if 20mm is not enough
+                // 3: { cellWidth: 25 }, // Adjust if 20mm image needs more space, or if the cell itself is narrow
+                // You might need to adjust other columns' widths as well to fit.
             },
+            styles: { cellPadding: 2, fontSize: 8, overflow: 'linebreak', halign: 'right', cellWidth: 'wrap' }, // Adjusted font size, keep halign right for Arabic
             willDrawPage: function (data) {
-                doc.setFont('Amiri', 'normal');
-                doc.setFontSize(12);
-                // *** التعديل 3: تأكد من محاذاة عنوان الجدول الفرعي لليمين ***
-                doc.text(title, doc.internal.pageSize.getWidth() - 10, data.settings.startY - 5, { align: 'right' });
+                doc.setFont('Amiri', 'normal'); // Ensure font is set for title
+                doc.setFontSize(12); // Title font size
+                doc.text(title, doc.internal.pageSize.getWidth() - 10, data.settings.startY - 5, { align: 'right' }); // Table subtitle
             }
         });
     };
@@ -981,9 +947,9 @@ downloadCurrentPdfBtn.addEventListener('click', () => {
         doc.addPage(); // New page for free work summary
         doc.setFont('Amiri', 'normal'); // Set font for new page
         doc.setFontSize(12);
-        // *** التعديل 4: محاذاة نص الملخص لليمين ***
-        doc.text('الأعمال المجانية للمندوب:', doc.internal.pageSize.getWidth() - 10, 20, { align: 'right' });
-        doc.text(freeWorkSummaryText, doc.internal.pageSize.getWidth() - 10, 30, { align: 'right' });
+        doc.text('الأعمال المجانية للمندوب:', doc.internal.pageSize.getWidth() - 10, 20, { align: 'right' }); // Align right
+        // For multiline text, consider using doc.text with a specific maxWidth or autoTable for summary
+        doc.text(freeWorkSummaryText, doc.internal.pageSize.getWidth() - 10, 30, { align: 'right' }); // Align right
     }
 
     doc.save(`كشف حساب المندوب ${selectedRep || 'كل المناديب'} بتاريخ ${formatDate(selectedDate)}.pdf`);
@@ -991,8 +957,7 @@ downloadCurrentPdfBtn.addEventListener('click', () => {
 
 
 downloadAllRepsPdfBtn.addEventListener('click', async () => {
-    // *** التعديل 5: أضف dir: 'rtl' إلى كائن jsPDF هنا أيضاً ***
-    const doc = new jspdf.jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4', dir: 'rtl' });
+    const doc = new jspdf.jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
     const selectedDate = accountingDatePicker.value;
     const formattedDate = formatDate(selectedDate);
 
@@ -1024,8 +989,7 @@ downloadAllRepsPdfBtn.addEventListener('click', async () => {
 
         const repReportTitle = `كشف حساب المندوب "${repName}" بتاريخ "${formattedDate}"`;
         doc.setFontSize(14);
-        // *** التعديل 6: تأكد من محاذاة عنوان التقرير لليمين ***
-        doc.text(repReportTitle, doc.internal.pageSize.getWidth() / 2, startY, { align: 'center' }); // align center works well with dir:rtl
+        doc.text(repReportTitle, doc.internal.pageSize.getWidth() / 2, startY, { align: 'center' });
         startY += 10;
 
         const repOrders = ordersByRep[repName];
@@ -1043,9 +1007,10 @@ downloadAllRepsPdfBtn.addEventListener('click', async () => {
 
             const tableData = data.map(order => {
                 return [
-                    '', // Placeholder for notes (Make sure this aligns with 'ملاحظات' in header)
+                    '', // Placeholder for notes
                     order.dateTime,
                     order.freeWorkOption === 'نعم' ? order.freeWorkText : 'لا يوجد',
+                    // Pass image data for autoTable
                     order.signature ? { image: order.signature, imgWidth: 20, imgHeight: 10 } : 'لا يوجد',
                     order.representative,
                     order.employeeName,
@@ -1057,31 +1022,31 @@ downloadAllRepsPdfBtn.addEventListener('click', async () => {
                     order.clientName,
                     [order.invoiceNumber1, order.invoiceNumber2, order.invoiceNumber3].filter(Boolean).join(', '),
                     order.orderType
-                ].reverse(); // Keep this reverse() for aligning data with header.
+                ].reverse();
             });
 
             if (tableData.length > 0) {
                 doc.setFontSize(12);
-                // *** التعديل 7: محاذاة عنوان الجدول الفرعي لليمين ***
                 doc.text(title, doc.internal.pageSize.getWidth() - 10, startYPos, { align: 'right' }); // Table subtitle
                 doc.autoTable({
                     head: [header],
                     body: tableData,
                     startY: startYPos + 5,
                     theme: 'grid',
-                    headStyles: { fillColor: [233, 236, 239], textColor: [73, 80, 87], font: 'Amiri', fontStyle: 'bold', fontSize: 9, halign: 'right' },
-                    bodyStyles: { font: 'Amiri', fontSize: 8, halign: 'right' },
-                    // *** التعديل 8: أضف dir: 'rtl' إلى styles الجدول هنا أيضاً ***
-                    styles: { cellPadding: 2, fontSize: 8, overflow: 'linebreak', halign: 'right', cellWidth: 'wrap', dir: 'rtl' },
+                    headStyles: { fillColor: [233, 236, 239], textColor: [73, 80, 87], font: 'Amiri', fontStyle: 'bold', fontSize: 9 }, // Increased header font size
+                    bodyStyles: { font: 'Amiri', fontSize: 8 }, // Decreased body font size
                     didDrawCell: function (data) {
+                        // Check if it's the 'توقيع المندوب' column (index 3 in reversed header, or 10 if not reversed)
                         if (data.cell.raw && data.cell.raw.image && data.column.index === 3) {
                             const img = data.cell.raw;
+                            // Calculate x and y to center the image within the cell
                             const imgX = data.cell.x + (data.cell.contentWidth / 2) - (img.imgWidth / 2);
                             const imgY = data.cell.y + (data.cell.contentHeight / 2) - (img.imgHeight / 2);
 
                             doc.addImage(img.image, 'PNG', imgX, imgY, img.imgWidth, img.imgHeight);
                         }
                     },
+                    styles: { cellPadding: 2, fontSize: 8, overflow: 'linebreak', halign: 'right', cellWidth: 'wrap' },
                 });
                 return doc.autoTable.previous.finalY;
             }
@@ -1093,9 +1058,9 @@ downloadAllRepsPdfBtn.addEventListener('click', async () => {
         currentY = addTableToDoc(websiteInvoices, 'فواتير الموقع', currentY + 10);
 
         doc.setFontSize(12);
-        // *** التعديل 9: محاذاة نص الملخص لليمين ***
         doc.text('الأعمال المجانية للمندوب:', doc.internal.pageSize.getWidth() - 10, currentY + 20, { align: 'right' });
         if (repFreeWorks.length > 0) {
+            // Adjust position for multiline text or use autoTable for better layout
             doc.text(repFreeWorks.join('\n'), doc.internal.pageSize.getWidth() - 10, currentY + 30, { align: 'right' });
         } else {
             doc.text(`لا يوجد أعمال مجانية لـ "${repName}" لهذا اليوم.`, doc.internal.pageSize.getWidth() - 10, currentY + 30, { align: 'right' });
