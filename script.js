@@ -155,26 +155,35 @@ if (document.getElementById('secretary-login-btn')) {
     secretaryLoginBtn.addEventListener('click', () => {
         const code = secretaryLoginCodeInput.value;
         if (employees[code]) {
+    // تسجيل الدخول المجهول في Firebase Authentication
+    firebase.auth().signInAnonymously()
+        .then(() => {
             currentUser = { code: code, name: employees[code] };
             currentDashboard = 'secretary';
             sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
             sessionStorage.setItem('currentDashboard', currentDashboard);
             showSecretaryDashboard();
             secretaryLoginErrorMessage.textContent = '';
-        } else {
-            secretaryLoginErrorMessage.textContent = 'رمز الدخول غير صحيح.';
-        }
+        })
+        .catch((error) => {
+            console.error("Error signing in anonymously:", error);
+            secretaryLoginErrorMessage.textContent = 'حدث خطأ في تسجيل الدخول. الرجاء المحاولة مرة أخرى.';
+        });
+} else {
+    secretaryLoginErrorMessage.textContent = 'رمز الدخول غير صحيح.';
+}
     });
 
-    secretaryLogoutBtn.addEventListener('click', () => {
-        currentUser = null;
-        currentDashboard = null;
-        sessionStorage.removeItem('currentUser');
-        sessionStorage.removeItem('currentDashboard');
-        secretaryDashboard.style.display = 'none';
-        secretaryLoginContainer.style.display = 'block';
-        secretaryLoginCodeInput.value = ''; // Clear input on logout
-    });
+secretaryLogoutBtn.addEventListener('click', () => {
+    firebase.auth().signOut(); // تسجيل الخروج من Firebase Auth
+    currentUser = null;
+    currentDashboard = null;
+    sessionStorage.removeItem('currentUser');
+    sessionStorage.removeItem('currentDashboard');
+    secretaryDashboard.style.display = 'none';
+    secretaryLoginContainer.style.display = 'block';
+    secretaryLoginCodeInput.value = ''; // Clear input on logout
+});
 
     const showSecretaryDashboard = () => {
         secretaryLoginContainer.style.display = 'none';
@@ -625,26 +634,35 @@ if (document.getElementById('accounting-login-btn')) {
     accountingLoginBtn.addEventListener('click', () => {
         const code = accountingLoginCodeInput.value;
         if (code === ACCOUNTING_CODE) {
+    // تسجيل الدخول المجهول في Firebase Authentication
+    firebase.auth().signInAnonymously()
+        .then(() => {
             currentUser = { code: code, name: "المحاسب" };
             currentDashboard = 'accounting';
             sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
             sessionStorage.setItem('currentDashboard', currentDashboard);
             showAccountingDashboard();
             accountingLoginErrorMessage.textContent = '';
-        } else {
-            accountingLoginErrorMessage.textContent = 'رمز الدخول غير صحيح.';
-        }
+        })
+        .catch((error) => {
+            console.error("Error signing in anonymously:", error);
+            accountingLoginErrorMessage.textContent = 'حدث خطأ في تسجيل الدخول. الرجاء المحاولة مرة أخرى.';
+        });
+} else {
+    accountingLoginErrorMessage.textContent = 'رمز الدخول غير صحيح.';
+}
     });
 
-    accountingLogoutBtn.addEventListener('click', () => {
-        currentUser = null;
-        currentDashboard = null;
-        sessionStorage.removeItem('currentUser');
-        sessionStorage.removeItem('currentDashboard');
-        accountingDashboard.style.display = 'none';
-        accountingLoginContainer.style.display = 'block';
-        accountingLoginCodeInput.value = ''; // Clear input on logout
-    });
+accountingLogoutBtn.addEventListener('click', () => {
+    firebase.auth().signOut(); // تسجيل الخروج من Firebase Auth
+    currentUser = null;
+    currentDashboard = null;
+    sessionStorage.removeItem('currentUser');
+    sessionStorage.removeItem('currentDashboard');
+    accountingDashboard.style.display = 'none';
+    accountingLoginContainer.style.display = 'block';
+    accountingLoginCodeInput.value = ''; // Clear input on logout
+});
 
     const showAccountingDashboard = () => {
         accountingLoginContainer.style.display = 'none';
