@@ -1,0 +1,302 @@
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f4f7f6;
+    margin: 0;
+    padding: 20px;
+    direction: rtl; /* Right-to-left for Arabic */
+    text-align: right;
+    color: #333;
+}
+
+.container {
+    background-color: #ffffff;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    max-width: 90%;
+    margin: 20px auto;
+    text-align: center;
+}
+
+.welcome-page {
+    max-width: 600px;
+    margin-top: 100px;
+}
+
+h1, h2, h3 {
+    color: #0056b3;
+    margin-bottom: 20px;
+}
+
+.button-group button,
+button {
+    background-color: #007bff;
+    color: white;
+    padding: 12px 25px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1.1em;
+    margin: 10px;
+    transition: background-color 0.3s ease;
+}
+
+.button-group button:hover,
+button:hover {
+    background-color: #0056b3;
+}
+
+input[type="text"],
+input[type="password"],
+input[type="number"],
+input[type="date"],
+select {
+    width: calc(100% - 22px);
+    padding: 10px;
+    margin: 8px 0 15px 0;
+    display: inline-block;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+    font-size: 1em;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    background-color: #fff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+th, td {
+    border: 1px solid #ddd;
+    padding: 10px;
+    text-align: right;
+    font-size: 0.9em;
+}
+
+th {
+    background-color: #e9ecef;
+    color: #495057;
+    font-weight: bold;
+}
+
+tr:nth-child(even) {
+    background-color: #f8f9fa;
+}
+
+.logout-btn {
+    background-color: #dc3545;
+    float: left; /* Aligns to top-left in RTL */
+    margin-bottom: 20px;
+}
+
+.logout-btn:hover {
+    background-color: #c82333;
+}
+
+.add-new-btn, .search-btn {
+    background-color: #28a745;
+    margin-right: 10px;
+    float: right;
+}
+
+.add-new-btn:hover, .search-btn:hover {
+    background-color: #218838;
+}
+
+/* Modal Styles */
+.modal {
+    display: none; /* Hidden by default */
+    position: fixed; /* Stay in place */
+    z-index: 1; /* Sit on top */
+    left: 0;
+    top: 0;
+    width: 100%; /* Full width */
+    height: 100%; /* Full height */
+    overflow: auto; /* Enable scroll if needed */
+    background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 5% auto; /* 5% from the top and centered */
+    padding: 30px;
+    border: 1px solid #888;
+    width: 80%; /* Could be more or less, depending on screen size */
+    max-width: 600px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    position: relative;
+    text-align: right;
+}
+
+.close-button {
+    color: #aaa;
+    float: left; /* Aligns to top-right in RTL */
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.close-button:hover,
+.close-button:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.modal-content form {
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-content label {
+    margin-top: 10px;
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: #555;
+}
+
+.modal-content .submit-btn {
+    background-color: #28a745;
+    margin-top: 20px;
+}
+
+.modal-content .submit-btn:hover {
+    background-color: #218838;
+}
+
+.error-message {
+    color: #dc3545;
+    margin-top: 10px;
+    font-weight: bold;
+}
+
+#signature-pad {
+    border: 1px solid #000;
+    background-color: #fff;
+    cursor: crosshair;
+    touch-action: none; /* Disable default touch actions */
+    width: 100%; /* Make canvas responsive */
+    height: 200px; /* Set a fixed height */
+}
+
+.dashboard-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.dashboard-controls input[type="date"],
+.dashboard-controls select {
+    width: auto;
+    flex-grow: 1;
+    margin-left: 10px;
+    text-align: right;
+}
+
+.dashboard-controls button {
+    margin-right: 10px;
+}
+
+.table-title {
+    text-align: center;
+    margin-top: 30px;
+    margin-bottom: 15px;
+    color: #007bff;
+}
+
+.free-work-summary {
+    background-color: #e6f7ff;
+    padding: 15px;
+    border-radius: 5px;
+    margin-top: 20px;
+    border: 1px solid #b3e0ff;
+}
+
+.free-work-summary h3 {
+    margin-top: 0;
+    color: #0056b3;
+}
+
+.export-buttons {
+    margin-top: 30px;
+    text-align: center;
+}
+
+/* Edit/Delete Buttons in tables */
+.action-buttons button {
+    padding: 6px 10px;
+    font-size: 0.85em;
+    margin: 0 3px;
+    border-radius: 4px;
+}
+
+.edit-btn {
+    background-color: #ffc107;
+    color: #333;
+}
+
+.edit-btn:hover {
+    background-color: #e0a800;
+}
+
+.delete-btn {
+    background-color: #dc3545;
+}
+
+.delete-btn:hover {
+    background-color: #c82333;
+}
+
+@media (max-width: 768px) {
+    .container {
+        padding: 15px;
+    }
+    .modal-content {
+        width: 95%;
+        margin: 2% auto;
+    }
+    .dashboard-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .dashboard-controls button,
+    .dashboard-controls input,
+    .dashboard-controls select {
+        width: 100%;
+        margin: 5px 0;
+    }
+    table, th, td {
+        display: block;
+        width: 100%;
+    }
+    thead {
+        display: none; /* Hide table headers on small screens */
+    }
+    tr {
+        margin-bottom: 10px;
+        display: block;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        padding: 10px;
+    }
+    td {
+        border: none;
+        border-bottom: 1px solid #eee;
+        position: relative;
+        padding-right: 50%; /* Space for label */
+        text-align: right;
+    }
+    td::before {
+        content: attr(data-label); /* Use data-label for content */
+        position: absolute;
+        right: 10px;
+        width: 45%;
+        padding-left: 10px;
+        font-weight: bold;
+        text-align: right;
+    }
+}

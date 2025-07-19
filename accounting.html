@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>قسم المحاسبة</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+</head>
+<body>
+    <div class="container" id="login-container">
+        <h2>تسجيل دخول قسم المحاسبة</h2>
+        <input type="password" id="accounting-login-code" placeholder="أدخل رمز الدخول">
+        <button id="accounting-login-btn">تسجيل الدخول</button>
+        <p id="login-error-message" class="error-message"></p>
+    </div>
+
+    <div class="container" id="accounting-dashboard" style="display:none;">
+        <button class="logout-btn" id="accounting-logout-btn">تسجيل الخروج</button>
+
+        <div class="dashboard-controls">
+            <button class="search-btn" id="search-order-btn-acc">البحث عن طلب</button>
+            <input type="date" id="accounting-date-picker">
+            <select id="accounting-representative-filter">
+                <option value="">اختر المندوب</option>
+                </select>
+        </div>
+
+        <h2 id="accounting-report-title">كشف حساب المندوب "لم يتم الاختيار" بتاريخ "اليوم"</h2>
+
+        <div id="invoice-tables-container">
+            <h3 class="table-title">فواتير عادية</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>نوع الفاتورة</th>
+                        <th>رقم الفاتورة</th>
+                        <th>اسم العميل</th>
+                        <th>رقم الهاتف</th>
+                        <th>المنطقة</th>
+                        <th>قيمة الفاتورة</th>
+                        <th>قيمة التوصيل</th>
+                        <th>طريقة الدفع</th>
+                        <th>الموظف</th>
+                        <th>المندوب</th>
+                        <th>توقيع المندوب</th>
+                        <th>الأعمال المجانية</th>
+                        <th>التاريخ والوقت</th>
+                        <th>ملاحظات</th>
+                    </tr>
+                </thead>
+                <tbody id="normal-invoices-table-body">
+                    </tbody>
+            </table>
+
+            <h3 class="table-title">فواتير الموقع</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>نوع الفاتورة</th>
+                        <th>رقم الفاتورة</th>
+                        <th>اسم العميل</th>
+                        <th>رقم الهاتف</th>
+                        <th>المنطقة</th>
+                        <th>قيمة الفاتورة</th>
+                        <th>قيمة التوصيل</th>
+                        <th>طريقة الدفع</th>
+                        <th>الموظف</th>
+                        <th>المندوب</th>
+                        <th>توقيع المندوب</th>
+                        <th>الأعمال المجانية</th>
+                        <th>التاريخ والوقت</th>
+                        <th>ملاحظات</th>
+                    </tr>
+                </thead>
+                <tbody id="website-invoices-table-body">
+                    </tbody>
+            </table>
+        </div>
+
+        <div class="free-work-summary">
+            <h3>الأعمال المجانية للمندوب:</h3>
+            <p id="free-work-details"></p>
+        </div>
+
+        <div class="export-buttons">
+            <button id="download-current-pdf-btn">تحميل الصفحة الحالية PDF</button>
+            <button id="download-all-reps-pdf-btn">تحميل صفحات كل المناديب PDF</button>
+        </div>
+    </div>
+
+    <div id="search-order-modal-acc" class="modal">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <h3>البحث عن طلب</h3>
+            <label for="search-type-acc">البحث عن طريق:</label>
+            <select id="search-type-acc">
+                <option value="invoice-number">رقم الفاتورة</option>
+                <option value="phone-number">رقم الهاتف</option>
+            </select>
+            <input type="text" id="search-query-acc" placeholder="أدخل الرقم">
+            <button id="execute-search-btn-acc">بحث</button>
+            <p id="search-error-message-acc" class="error-message"></p>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
