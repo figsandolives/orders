@@ -102,11 +102,14 @@ const setupModal = (modalId, closeButtonClass) => {
     };
 };
 
-// --- Secretary Section ---
+/// --- Secretary Section ---
 if (document.getElementById('secretary-login-btn')) {
     setupModal('new-order-modal', '.close-button');
     setupModal('signature-modal', '.close-button');
     setupModal('search-order-modal', '.close-button');
+    // *** إضافة: إعداد نافذة نتائج البحث المنبثقة ***
+    setupModal('search-results-modal', '#close-search-results-modal');
+
 
     const secretaryLoginBtn = document.getElementById('secretary-login-btn');
     const secretaryLoginCodeInput = document.getElementById('secretary-login-code');
@@ -115,7 +118,7 @@ if (document.getElementById('secretary-login-btn')) {
     const secretaryLoginContainer = document.getElementById('login-container');
     const welcomeMessage = document.getElementById('welcome-message');
     const currentDateDisplay = document.getElementById('current-date');
-    const secretaryLogoutBtn = document = document.getElementById('secretary-logout-btn');
+    const secretaryLogoutBtn = document.getElementById('secretary-logout-btn');
     const addNewOrderBtn = document.getElementById('add-new-order-btn');
     const newOrderModal = document.getElementById('new-order-modal');
     const newOrderForm = document.getElementById('new-order-form');
@@ -135,6 +138,12 @@ if (document.getElementById('secretary-login-btn')) {
     const searchQueryInput = document.getElementById('search-query');
     const executeSearchBtn = document.getElementById('execute-search-btn');
     const searchErrorMessage = document.getElementById('search-error-message');
+
+    // *** إضافة: عناصر نافذة نتائج البحث ***
+    const searchResultsModal = document.getElementById('search-results-modal');
+    const searchResultsTableBody = document.getElementById('search-results-table-body');
+    const noSearchResultsMessage = document.getElementById('no-search-results-message');
+
 
     // Signature Pad
     const signatureModal = document.getElementById('signature-modal');
@@ -194,6 +203,55 @@ if (document.getElementById('secretary-login-btn')) {
         loadSecretaryOrders(today); // Load orders for today
     };
 
+    // *** دالة مساعدة لإنشاء صف جدول (تستخدم في لوحة التحكم ونتائج البحث) ***
+    const createOrderTableRow = (order, orderId) => {
+        const row = document.createElement('tr');
+        row.setAttribute('data-order-id', orderId);
+
+        const dataLabels = {
+            'نوع الفاتورة': order.orderType,
+            'رقم الفاتورة': [order.invoiceNumber1, order.invoiceNumber2, order.invoiceNumber3].filter(Boolean).join(', '),
+            'اسم العميل': order.clientName,
+            'رقم الهاتف': order.phoneNumber,
+            'المنطقة': order.region,
+            'قيمة الفاتورة': order.invoiceValue,
+            'قيمة التوصيل': order.deliveryValue,
+            'طريقة الدفع': order.paymentMethod,
+            'الموظف': order.employeeName,
+            'المندوب': order.representative,
+            'توقيع المندوب': order.signature ? '<img src="' + order.signature + '" width="80" height="40" alt="Signature">' : 'لا يوجد',
+            'الأعمال المجانية': order.freeWorkOption === 'نعم' ? order.freeWorkText : 'لا يوجد',
+            'التاريخ والوقت': order.dateTime,
+            'إجراءات': '' // Actions column
+        };
+
+        for (const label in dataLabels) {
+            const cell = row.insertCell();
+            cell.setAttribute('data-label', label);
+            cell.innerHTML = dataLabels[label];
+        }
+
+        const actionsCell = row.insertCell();
+        actionsCell.setAttribute('data-label', 'إجراءات');
+        actionsCell.classList.add('action-buttons');
+
+        // Edit Button
+        const editButton = document.createElement('button');
+        editButton.textContent = 'تعديل';
+        editButton.classList.add('edit-btn');
+        editButton.onclick = () => editOrder(orderId, order);
+        actionsCell.appendChild(editButton);
+
+        // Delete Button
+        const deleteButton = document.createElement('button');
+        deleteButton.textContent = 'حذف';
+        deleteButton.classList.add('delete-btn');
+        deleteButton.onclick = () => confirmDeleteOrder(orderId);
+        actionsCell.appendChild(deleteButton);
+
+        return row;
+    };
+
     const loadSecretaryOrders = (date) => {
         const ordersTableBody = document.getElementById('orders-table-body');
         ordersTableBody.innerHTML = ''; // Clear existing orders
@@ -204,50 +262,8 @@ if (document.getElementById('secretary-login-btn')) {
             snapshot.forEach((childSnapshot) => {
                 const order = childSnapshot.val();
                 const orderId = childSnapshot.key;
-                const row = ordersTableBody.insertRow();
-
-                row.setAttribute('data-order-id', orderId);
-
-                const dataLabels = {
-                    'نوع الفاتورة': order.orderType,
-                    'رقم الفاتورة': [order.invoiceNumber1, order.invoiceNumber2, order.invoiceNumber3].filter(Boolean).join(', '),
-                    'اسم العميل': order.clientName,
-                    'رقم الهاتف': order.phoneNumber,
-                    'المنطقة': order.region,
-                    'قيمة الفاتورة': order.invoiceValue,
-                    'قيمة التوصيل': order.deliveryValue,
-                    'طريقة الدفع': order.paymentMethod,
-                    'الموظف': order.employeeName,
-                    'المندوب': order.representative,
-                    'توقيع المندوب': order.signature ? '<img src="' + order.signature + '" width="80" height="40" alt="Signature">' : 'لا يوجد',
-                    'الأعمال المجانية': order.freeWorkOption === 'نعم' ? order.freeWorkText : 'لا يوجد',
-                    'التاريخ والوقت': order.dateTime,
-                    'إجراءات': '' // Actions column
-                };
-
-                for (const label in dataLabels) {
-                    const cell = row.insertCell();
-                    cell.setAttribute('data-label', label);
-                    cell.innerHTML = dataLabels[label];
-                }
-
-                const actionsCell = row.insertCell();
-                actionsCell.setAttribute('data-label', 'إجراءات');
-                actionsCell.classList.add('action-buttons');
-
-                // Edit Button
-                const editButton = document.createElement('button');
-                editButton.textContent = 'تعديل';
-                editButton.classList.add('edit-btn');
-                editButton.onclick = () => editOrder(orderId, order);
-                actionsCell.appendChild(editButton);
-
-                // Delete Button
-                const deleteButton = document.createElement('button');
-                deleteButton.textContent = 'حذف';
-                deleteButton.classList.add('delete-btn');
-                deleteButton.onclick = () => confirmDeleteOrder(orderId);
-                actionsCell.appendChild(deleteButton);
+                const row = createOrderTableRow(order, orderId); // استخدام الدالة المساعدة
+                ordersTableBody.appendChild(row);
             });
         }, (error) => {
             console.error("Error loading orders: ", error);
@@ -318,13 +334,7 @@ if (document.getElementById('secretary-login-btn')) {
             deliveryValueInput.removeAttribute('required');
             paymentMethodSelect.removeAttribute('required');
 
-            // *** إزالة: لم تعد هناك حاجة لإخفاء الحقول هنا. ستظل مرئية ولكن بـ 0 ومدفوع. ***
-            // invoiceValueLabel.style.display = 'none';
-            // invoiceValueInput.style.display = 'none';
-            // deliveryValueLabel.style.display = 'none';
-            // deliveryValueInput.style.display = 'none';
-            // paymentMethodLabel.style.display = 'none';
-            // paymentMethodSelect.style.display = 'none';
+            // الحقول تظل مرئية ولكن بـ 0 ومدفوع.
         } else { // 'عادية'
             // تأكد من مسح أي قيم تلقائية سابقة
             invoiceValueInput.value = '';
@@ -412,14 +422,44 @@ if (document.getElementById('secretary-login-btn')) {
             orderData.signature = signatureData;
             database.ref('orders').push(orderData)
                 .then(() => {
-                    alert('تم تسليم الطلب بنجاح!'); // استخدم modal مخصص بدلاً من alert
-                    signatureModal.style.display = 'none';
-                    newOrderForm.reset();
-                    loadSecretaryOrders(new Date()); // Reload orders for today
+                    // *** تعديل: استخدام modal مخصص بدلاً من alert ***
+                    const successModal = document.createElement('div');
+                    successModal.classList.add('modal');
+                    successModal.innerHTML = `
+                        <div class="modal-content">
+                            <h3>نجاح</h3>
+                            <p>تم تسليم الطلب بنجاح!</p>
+                            <button id="close-success-modal">إغلاق</button>
+                        </div>
+                    `;
+                    document.body.appendChild(successModal);
+                    successModal.style.display = 'block';
+
+                    document.getElementById('close-success-modal').onclick = () => {
+                        successModal.remove();
+                        signatureModal.style.display = 'none';
+                        newOrderForm.reset();
+                        loadSecretaryOrders(new Date()); // Reload orders for today
+                    };
                 })
                 .catch((error) => {
                     console.error("Error adding order: ", error);
-                    alert('حدث خطأ أثناء تسليم الطلب.'); // استخدم modal مخصص بدلاً من alert
+                    // *** تعديل: استخدام modal مخصص بدلاً من alert ***
+                    const errorModal = document.createElement('div');
+                    errorModal.classList.add('modal');
+                    errorModal.innerHTML = `
+                        <div class="modal-content">
+                            <h3>خطأ</h3>
+                            <p>حدث خطأ أثناء تسليم الطلب: ${error.message}</p>
+                            <button id="close-error-modal">إغلاق</button>
+                        </div>
+                    `;
+                    document.body.appendChild(errorModal);
+                    errorModal.style.display = 'block';
+
+                    document.getElementById('close-error-modal').onclick = () => {
+                        errorModal.remove();
+                    };
                 });
         };
     });
@@ -432,7 +472,22 @@ if (document.getElementById('secretary-login-btn')) {
 
     saveSignatureBtn.addEventListener('click', () => {
         if (signaturePad.isEmpty()) {
-            alert("الرجاء التوقيع قبل الحفظ."); // استخدم modal مخصص بدلاً من alert
+            // *** تعديل: استخدام modal مخصص بدلاً من alert ***
+            const emptySignatureModal = document.createElement('div');
+            emptySignatureModal.classList.add('modal');
+            emptySignatureModal.innerHTML = `
+                <div class="modal-content">
+                    <h3>تنبيه</h3>
+                    <p>الرجاء التوقيع قبل الحفظ.</p>
+                    <button id="close-empty-signature-modal">إغلاق</button>
+                </div>
+            `;
+            document.body.appendChild(emptySignatureModal);
+            emptySignatureModal.style.display = 'block';
+
+            document.getElementById('close-empty-signature-modal').onclick = () => {
+                emptySignatureModal.remove();
+            };
         } else {
             const signatureData = signaturePad.toDataURL(); // Get signature as base64 image
             if (currentSignatureCallback) {
@@ -505,17 +560,47 @@ if (document.getElementById('secretary-login-btn')) {
                     updatedOrderData.signature = signatureData;
                     database.ref('orders/' + orderId).update(updatedOrderData)
                         .then(() => {
-                            alert('تم تحديث الطلب بنجاح وتغيير التوقيع!'); // استخدم modal مخصص بدلاً من alert
-                            signatureModal.style.display = 'none';
-                            newOrderForm.reset();
-                            // Reset form submit handler
-                            newOrderForm.onsubmit = null;
-                            newOrderForm.querySelector('.submit-btn').textContent = 'تسليم';
-                            loadSecretaryOrders(new Date()); // Reload orders
+                            // *** تعديل: استخدام modal مخصص بدلاً من alert ***
+                            const successModal = document.createElement('div');
+                            successModal.classList.add('modal');
+                            successModal.innerHTML = `
+                                <div class="modal-content">
+                                    <h3>نجاح</h3>
+                                    <p>تم تحديث الطلب بنجاح وتغيير التوقيع!</p>
+                                    <button id="close-update-success-modal">إغلاق</button>
+                                </div>
+                            `;
+                            document.body.appendChild(successModal);
+                            successModal.style.display = 'block';
+
+                            document.getElementById('close-update-success-modal').onclick = () => {
+                                successModal.remove();
+                                signatureModal.style.display = 'none';
+                                newOrderForm.reset();
+                                // Reset form submit handler
+                                newOrderForm.onsubmit = null;
+                                newOrderForm.querySelector('.submit-btn').textContent = 'تسليم';
+                                loadSecretaryOrders(new Date()); // Reload orders
+                            };
                         })
                         .catch((error) => {
                             console.error("Error updating order with new signature: ", error);
-                            alert('حدث خطأ أثناء تحديث الطلب.'); // استخدم modal مخصص بدلاً من alert
+                            // *** تعديل: استخدام modal مخصص بدلاً من alert ***
+                            const errorModal = document.createElement('div');
+                            errorModal.classList.add('modal');
+                            errorModal.innerHTML = `
+                                <div class="modal-content">
+                                    <h3>خطأ</h3>
+                                    <p>حدث خطأ أثناء تحديث الطلب: ${error.message}</p>
+                                    <button id="close-update-error-modal">إغلاق</button>
+                                </div>
+                            `;
+                            document.body.appendChild(errorModal);
+                            errorModal.style.display = 'block';
+
+                            document.getElementById('close-update-error-modal').onclick = () => {
+                                errorModal.remove();
+                            };
                         });
                 };
             } else {
@@ -523,17 +608,47 @@ if (document.getElementById('secretary-login-btn')) {
                 updatedOrderData.signature = currentOrderData.signature;
                 database.ref('orders/' + orderId).update(updatedOrderData)
                     .then(() => {
-                        alert('تم تحديث الطلب بنجاح!'); // استخدم modal مخصص بدلاً من alert
-                        newOrderModal.style.display = 'none';
-                        newOrderForm.reset();
-                        // Reset form submit handler
-                        newOrderForm.onsubmit = null;
-                        newOrderForm.querySelector('.submit-btn').textContent = 'تسليم';
-                        loadSecretaryOrders(new Date()); // Reload orders
+                        // *** تعديل: استخدام modal مخصص بدلاً من alert ***
+                        const successModal = document.createElement('div');
+                        successModal.classList.add('modal');
+                        successModal.innerHTML = `
+                            <div class="modal-content">
+                                <h3>نجاح</h3>
+                                <p>تم تحديث الطلب بنجاح!</p>
+                                <button id="close-update-no-sig-success-modal">إغلاق</button>
+                            </div>
+                        `;
+                        document.body.appendChild(successModal);
+                        successModal.style.display = 'block';
+
+                        document.getElementById('close-update-no-sig-success-modal').onclick = () => {
+                            successModal.remove();
+                            newOrderModal.style.display = 'none';
+                            newOrderForm.reset();
+                            // Reset form submit handler
+                            newOrderForm.onsubmit = null;
+                            newOrderForm.querySelector('.submit-btn').textContent = 'تسليم';
+                            loadSecretaryOrders(new Date()); // Reload orders
+                        };
                     })
                     .catch((error) => {
                         console.error("Error updating order: ", error);
-                        alert('حدث خطأ أثناء تحديث الطلب.'); // استخدم modal مخصص بدلاً من alert
+                        // *** تعديل: استخدام modal مخصص بدلاً من alert ***
+                        const errorModal = document.createElement('div');
+                        errorModal.classList.add('modal');
+                        errorModal.innerHTML = `
+                            <div class="modal-content">
+                                <h3>خطأ</h3>
+                                <p>حدث خطأ أثناء تحديث الطلب: ${error.message}</p>
+                                <button id="close-update-no-sig-error-modal">إغلاق</button>
+                            </div>
+                        `;
+                        document.body.appendChild(errorModal);
+                        errorModal.style.display = 'block';
+
+                        document.getElementById('close-update-no-sig-error-modal').onclick = () => {
+                            errorModal.remove();
+                        };
                     });
             }
         };
@@ -557,13 +672,43 @@ if (document.getElementById('secretary-login-btn')) {
         document.getElementById('confirm-delete-yes').onclick = () => {
             database.ref('orders/' + orderId).remove()
                 .then(() => {
-                    alert('تم حذف الطلب بنجاح!'); // استخدم modal مخصص بدلاً من alert
-                    loadSecretaryOrders(new Date()); // Reload orders
-                    confirmationModal.remove(); // إزالة المودال بعد التأكيد
+                    // *** تعديل: استخدام modal مخصص بدلاً من alert ***
+                    const successModal = document.createElement('div');
+                    successModal.classList.add('modal');
+                    successModal.innerHTML = `
+                        <div class="modal-content">
+                            <h3>نجاح</h3>
+                            <p>تم حذف الطلب بنجاح!</p>
+                            <button id="close-delete-success-modal">إغلاق</button>
+                        </div>
+                    `;
+                    document.body.appendChild(successModal);
+                    successModal.style.display = 'block';
+
+                    document.getElementById('close-delete-success-modal').onclick = () => {
+                        successModal.remove();
+                        loadSecretaryOrders(new Date()); // Reload orders
+                        confirmationModal.remove(); // إزالة المودال بعد التأكيد
+                    };
                 })
                 .catch((error) => {
                     console.error("Error removing order: ", error);
-                    alert('حدث خطأ أثناء حذف الطلب.'); // استخدم modal مخصص بدلاً من alert
+                    // *** تعديل: استخدام modal مخصص بدلاً من alert ***
+                    const errorModal = document.createElement('div');
+                    errorModal.classList.add('modal');
+                    errorModal.innerHTML = `
+                        <div class="modal-content">
+                            <h3>خطأ</h3>
+                            <p>حدث خطأ أثناء حذف الطلب: ${error.message}</p>
+                            <button id="close-delete-error-modal">إغلاق</button>
+                        </div>
+                    `;
+                    document.body.appendChild(errorModal);
+                    errorModal.style.display = 'block';
+
+                    document.getElementById('close-delete-error-modal').onclick = () => {
+                        errorModal.remove();
+                    };
                     confirmationModal.remove(); // إزالة المودال حتى لو كان هناك خطأ
                 });
         };
@@ -577,13 +722,17 @@ if (document.getElementById('secretary-login-btn')) {
         searchOrderModal.style.display = 'block';
         searchQueryInput.value = ''; // Clear previous search
         searchErrorMessage.textContent = '';
+        // *** إضافة: مسح نتائج البحث السابقة عند فتح نافذة البحث ***
+        searchResultsTableBody.innerHTML = '';
+        noSearchResultsMessage.style.display = 'none';
     });
 
     executeSearchBtn.addEventListener('click', () => {
         const searchType = searchTypeSelect.value;
         const searchQuery = searchQueryInput.value.trim();
-        const ordersTableBody = document.getElementById('orders-table-body');
-        ordersTableBody.innerHTML = ''; // Clear current table
+        // *** تعديل: مسح النتائج في نافذة النتائج المنبثقة وليس في لوحة التحكم الرئيسية ***
+        searchResultsTableBody.innerHTML = '';
+        noSearchResultsMessage.style.display = 'none';
 
         if (!searchQuery) {
             searchErrorMessage.textContent = 'الرجاء إدخال قيمة للبحث.';
@@ -600,63 +749,30 @@ if (document.getElementById('secretary-login-btn')) {
         }
 
         queryRef.once('value', (snapshot) => {
+            searchOrderModal.style.display = 'none'; // إخفاء نافذة البحث
+            searchResultsModal.style.display = 'block'; // إظهار نافذة النتائج
+
             if (snapshot.exists()) {
                 snapshot.forEach((childSnapshot) => {
                     const order = childSnapshot.val();
                     const orderId = childSnapshot.key;
-                    const row = ordersTableBody.insertRow();
-
-                    row.setAttribute('data-order-id', orderId);
-
-                    const dataLabels = {
-                        'نوع الفاتورة': order.orderType,
-                        'رقم الفاتورة': [order.invoiceNumber1, order.invoiceNumber2, order.invoiceNumber3].filter(Boolean).join(', '),
-                        'اسم العميل': order.clientName,
-                        'رقم الهاتف': order.phoneNumber,
-                        'المنطقة': order.region,
-                        'قيمة الفاتورة': order.invoiceValue,
-                        'قيمة التوصيل': order.deliveryValue,
-                        'طريقة الدفع': order.paymentMethod,
-                        'الموظف': order.employeeName,
-                        'المندوب': order.representative,
-                        'توقيع المندوب': order.signature ? '<img src="' + order.signature + '" width="80" height="40" alt="Signature">' : 'لا يوجد',
-                        'الأعمال المجانية': order.freeWorkOption === 'نعم' ? order.freeWorkText : 'لا يوجد',
-                        'التاريخ والوقت': order.dateTime,
-                        'إجراءات': '' // Actions column
-                    };
-
-                    for (const label in dataLabels) {
-                        const cell = row.insertCell();
-                        cell.setAttribute('data-label', label);
-                        cell.innerHTML = dataLabels[label];
-                    }
-
-                    const actionsCell = row.insertCell();
-                    actionsCell.setAttribute('data-label', 'إجراءات');
-                    actionsCell.classList.add('action-buttons');
-
-                    // Edit Button
-                    const editButton = document.createElement('button');
-                    editButton.textContent = 'تعديل';
-                    editButton.classList.add('edit-btn');
-                    editButton.onclick = () => editOrder(orderId, order);
-                    actionsCell.appendChild(editButton);
-
-                    // Delete Button
-                    const deleteButton = document.createElement('button');
-                    deleteButton.textContent = 'حذف';
-                    deleteButton.classList.add('delete-btn');
-                    deleteButton.onclick = () => confirmDeleteOrder(orderId);
-                    actionsCell.appendChild(deleteButton);
+                    // *** تعديل: استخدام الدالة المساعدة لإنشاء الصف وإضافته لنتائج البحث ***
+                    const row = createOrderTableRow(order, orderId);
+                    searchResultsTableBody.appendChild(row);
                 });
-                searchOrderModal.style.display = 'none';
+                noSearchResultsMessage.style.display = 'none'; // إخفاء رسالة لا توجد نتائج
             } else {
-                ordersTableBody.innerHTML = '<tr><td colspan="14">لا توجد طلبات مطابقة لمعايير البحث.</td></tr>';
-                searchErrorMessage.textContent = 'لا توجد طلبات مطابقة لمعايير البحث.';
+                searchResultsTableBody.innerHTML = ''; // تأكد من أنها فارغة
+                noSearchResultsMessage.textContent = 'لا توجد طلبات مطابقة لمعايير البحث.';
+                noSearchResultsMessage.style.display = 'block'; // إظهار رسالة لا توجد نتائج
             }
         }, (error) => {
             console.error("Error searching orders: ", error);
-            searchErrorMessage.textContent = 'حدث خطأ أثناء البحث.';
+            searchOrderModal.style.display = 'none'; // إخفاء نافذة البحث
+            searchResultsModal.style.display = 'block'; // إظهار نافذة النتائج
+            searchResultsTableBody.innerHTML = '';
+            noSearchResultsMessage.textContent = 'حدث خطأ أثناء البحث: ' + error.message;
+            noSearchResultsMessage.style.display = 'block';
         });
     });
 }
