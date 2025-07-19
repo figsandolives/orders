@@ -115,7 +115,7 @@ if (document.getElementById('secretary-login-btn')) {
     const secretaryLoginContainer = document.getElementById('login-container');
     const welcomeMessage = document.getElementById('welcome-message');
     const currentDateDisplay = document.getElementById('current-date');
-    const secretaryLogoutBtn = document.getElementById('secretary-logout-btn');
+    const secretaryLogoutBtn = document = document.getElementById('secretary-logout-btn');
     const addNewOrderBtn = document.getElementById('add-new-order-btn');
     const newOrderModal = document.getElementById('new-order-modal');
     const newOrderForm = document.getElementById('new-order-form');
@@ -285,7 +285,7 @@ if (document.getElementById('secretary-login-btn')) {
     orderTypeSelect.addEventListener('change', () => {
         const selectedType = orderTypeSelect.value;
 
-        // إعادة ضبط جميع الحقول إلى حالتها الافتراضية أولاً
+        // إعادة ضبط جميع الحقول إلى حالتها الافتراضية أولاً (مرئية ومطلوبة)
         invoiceValueLabel.style.display = 'block';
         invoiceValueInput.style.display = 'block';
         deliveryValueLabel.style.display = 'block';
@@ -313,18 +313,18 @@ if (document.getElementById('secretary-login-btn')) {
             deliveryValueInput.value = 0; // قيمة التوصيل 0
             paymentMethodSelect.value = 'مدفوع'; // طريقة الدفع مدفوع
 
-            // إزالة سمة required للحقول التي يتم ملؤها تلقائياً أو إخفائها
+            // إزالة سمة required للحقول التي يتم ملؤها تلقائياً
             invoiceValueInput.removeAttribute('required');
             deliveryValueInput.removeAttribute('required');
             paymentMethodSelect.removeAttribute('required');
 
-            // إخفاء الحقول غير ذات الصلة
-            invoiceValueLabel.style.display = 'none';
-            invoiceValueInput.style.display = 'none';
-            deliveryValueLabel.style.display = 'none';
-            deliveryValueInput.style.display = 'none';
-            paymentMethodLabel.style.display = 'none';
-            paymentMethodSelect.style.display = 'none';
+            // *** إزالة: لم تعد هناك حاجة لإخفاء الحقول هنا. ستظل مرئية ولكن بـ 0 ومدفوع. ***
+            // invoiceValueLabel.style.display = 'none';
+            // invoiceValueInput.style.display = 'none';
+            // deliveryValueLabel.style.display = 'none';
+            // deliveryValueInput.style.display = 'none';
+            // paymentMethodLabel.style.display = 'none';
+            // paymentMethodSelect.style.display = 'none';
         } else { // 'عادية'
             // تأكد من مسح أي قيم تلقائية سابقة
             invoiceValueInput.value = '';
