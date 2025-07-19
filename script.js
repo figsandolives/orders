@@ -689,35 +689,35 @@ if (document.getElementById('accounting-login-btn')) {
     accountingLoginBtn.addEventListener('click', () => {
         const code = accountingLoginCodeInput.value;
         if (code === ACCOUNTING_CODE) {
-    // تسجيل الدخول المجهول في Firebase Authentication
-    firebase.auth().signInAnonymously()
-        .then(() => {
-            currentUser = { code: code, name: "المحاسب" };
-            currentDashboard = 'accounting';
-            sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
-            sessionStorage.setItem('currentDashboard', currentDashboard);
-            showAccountingDashboard();
-            accountingLoginErrorMessage.textContent = '';
-        })
-        .catch((error) => {
-            console.error("Error signing in anonymously:", error);
-            accountingLoginErrorMessage.textContent = 'حدث خطأ في تسجيل الدخول. الرجاء المحاولة مرة أخرى.';
-        });
-} else {
-    accountingLoginErrorMessage.textContent = 'رمز الدخول غير صحيح.';
-}
+            // تسجيل الدخول المجهول في Firebase Authentication
+            firebase.auth().signInAnonymously()
+                .then(() => {
+                    currentUser = { code: code, name: "المحاسب" };
+                    currentDashboard = 'accounting';
+                    sessionStorage.setItem('currentUser', JSON.stringify(currentUser));
+                    sessionStorage.setItem('currentDashboard', currentDashboard);
+                    showAccountingDashboard();
+                    accountingLoginErrorMessage.textContent = '';
+                })
+                .catch((error) => {
+                    console.error("Error signing in anonymously:", error);
+                    accountingLoginErrorMessage.textContent = 'حدث خطأ في تسجيل الدخول. الرجاء المحاولة مرة أخرى.';
+                });
+        } else {
+            accountingLoginErrorMessage.textContent = 'رمز الدخول غير صحيح.';
+        }
     });
 
-accountingLogoutBtn.addEventListener('click', () => {
-    firebase.auth().signOut(); // تسجيل الخروج من Firebase Auth
-    currentUser = null;
-    currentDashboard = null;
-    sessionStorage.removeItem('currentUser');
-    sessionStorage.removeItem('currentDashboard');
-    accountingDashboard.style.display = 'none';
-    accountingLoginContainer.style.display = 'block';
-    accountingLoginCodeInput.value = ''; // Clear input on logout
-});
+    accountingLogoutBtn.addEventListener('click', () => {
+        firebase.auth().signOut(); // تسجيل الخروج من Firebase Auth
+        currentUser = null;
+        currentDashboard = null;
+        sessionStorage.removeItem('currentUser');
+        sessionStorage.removeItem('currentDashboard');
+        accountingDashboard.style.display = 'none';
+        accountingLoginContainer.style.display = 'block';
+        accountingLoginCodeInput.value = ''; // Clear input on logout
+    });
 
     const showAccountingDashboard = () => {
         accountingLoginContainer.style.display = 'none';
@@ -736,279 +736,302 @@ accountingLogoutBtn.addEventListener('click', () => {
     const updateAccountingDashboard = () => {
         const selectedDate = accountingDatePicker.value;
         const selectedRep = accountingRepresentativeFilter.value;
+        const formattedDate = formatDate(selectedDate);
+
+        accountingReportTitle.textContent = `كشف حساب المندوب "${selectedRep || 'جميع المناديب'}" بتاريخ "${formattedDate}"`;
 
         normalInvoicesTableBody.innerHTML = '';
         websiteInvoicesTableBody.innerHTML = '';
         freeWorkDetails.textContent = '';
 
-        accountingReportTitle.textContent = `كشف حساب المندوب "${selectedRep || 'لم يتم الاختيار'}" بتاريخ "${formatDate(selectedDate)}"`;
+        let queryRef = database.ref('orders').orderByChild('date').equalTo(formattedDate);
 
-        // Clear and repopulate representative filter based on orders for the selected date
-        accountingRepresentativeFilter.innerHTML = '<option value="">اختر المندوب</option>';
-        const repsWithOrders = new Set();
+        if (selectedRep) {
+            queryRef = queryRef.orderByChild('representative').equalTo(selectedRep);
+        }
 
-        database.ref('orders').orderByChild('date').equalTo(formatDate(selectedDate)).once('value', (snapshot) => {
+        queryRef.on('value', (snapshot) => {
+            normalInvoicesTableBody.innerHTML = '';
+            websiteInvoicesTableBody.innerHTML = '';
+            freeWorkDetails.textContent = '';
+
+            let totalFreeWorks = [];
+
             snapshot.forEach((childSnapshot) => {
                 const order = childSnapshot.val();
-                repsWithOrders.add(order.representative);
+                const orderId = childSnapshot.key;
+                const row = document.createElement('tr');
+                row.setAttribute('data-order-id', orderId);
+
+                // Define cell content in the order it appears in the HTML table (LTR)
+                const cellsContent = [
+                    order.orderType, // نوع الفاتورة
+                    [order.invoiceNumber1, order.invoiceNumber2, order.invoiceNumber3].filter(Boolean).join(', '), // رقم الفاتورة
+                    order.clientName, // اسم العميل
+                    order.phoneNumber, // رقم الهاتف
+                    order.region, // المنطقة
+                    order.invoiceValue, // قيمة الفاتورة
+                    order.deliveryValue, // قيمة التوصيل
+                    order.paymentMethod, // طريقة الدفع
+                    order.employeeName, // الموظف
+                    order.representative, // المندوب
+                    order.signature ? '<img src="' + order.signature + '" width="80" height="40" alt="Signature">' : 'لا يوجد', // توقيع المندوب
+                    order.freeWorkOption === 'نعم' ? order.freeWorkText : 'لا يوجد', // الأعمال المجانية
+                    order.dateTime, // التاريخ والوقت
+                    order.notes || '' // ملاحظات (تأكد من وجود هذا الحقل في بيانات Firebase إذا كنت تستخدمه)
+                ];
+
+                cellsContent.forEach(content => {
+                    const cell = row.insertCell();
+                    cell.innerHTML = content;
+                });
+
+                if (order.orderType === 'عادية' || order.orderType === 'اشتراك') {
+                    normalInvoicesTableBody.appendChild(row);
+                } else if (order.orderType === 'موقع') {
+                    websiteInvoicesTableBody.appendChild(row);
+                }
+
+                if (order.freeWorkOption === 'نعم' && order.freeWorkText) {
+                    totalFreeWorks.push(`- ${order.freeWorkText} (${order.representative})`);
+                }
             });
 
-            Array.from(repsWithOrders).sort().forEach(rep => {
+            if (totalFreeWorks.length > 0) {
+                freeWorkDetails.textContent = totalFreeWorks.join('\n');
+            } else {
+                freeWorkDetails.textContent = 'لا يوجد أعمال مجانية لهذا اليوم.';
+            }
+
+            // Populate representative filter based on fetched orders
+            const uniqueReps = new Set();
+            snapshot.forEach(childSnapshot => {
+                uniqueReps.add(childSnapshot.val().representative);
+            });
+            accountingRepresentativeFilter.innerHTML = '<option value="">اختر المندوب</option>';
+            uniqueReps.forEach(rep => {
                 const option = document.createElement('option');
                 option.value = rep;
                 option.textContent = rep;
                 accountingRepresentativeFilter.appendChild(option);
             });
-
-            // Re-select if previously selected rep is still valid
-            if (selectedRep && repsWithOrders.has(selectedRep)) {
+            // Set the selected rep back after repopulating options
+            if (selectedRep) {
                 accountingRepresentativeFilter.value = selectedRep;
-            } else {
-                accountingRepresentativeFilter.value = ''; // Clear if not found
-            }
-
-            // Now load tables based on date and (optionally) selected representative
-            loadAccountingTables(selectedDate, accountingRepresentativeFilter.value);
-        });
-    };
-
-    const loadAccountingTables = (dateString, representativeName) => {
-        normalInvoicesTableBody.innerHTML = '';
-        websiteInvoicesTableBody.innerHTML = '';
-        freeWorkDetails.innerHTML = '';
-
-        const formattedDate = formatDate(dateString);
-        let freeWorks = [];
-
-        database.ref('orders').orderByChild('date').equalTo(formattedDate).on('value', (snapshot) => {
-            normalInvoicesTableBody.innerHTML = '';
-            websiteInvoicesTableBody.innerHTML = '';
-            freeWorks = []; // Reset free works for real-time updates
-
-            snapshot.forEach((childSnapshot) => {
-                const order = childSnapshot.val();
-                if (representativeName === '' || order.representative === representativeName) {
-                    const row = document.createElement('tr');
-                    const cells = [
-                        order.orderType,
-                        [order.invoiceNumber1, order.invoiceNumber2, order.invoiceNumber3].filter(Boolean).join(', '),
-                        order.clientName,
-                        order.phoneNumber,
-                        order.region,
-                        order.invoiceValue,
-                        order.deliveryValue,
-                        order.paymentMethod,
-                        order.employeeName,
-                        order.representative,
-                        order.signature ? '<img src="' + order.signature + '" width="80" height="40" alt="Signature">' : 'لا يوجد',
-                        order.freeWorkOption === 'نعم' ? order.freeWorkText : 'لا يوجد',
-                        order.dateTime,
-                        '<textarea class="notes-field"></textarea>' // Notes field
-                    ];
-
-                    const dataLabels = [
-                        'نوع الفاتورة', 'رقم الفاتورة', 'اسم العميل', 'رقم الهاتف', 'المنطقة',
-                        'قيمة الفاتورة', 'قيمة التوصيل', 'طريقة الدفع', 'الموظف', 'المندوب',
-                        'توقيع المندوب', 'الأعمال المجانية', 'التاريخ والوقت', 'ملاحظات'
-                    ];
-
-                    cells.forEach((cellContent, index) => {
-                        const cell = row.insertCell();
-                        cell.setAttribute('data-label', dataLabels[index]);
-                        cell.innerHTML = cellContent;
-                    });
-
-                    if (order.orderType === 'عادية' || order.orderType === 'اشتراك') {
-                        normalInvoicesTableBody.appendChild(row);
-                    } else if (order.orderType === 'موقع') {
-                        websiteInvoicesTableBody.appendChild(row);
-                    }
-
-                    if (order.freeWorkOption === 'نعم' && order.freeWorkText) {
-                        freeWorks.push(`- ${order.representative}: ${order.freeWorkText}`);
-                    }
-                }
-            });
-
-            if (freeWorks.length > 0) {
-                freeWorkDetails.innerHTML = freeWorks.join('<br>');
-            } else {
-                freeWorkDetails.textContent = `لا يوجد أعمال مجانية لـ "${representativeName || 'هذا اليوم'}" لهذا اليوم.`;
-            }
-        });
-    };
-
-    searchOrderBtnAcc.addEventListener('click', () => {
-        searchOrderModalAcc.style.display = 'block';
-        searchQueryAccInput.value = '';
-        searchErrorMessageAcc.textContent = '';
-    });
-
-    executeSearchBtnAcc.addEventListener('click', () => {
-        const searchType = searchTypeAccSelect.value;
-        const searchQuery = searchQueryAccInput.value.trim();
-        normalInvoicesTableBody.innerHTML = '';
-        websiteInvoicesTableBody.innerHTML = '';
-        freeWorkDetails.innerHTML = '';
-        accountingReportTitle.textContent = `نتائج البحث عن طلب: "${searchQuery}"`;
-
-        if (!searchQuery) {
-            searchErrorMessageAcc.textContent = 'الرجاء إدخال قيمة للبحث.';
-            return;
-        }
-
-        searchErrorMessageAcc.textContent = '';
-
-        let queryRef;
-        if (searchType === 'invoice-number') {
-            queryRef = database.ref('orders').orderByChild('invoiceNumber1').equalTo(searchQuery);
-        } else if (searchType === 'phone-number') {
-            queryRef = database.ref('orders').orderByChild('phoneNumber').equalTo(parseInt(searchQuery));
-        }
-
-        queryRef.once('value', (snapshot) => {
-            if (snapshot.exists()) {
-                snapshot.forEach((childSnapshot) => {
-                    const order = childSnapshot.val();
-                    const row = document.createElement('tr');
-                    const cells = [
-                        order.orderType,
-                        [order.invoiceNumber1, order.invoiceNumber2, order.invoiceNumber3].filter(Boolean).join(', '),
-                        order.clientName,
-                        order.phoneNumber,
-                        order.region,
-                        order.invoiceValue,
-                        order.deliveryValue,
-                        order.paymentMethod,
-                        order.employeeName,
-                        order.representative,
-                        order.signature ? '<img src="' + order.signature + '" width="80" height="40" alt="Signature">' : 'لا يوجد',
-                        order.freeWorkOption === 'نعم' ? order.freeWorkText : 'لا يوجد',
-                        order.dateTime,
-                        '<textarea class="notes-field"></textarea>' // Notes field
-                    ];
-
-                    const dataLabels = [
-                        'نوع الفاتورة', 'رقم الفاتورة', 'اسم العميل', 'رقم الهاتف', 'المنطقة',
-                        'قيمة الفاتورة', 'قيمة التوصيل', 'طريقة الدفع', 'الموظف', 'المندوب',
-                        'توقيع المندوب', 'الأعمال المجانية', 'التاريخ والوقت', 'ملاحظات'
-                    ];
-
-                    cells.forEach((cellContent, index) => {
-                        const cell = row.insertCell();
-                        cell.setAttribute('data-label', dataLabels[index]);
-                        cell.innerHTML = cellContent;
-                    });
-
-                    if (order.orderType === 'عادية' || order.orderType === 'اشتراك') {
-                        normalInvoicesTableBody.appendChild(row);
-                    } else if (order.orderType === 'موقع') {
-                        websiteInvoicesTableBody.appendChild(row);
-                    }
-                });
-                searchOrderModalAcc.style.display = 'none';
-            } else {
-                normalInvoicesTableBody.innerHTML = '<tr><td colspan="14">لا توجد طلبات مطابقة لمعايير البحث.</td></tr>';
-                websiteInvoicesTableBody.innerHTML = '<tr><td colspan="14">لا توجد طلبات مطابقة لمعايير البحث.</td></tr>';
-                searchErrorMessageAcc.textContent = 'لا توجد طلبات مطابقة لمعايير البحث.';
             }
         }, (error) => {
-            console.error("Error searching orders: ", error);
-            searchErrorMessageAcc.textContent = 'حدث خطأ أثناء البحث.';
-        });
-    });
-
-// PDF Generation
-downloadCurrentPdfBtn.addEventListener('click', () => {
-    const doc = new jspdf.jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-    const selectedDate = accountingDatePicker.value;
-    const selectedRep = accountingRepresentativeFilter.value;
-    const reportTitle = `كشف حساب المندوب "${selectedRep || 'جميع المناديب'}" بتاريخ "${formatDate(selectedDate)}"`;
-
-    doc.setFont('Amiri', 'normal'); // Set font for Arabic support (ensure 'Amiri' is loaded or available)
-    doc.setFontSize(14);
-    doc.text(reportTitle, doc.internal.pageSize.getWidth() / 2, 10, { align: 'center' });
-
-    const addTable = (tableBodyId, title) => {
-        const table = document.getElementById(tableBodyId);
-        const rows = Array.from(table.rows);
-        if (rows.length === 0 || (rows.length === 1 && rows[0].cells[0].textContent === 'لا توجد طلبات مطابقة لمعايير البحث.')) {
-            // If table is empty or just has "no data" message, don't add it
-            return;
-        }
-
-        const header = [
-            'ملاحظات', 'التاريخ والوقت', 'الأعمال المجانية', 'توقيع المندوب', 'المندوب', 'الموظف',
-            'طريقة الدفع', 'قيمة التوصيل', 'قيمة الفاتورة', 'المنطقة', 'رقم الهاتف',
-            'اسم العميل', 'رقم الفاتورة', 'نوع الفاتورة'
-        ]; // Reversed for RTL display in PDF autoTable
-
-        const data = rows.map(row => {
-            return Array.from(row.cells).map(cell => {
-                if (cell.querySelector('.notes-field')) {
-                    return cell.querySelector('.notes-field').value;
-                }
-                if (cell.querySelector('img')) {
-                    // Pass image data, autoTable will handle it in didDrawCell
-                    // Adjust width/height if 20x10mm is not suitable
-                    return { image: cell.querySelector('img').src, imgWidth: 20, imgHeight: 10 };
-                }
-                return cell.textContent;
-            });
-        });
-
-        doc.autoTable({
-            head: [header],
-            body: data,
-            startY: doc.autoTable.previous.finalY + 20 || 20,
-            theme: 'grid',
-            headStyles: { fillColor: [233, 236, 239], textColor: [73, 80, 87], font: 'Amiri', fontStyle: 'bold', fontSize: 9 }, // Increased font size for headers slightly
-            bodyStyles: { font: 'Amiri', fontSize: 8 }, // Decreased body font size for better fit
-            didDrawCell: function (data) {
-                // Check if it's the 'توقيع المندوب' column (index 3 in reversed header, or 10 if not reversed)
-                // It's safer to check data.column.index and the type of content
-                // Based on reversed header, 'توقيع المندوب' is at index 3.
-                // Or you can check if data.cell.raw is an object with 'image' property.
-
-                if (data.cell.raw && data.cell.raw.image && data.column.index === 3) { // Ensure it's the signature column (index based on reversed data)
-                    const img = data.cell.raw;
-                    // Calculate x and y to center the image within the cell
-                    const imgX = data.cell.x + (data.cell.contentWidth / 2) - (img.imgWidth / 2);
-                    const imgY = data.cell.y + (data.cell.contentHeight / 2) - (img.imgHeight / 2);
-
-                    doc.addImage(img.image, 'PNG', imgX, imgY, img.imgWidth, img.imgHeight);
-                }
-            },
-            columnStyles: {
-                // Optionally, set specific widths for columns if needed for better control
-                // For example, allocate more space for the signature column if 20mm is not enough
-                // 3: { cellWidth: 25 }, // Adjust if 20mm image needs more space, or if the cell itself is narrow
-                // You might need to adjust other columns' widths as well to fit.
-            },
-            styles: { cellPadding: 2, fontSize: 8, overflow: 'linebreak', halign: 'right', cellWidth: 'wrap' }, // Adjusted font size, keep halign right for Arabic
-            willDrawPage: function (data) {
-                doc.setFont('Amiri', 'normal'); // Ensure font is set for title
-                doc.setFontSize(12); // Title font size
-                doc.text(title, doc.internal.pageSize.getWidth() - 10, data.settings.startY - 5, { align: 'right' }); // Table subtitle
-            }
+            console.error("Error loading accounting orders: ", error);
         });
     };
 
-    addTable('normal-invoices-table-body', 'فواتير عادية');
-    addTable('website-invoices-table-body', 'فواتير الموقع');
+    // PDF Generation
+    downloadCurrentPdfBtn.addEventListener('click', () => {
+        const doc = new jspdf.jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4', dir: 'rtl' });
+        const selectedDate = accountingDatePicker.value;
+        const selectedRep = accountingRepresentativeFilter.value;
+        const reportTitle = `كشف حساب المندوب "${selectedRep || 'جميع المناديب'}" بتاريخ "${formatDate(selectedDate)}"`;
 
-    const freeWorkSummaryText = freeWorkDetails.textContent;
-    if (freeWorkSummaryText && freeWorkSummaryText.trim() !== '') {
-        doc.addPage(); // New page for free work summary
-        doc.setFont('Amiri', 'normal'); // Set font for new page
-        doc.setFontSize(12);
-        doc.text('الأعمال المجانية للمندوب:', doc.internal.pageSize.getWidth() - 10, 20, { align: 'right' }); // Align right
-        // For multiline text, consider using doc.text with a specific maxWidth or autoTable for summary
-        doc.text(freeWorkSummaryText, doc.internal.pageSize.getWidth() - 10, 30, { align: 'right' }); // Align right
-    }
+        doc.setFont('Amiri', 'normal'); // Set font for Arabic support (ensure 'Amiri' is loaded or available)
+        doc.setFontSize(14);
+        doc.text(reportTitle, doc.internal.pageSize.getWidth() / 2, 10, { align: 'center' });
 
-    doc.save(`كشف حساب المندوب ${selectedRep || 'كل المناديب'} بتاريخ ${formatDate(selectedDate)}.pdf`);
-});
+        const addTable = (tableBodyId, title) => {
+            const table = document.getElementById(tableBodyId);
+            const rows = Array.from(table.rows);
+            if (rows.length === 0 || (rows.length === 1 && rows[0].cells[0].textContent === 'لا توجد طلبات مطابقة لمعايير البحث.')) {
+                // If table is empty or just has "no data" message, don't add it
+                return;
+            }
+
+            // *** التعديل 1: إزالة 'التاريخ والوقت' من الرؤوس ***
+            const header = [
+                'ملاحظات', 'الأعمال المجانية', 'توقيع المندوب', 'المندوب', 'الموظف',
+                'طريقة الدفع', 'قيمة التوصيل', 'قيمة الفاتورة', 'المنطقة', 'رقم الهاتف',
+                'اسم العميل', 'رقم الفاتورة', 'نوع الفاتورة'
+            ]; // هذا الترتيب هو من اليمين لليسار بصرياً في الـ PDF (آخر عمود هو الأيمن)
+
+            const data = rows.map(row => {
+                // *** التعديل 2: بناء البيانات بترتيب يطابق الرؤوس الجديدة (مع حذف 'التاريخ والوقت') ***
+                // الترتيب هنا يجب أن يطابق ترتيب الأعمدة في الـ HTML table، مع حذف عمود التاريخ والوقت
+                // ثم عكسه ليتناسب مع ترتيب الـ header (RTL)
+                const rowCells = Array.from(row.cells);
+                const mappedData = [
+                    rowCells[13].textContent, // ملاحظات (HTML index 13) -> PDF header index 0
+                    rowCells[11].textContent, // الأعمال المجانية (HTML index 11) -> PDF header index 1
+                    rowCells[10].querySelector('img') ? { image: rowCells[10].querySelector('img').src, imgWidth: 20, imgHeight: 10 } : 'لا يوجد', // توقيع المندوب (HTML index 10) -> PDF header index 2
+                    rowCells[9].textContent, // المندوب (HTML index 9) -> PDF header index 3
+                    rowCells[8].textContent, // الموظف (HTML index 8) -> PDF header index 4
+                    rowCells[7].textContent, // طريقة الدفع (HTML index 7) -> PDF header index 5
+                    rowCells[6].textContent, // قيمة التوصيل (HTML index 6) -> PDF header index 6
+                    rowCells[5].textContent, // قيمة الفاتورة (HTML index 5) -> PDF header index 7
+                    rowCells[4].textContent, // المنطقة (HTML index 4) -> PDF header index 8
+                    rowCells[3].textContent, // رقم الهاتف (HTML index 3) -> PDF header index 9
+                    rowCells[2].textContent, // اسم العميل (HTML index 2) -> PDF header index 10
+                    rowCells[1].textContent, // رقم الفاتورة (HTML index 1) -> PDF header index 11
+                    rowCells[0].textContent // نوع الفاتورة (HTML index 0) -> PDF header index 12
+                ];
+                return mappedData;
+            });
+
+            doc.autoTable({
+                head: [header],
+                body: data,
+                startY: doc.autoTable.previous.finalY + 20 || 20,
+                theme: 'grid',
+                headStyles: { fillColor: [233, 236, 239], textColor: [73, 80, 87], font: 'Amiri', fontStyle: 'bold', fontSize: 9, halign: 'right' },
+                bodyStyles: { font: 'Amiri', fontSize: 8, halign: 'right' },
+                styles: { cellPadding: 2, fontSize: 8, overflow: 'linebreak', halign: 'right', cellWidth: 'wrap', dir: 'rtl' },
+                didDrawCell: function (data) {
+                    // *** التعديل 3: تحديث فهرس عمود التوقيع في didDrawCell ***
+                    // 'توقيع المندوب' الآن في الفهرس 2 في الرؤوس الجديدة (ملاحظات 0, أعمال مجانية 1, توقيع 2)
+                    if (data.cell.raw && data.cell.raw.image && data.column.index === 2) {
+                        const img = data.cell.raw;
+                        const imgX = data.cell.x + (data.cell.contentWidth / 2) - (img.imgWidth / 2);
+                        const imgY = data.cell.y + (data.cell.contentHeight / 2) - (img.imgHeight / 2);
+
+                        doc.addImage(img.image, 'PNG', imgX, imgY, img.imgWidth, img.imgHeight);
+                    }
+                },
+                columnStyles: {
+                    // يمكنك تعديل عرض الأعمدة هنا إذا لزم الأمر
+                    // مثلاً: 2: { cellWidth: 25 }, // لعمود توقيع المندوب
+                },
+                willDrawPage: function (data) {
+                    doc.setFont('Amiri', 'normal');
+                    doc.setFontSize(12);
+                    doc.text(title, doc.internal.pageSize.getWidth() - 10, data.settings.startY - 5, { align: 'right' });
+                }
+            });
+        };
+
+        addTable('normal-invoices-table-body', 'فواتير عادية');
+        addTable('website-invoices-table-body', 'فواتير الموقع');
+
+        const freeWorkSummaryText = freeWorkDetails.textContent;
+        if (freeWorkSummaryText && freeWorkSummaryText.trim() !== '') {
+            doc.addPage();
+            doc.setFont('Amiri', 'normal');
+            doc.setFontSize(12);
+            doc.text('الأعمال المجانية للمندوب:', doc.internal.pageSize.getWidth() - 10, 20, { align: 'right' });
+            doc.text(freeWorkSummaryText, doc.internal.pageSize.getWidth() - 10, 30, { align: 'right' });
+        }
+
+        doc.save(`كشف حساب المندوب ${selectedRep || 'كل المناديب'} بتاريخ ${formatDate(selectedDate)}.pdf`);
+    });
+
+
+    downloadAllRepsPdfBtn.addEventListener('click', async () => {
+        const doc = new jspdf.jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4', dir: 'rtl' });
+        const selectedDate = accountingDatePicker.value;
+        const formattedDate = formatDate(selectedDate);
+
+        doc.setFont('Amiri', 'normal');
+
+        const allOrders = await database.ref('orders').orderByChild('date').equalTo(formattedDate).once('value').then(s => s.val());
+
+        if (!allOrders) {
+            alert('لا توجد طلبات لهذا التاريخ لتصديرها.');
+            return;
+        }
+
+        const ordersByRep = {};
+        for (const orderId in allOrders) {
+            const order = allOrders[orderId];
+            if (!ordersByRep[order.representative]) {
+                ordersByRep[order.representative] = [];
+            }
+            ordersByRep[order.representative].push(order);
+        }
+
+        const representativesSorted = Object.keys(ordersByRep).sort();
+
+        for (const repName of representativesSorted) {
+            if (doc.internal.pages.length > 1) {
+                doc.addPage();
+            }
+            let startY = 10;
+
+            const repReportTitle = `كشف حساب المندوب "${repName}" بتاريخ "${formattedDate}"`;
+            doc.setFontSize(14);
+            doc.text(repReportTitle, doc.internal.pageSize.getWidth() / 2, startY, { align: 'center' });
+            startY += 10;
+
+            const repOrders = ordersByRep[repName];
+            const normalInvoices = repOrders.filter(order => order.orderType === 'عادية' || order.orderType === 'اشتراك');
+            const websiteInvoices = repOrders.filter(order => order.orderType === 'موقع');
+            const repFreeWorks = repOrders.filter(order => order.freeWorkOption === 'نعم' && order.freeWorkText)
+                                           .map(order => `- ${order.freeWorkText}`);
+
+            const addTableToDoc = (data, title, startYPos) => {
+                // *** التعديل 4: إزالة 'التاريخ والوقت' من الرؤوس هنا أيضاً ***
+                const header = [
+                    'ملاحظات', 'الأعمال المجانية', 'توقيع المندوب', 'المندوب', 'الموظف',
+                    'طريقة الدفع', 'قيمة التوصيل', 'قيمة الفاتورة', 'المنطقة', 'رقم الهاتف',
+                    'اسم العميل', 'رقم الفاتورة', 'نوع الفاتورة'
+                ]; // هذا الترتيب هو من اليمين لليسار بصرياً في الـ PDF (آخر عمود هو الأيمن)
+
+                const tableData = data.map(order => {
+                    // *** التعديل 5: بناء البيانات بترتيب يطابق الرؤوس الجديدة (مع حذف 'التاريخ والوقت') ***
+                    return [
+                        '', // ملاحظات - Placeholder (index 0)
+                        order.freeWorkOption === 'نعم' ? order.freeWorkText : 'لا يوجد', // الأعمال المجانية (index 1)
+                        order.signature ? { image: order.signature, imgWidth: 20, imgHeight: 10 } : 'لا يوجد', // توقيع المندوب (index 2)
+                        order.representative, // المندوب (index 3)
+                        order.employeeName, // الموظف (index 4)
+                        order.paymentMethod, // طريقة الدفع (index 5)
+                        order.deliveryValue, // قيمة التوصيل (index 6)
+                        order.invoiceValue, // قيمة الفاتورة (index 7)
+                        order.region, // المنطقة (index 8)
+                        order.phoneNumber, // رقم الهاتف (index 9)
+                        order.clientName, // اسم العميل (index 10)
+                        [order.invoiceNumber1, order.invoiceNumber2, order.invoiceNumber3].filter(Boolean).join(', '), // رقم الفاتورة (index 11)
+                        order.orderType // نوع الفاتورة (index 12)
+                    ];
+                });
+
+                if (tableData.length > 0) {
+                    doc.setFontSize(12);
+                    doc.text(title, doc.internal.pageSize.getWidth() - 10, startYPos, { align: 'right' }); // Table subtitle
+                    doc.autoTable({
+                        head: [header],
+                        body: tableData,
+                        startY: startYPos + 5,
+                        theme: 'grid',
+                        headStyles: { fillColor: [233, 236, 239], textColor: [73, 80, 87], font: 'Amiri', fontStyle: 'bold', fontSize: 9, halign: 'right' },
+                        bodyStyles: { font: 'Amiri', fontSize: 8, halign: 'right' },
+                        styles: { cellPadding: 2, fontSize: 8, overflow: 'linebreak', halign: 'right', cellWidth: 'wrap', dir: 'rtl' },
+                        didDrawCell: function (data) {
+                            // *** التعديل 6: تحديث فهرس عمود التوقيع في didDrawCell هنا أيضاً ***
+                            // 'توقيع المندوب' الآن في الفهرس 2 في الرؤوس الجديدة
+                            if (data.cell.raw && data.cell.raw.image && data.column.index === 2) {
+                                const img = data.cell.raw;
+                                const imgX = data.cell.x + (data.cell.contentWidth / 2) - (img.imgWidth / 2);
+                                const imgY = data.cell.y + (data.cell.contentHeight / 2) - (img.imgHeight / 2);
+
+                                doc.addImage(img.image, 'PNG', imgX, imgY, img.imgWidth, img.imgHeight);
+                            }
+                        },
+                    });
+                    return doc.autoTable.previous.finalY;
+                }
+                return startYPos;
+            };
+
+            let currentY = startY;
+            currentY = addTableToDoc(normalInvoices, 'فواتير عادية', currentY + 10);
+            currentY = addTableToDoc(websiteInvoices, 'فواتير الموقع', currentY + 10);
+
+            doc.setFontSize(12);
+            doc.text('الأعمال المجانية للمندوب:', doc.internal.pageSize.getWidth() - 10, currentY + 20, { align: 'right' });
+            if (repFreeWorks.length > 0) {
+                doc.text(repFreeWorks.join('\n'), doc.internal.pageSize.getWidth() - 10, currentY + 30, { align: 'right' });
+            } else {
+                doc.text(`لا يوجد أعمال مجانية لـ "${repName}" لهذا اليوم.`, doc.internal.pageSize.getWidth() - 10, currentY + 30, { align: 'right' });
+            }
+        }
+
+        doc.save(`كشف حساب المناديب بتاريخ ${formattedDate}.pdf`);
+    });
 
 
 downloadAllRepsPdfBtn.addEventListener('click', async () => {
