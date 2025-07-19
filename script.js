@@ -863,184 +863,210 @@ accountingLogoutBtn.addEventListener('click', () => {
         });
     });
 
-    // PDF Generation
-    downloadCurrentPdfBtn.addEventListener('click', () => {
-        const doc = new jspdf.jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-        const selectedDate = accountingDatePicker.value;
-        const selectedRep = accountingRepresentativeFilter.value;
-        const reportTitle = `كشف حساب المندوب "${selectedRep || 'جميع المناديب'}" بتاريخ "${formatDate(selectedDate)}"`;
+// PDF Generation
+downloadCurrentPdfBtn.addEventListener('click', () => {
+    const doc = new jspdf.jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+    const selectedDate = accountingDatePicker.value;
+    const selectedRep = accountingRepresentativeFilter.value;
+    const reportTitle = `كشف حساب المندوب "${selectedRep || 'جميع المناديب'}" بتاريخ "${formatDate(selectedDate)}"`;
 
-        doc.setFont('Amiri', 'normal'); // Set font for Arabic support (ensure 'Amiri' is loaded or available)
-        doc.setFontSize(14);
-        doc.text(reportTitle, doc.internal.pageSize.getWidth() / 2, 10, { align: 'center' });
+    doc.setFont('Amiri', 'normal'); // Set font for Arabic support (ensure 'Amiri' is loaded or available)
+    doc.setFontSize(14);
+    doc.text(reportTitle, doc.internal.pageSize.getWidth() / 2, 10, { align: 'center' });
 
-        const addTable = (tableBodyId, title) => {
-            const table = document.getElementById(tableBodyId);
-            const rows = Array.from(table.rows);
-            if (rows.length === 0 || (rows.length === 1 && rows[0].cells[0].textContent === 'لا توجد طلبات مطابقة لمعايير البحث.')) {
-                // If table is empty or just has "no data" message, don't add it
-                return;
+    const addTable = (tableBodyId, title) => {
+        const table = document.getElementById(tableBodyId);
+        const rows = Array.from(table.rows);
+        if (rows.length === 0 || (rows.length === 1 && rows[0].cells[0].textContent === 'لا توجد طلبات مطابقة لمعايير البحث.')) {
+            // If table is empty or just has "no data" message, don't add it
+            return;
+        }
+
+        const header = [
+            'ملاحظات', 'التاريخ والوقت', 'الأعمال المجانية', 'توقيع المندوب', 'المندوب', 'الموظف',
+            'طريقة الدفع', 'قيمة التوصيل', 'قيمة الفاتورة', 'المنطقة', 'رقم الهاتف',
+            'اسم العميل', 'رقم الفاتورة', 'نوع الفاتورة'
+        ]; // Reversed for RTL display in PDF autoTable
+
+        const data = rows.map(row => {
+            return Array.from(row.cells).map(cell => {
+                if (cell.querySelector('.notes-field')) {
+                    return cell.querySelector('.notes-field').value;
+                }
+                if (cell.querySelector('img')) {
+                    // Pass image data, autoTable will handle it in didDrawCell
+                    // Adjust width/height if 20x10mm is not suitable
+                    return { image: cell.querySelector('img').src, imgWidth: 20, imgHeight: 10 };
+                }
+                return cell.textContent;
+            }).reverse(); // Reverse cell order for RTL
+        });
+
+        doc.autoTable({
+            head: [header],
+            body: data,
+            startY: doc.autoTable.previous.finalY + 20 || 20,
+            theme: 'grid',
+            headStyles: { fillColor: [233, 236, 239], textColor: [73, 80, 87], font: 'Amiri', fontStyle: 'bold', fontSize: 9 }, // Increased font size for headers slightly
+            bodyStyles: { font: 'Amiri', fontSize: 8 }, // Decreased body font size for better fit
+            didDrawCell: function (data) {
+                // Check if it's the 'توقيع المندوب' column (index 3 in reversed header, or 10 if not reversed)
+                // It's safer to check data.column.index and the type of content
+                // Based on reversed header, 'توقيع المندوب' is at index 3.
+                // Or you can check if data.cell.raw is an object with 'image' property.
+
+                if (data.cell.raw && data.cell.raw.image && data.column.index === 3) { // Ensure it's the signature column (index based on reversed data)
+                    const img = data.cell.raw;
+                    // Calculate x and y to center the image within the cell
+                    const imgX = data.cell.x + (data.cell.contentWidth / 2) - (img.imgWidth / 2);
+                    const imgY = data.cell.y + (data.cell.contentHeight / 2) - (img.imgHeight / 2);
+
+                    doc.addImage(img.image, 'PNG', imgX, imgY, img.imgWidth, img.imgHeight);
+                }
+            },
+            columnStyles: {
+                // Optionally, set specific widths for columns if needed for better control
+                // For example, allocate more space for the signature column if 20mm is not enough
+                // 3: { cellWidth: 25 }, // Adjust if 20mm image needs more space, or if the cell itself is narrow
+                // You might need to adjust other columns' widths as well to fit.
+            },
+            styles: { cellPadding: 2, fontSize: 8, overflow: 'linebreak', halign: 'right', cellWidth: 'wrap' }, // Adjusted font size, keep halign right for Arabic
+            willDrawPage: function (data) {
+                doc.setFont('Amiri', 'normal'); // Ensure font is set for title
+                doc.setFontSize(12); // Title font size
+                doc.text(title, doc.internal.pageSize.getWidth() - 10, data.settings.startY - 5, { align: 'right' }); // Table subtitle
             }
+        });
+    };
 
+    addTable('normal-invoices-table-body', 'فواتير عادية');
+    addTable('website-invoices-table-body', 'فواتير الموقع');
+
+    const freeWorkSummaryText = freeWorkDetails.textContent;
+    if (freeWorkSummaryText && freeWorkSummaryText.trim() !== '') {
+        doc.addPage(); // New page for free work summary
+        doc.setFont('Amiri', 'normal'); // Set font for new page
+        doc.setFontSize(12);
+        doc.text('الأعمال المجانية للمندوب:', doc.internal.pageSize.getWidth() - 10, 20, { align: 'right' }); // Align right
+        // For multiline text, consider using doc.text with a specific maxWidth or autoTable for summary
+        doc.text(freeWorkSummaryText, doc.internal.pageSize.getWidth() - 10, 30, { align: 'right' }); // Align right
+    }
+
+    doc.save(`كشف حساب المندوب ${selectedRep || 'كل المناديب'} بتاريخ ${formatDate(selectedDate)}.pdf`);
+});
+
+
+downloadAllRepsPdfBtn.addEventListener('click', async () => {
+    const doc = new jspdf.jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+    const selectedDate = accountingDatePicker.value;
+    const formattedDate = formatDate(selectedDate);
+
+    doc.setFont('Amiri', 'normal'); // Set font for Arabic support
+
+    const allOrders = await database.ref('orders').orderByChild('date').equalTo(formattedDate).once('value').then(s => s.val());
+
+    if (!allOrders) {
+        alert('لا توجد طلبات لهذا التاريخ لتصديرها.');
+        return;
+    }
+
+    const ordersByRep = {};
+    for (const orderId in allOrders) {
+        const order = allOrders[orderId];
+        if (!ordersByRep[order.representative]) {
+            ordersByRep[order.representative] = [];
+        }
+        ordersByRep[order.representative].push(order);
+    }
+
+    const representativesSorted = Object.keys(ordersByRep).sort();
+
+    for (const repName of representativesSorted) {
+        if (doc.internal.pages.length > 1) { // Add new page for each rep after the first one
+            doc.addPage();
+        }
+        let startY = 10;
+
+        const repReportTitle = `كشف حساب المندوب "${repName}" بتاريخ "${formattedDate}"`;
+        doc.setFontSize(14);
+        doc.text(repReportTitle, doc.internal.pageSize.getWidth() / 2, startY, { align: 'center' });
+        startY += 10;
+
+        const repOrders = ordersByRep[repName];
+        const normalInvoices = repOrders.filter(order => order.orderType === 'عادية' || order.orderType === 'اشتراك');
+        const websiteInvoices = repOrders.filter(order => order.orderType === 'موقع');
+        const repFreeWorks = repOrders.filter(order => order.freeWorkOption === 'نعم' && order.freeWorkText)
+                                       .map(order => `- ${order.freeWorkText}`);
+
+        const addTableToDoc = (data, title, startYPos) => {
             const header = [
                 'ملاحظات', 'التاريخ والوقت', 'الأعمال المجانية', 'توقيع المندوب', 'المندوب', 'الموظف',
                 'طريقة الدفع', 'قيمة التوصيل', 'قيمة الفاتورة', 'المنطقة', 'رقم الهاتف',
                 'اسم العميل', 'رقم الفاتورة', 'نوع الفاتورة'
             ]; // Reversed for RTL display in PDF autoTable
 
-            const data = rows.map(row => {
-                return Array.from(row.cells).map(cell => {
-                    if (cell.querySelector('.notes-field')) {
-                        return cell.querySelector('.notes-field').value;
-                    }
-                    if (cell.querySelector('img')) {
-                        return { image: cell.querySelector('img').src, width: 20, height: 10 }; // Return image data for autoTable
-                    }
-                    return cell.textContent;
-                }).reverse(); // Reverse cell order for RTL
+            const tableData = data.map(order => {
+                return [
+                    '', // Placeholder for notes
+                    order.dateTime,
+                    order.freeWorkOption === 'نعم' ? order.freeWorkText : 'لا يوجد',
+                    // Pass image data for autoTable
+                    order.signature ? { image: order.signature, imgWidth: 20, imgHeight: 10 } : 'لا يوجد',
+                    order.representative,
+                    order.employeeName,
+                    order.paymentMethod,
+                    order.deliveryValue,
+                    order.invoiceValue,
+                    order.region,
+                    order.phoneNumber,
+                    order.clientName,
+                    [order.invoiceNumber1, order.invoiceNumber2, order.invoiceNumber3].filter(Boolean).join(', '),
+                    order.orderType
+                ].reverse();
             });
 
-            doc.autoTable({
-                head: [header],
-                body: data,
-                startY: doc.autoTable.previous.finalY + 20 || 20,
-                theme: 'grid',
-                headStyles: { fillColor: [233, 236, 239], textColor: [73, 80, 87], font: 'Amiri', fontStyle: 'bold' },
-                bodyStyles: { font: 'Amiri' },
-                didDrawCell: function (data) {
-                    if (data.cell.raw && data.cell.raw.image) {
-                        doc.addImage(data.cell.raw.image, 'PNG', data.cell.x + 1, data.cell.y + 1, data.cell.raw.width, data.cell.raw.height);
-                    }
-                },
-                columnStyles: {
-                    // Set specific widths if needed or adjust dynamically
-                    // e.g., 0: { cellWidth: 30 } // For "ملاحظات"
-                },
-                styles: { cellPadding: 2, fontSize: 8, overflow: 'linebreak', halign: 'right', cellWidth: 'wrap' }, // Adjust font size for better fit
-                willDrawPage: function (data) {
-                    doc.text(title, doc.internal.pageSize.getWidth() - 10, data.settings.startY - 5, { align: 'right' }); // Table subtitle
-                }
-            });
+            if (tableData.length > 0) {
+                doc.setFontSize(12);
+                doc.text(title, doc.internal.pageSize.getWidth() - 10, startYPos, { align: 'right' }); // Table subtitle
+                doc.autoTable({
+                    head: [header],
+                    body: tableData,
+                    startY: startYPos + 5,
+                    theme: 'grid',
+                    headStyles: { fillColor: [233, 236, 239], textColor: [73, 80, 87], font: 'Amiri', fontStyle: 'bold', fontSize: 9 }, // Increased header font size
+                    bodyStyles: { font: 'Amiri', fontSize: 8 }, // Decreased body font size
+                    didDrawCell: function (data) {
+                        // Check if it's the 'توقيع المندوب' column (index 3 in reversed header, or 10 if not reversed)
+                        if (data.cell.raw && data.cell.raw.image && data.column.index === 3) {
+                            const img = data.cell.raw;
+                            // Calculate x and y to center the image within the cell
+                            const imgX = data.cell.x + (data.cell.contentWidth / 2) - (img.imgWidth / 2);
+                            const imgY = data.cell.y + (data.cell.contentHeight / 2) - (img.imgHeight / 2);
+
+                            doc.addImage(img.image, 'PNG', imgX, imgY, img.imgWidth, img.imgHeight);
+                        }
+                    },
+                    styles: { cellPadding: 2, fontSize: 8, overflow: 'linebreak', halign: 'right', cellWidth: 'wrap' },
+                });
+                return doc.autoTable.previous.finalY;
+            }
+            return startYPos;
         };
 
-        addTable('normal-invoices-table-body', 'فواتير عادية');
-        addTable('website-invoices-table-body', 'فواتير الموقع');
+        let currentY = startY;
+        currentY = addTableToDoc(normalInvoices, 'فواتير عادية', currentY + 10);
+        currentY = addTableToDoc(websiteInvoices, 'فواتير الموقع', currentY + 10);
 
-        const freeWorkSummaryText = freeWorkDetails.textContent;
-        if (freeWorkSummaryText && freeWorkSummaryText.trim() !== '') {
-            doc.addPage(); // New page for free work summary
-            doc.setFontSize(12);
-            doc.text('الأعمال المجانية للمندوب:', 10, 20);
-            doc.text(freeWorkSummaryText, 10, 30);
+        doc.setFontSize(12);
+        doc.text('الأعمال المجانية للمندوب:', doc.internal.pageSize.getWidth() - 10, currentY + 20, { align: 'right' });
+        if (repFreeWorks.length > 0) {
+            // Adjust position for multiline text or use autoTable for better layout
+            doc.text(repFreeWorks.join('\n'), doc.internal.pageSize.getWidth() - 10, currentY + 30, { align: 'right' });
+        } else {
+            doc.text(`لا يوجد أعمال مجانية لـ "${repName}" لهذا اليوم.`, doc.internal.pageSize.getWidth() - 10, currentY + 30, { align: 'right' });
         }
+    }
 
-        doc.save(`كشف حساب المندوب ${selectedRep || 'كل المناديب'} بتاريخ ${formatDate(selectedDate)}.pdf`);
-    });
-
-
-    downloadAllRepsPdfBtn.addEventListener('click', async () => {
-        const doc = new jspdf.jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-        const selectedDate = accountingDatePicker.value;
-        const formattedDate = formatDate(selectedDate);
-
-        doc.setFont('Amiri', 'normal'); // Set font for Arabic support
-
-        const allOrders = await database.ref('orders').orderByChild('date').equalTo(formattedDate).once('value').then(s => s.val());
-
-        if (!allOrders) {
-            alert('لا توجد طلبات لهذا التاريخ لتصديرها.');
-            return;
-        }
-
-        const ordersByRep = {};
-        for (const orderId in allOrders) {
-            const order = allOrders[orderId];
-            if (!ordersByRep[order.representative]) {
-                ordersByRep[order.representative] = [];
-            }
-            ordersByRep[order.representative].push(order);
-        }
-
-        const representativesSorted = Object.keys(ordersByRep).sort();
-
-        for (const repName of representativesSorted) {
-            if (doc.internal.pages.length > 1) { // Add new page for each rep after the first one
-                doc.addPage();
-            }
-            let startY = 10;
-
-            const repReportTitle = `كشف حساب المندوب "${repName}" بتاريخ "${formattedDate}"`;
-            doc.setFontSize(14);
-            doc.text(repReportTitle, doc.internal.pageSize.getWidth() / 2, startY, { align: 'center' });
-            startY += 10;
-
-            const repOrders = ordersByRep[repName];
-            const normalInvoices = repOrders.filter(order => order.orderType === 'عادية' || order.orderType === 'اشتراك');
-            const websiteInvoices = repOrders.filter(order => order.orderType === 'موقع');
-            const repFreeWorks = repOrders.filter(order => order.freeWorkOption === 'نعم' && order.freeWorkText)
-                                           .map(order => `- ${order.freeWorkText}`);
-
-            const addTableToDoc = (data, title, startYPos) => {
-                const header = [
-                    'ملاحظات', 'التاريخ والوقت', 'الأعمال المجانية', 'توقيع المندوب', 'المندوب', 'الموظف',
-                    'طريقة الدفع', 'قيمة التوصيل', 'قيمة الفاتورة', 'المنطقة', 'رقم الهاتف',
-                    'اسم العميل', 'رقم الفاتورة', 'نوع الفاتورة'
-                ]; // Reversed for RTL display in PDF autoTable
-
-                const tableData = data.map(order => {
-                    return [
-                        '', // Placeholder for notes
-                        order.dateTime,
-                        order.freeWorkOption === 'نعم' ? order.freeWorkText : 'لا يوجد',
-                        order.signature ? { image: order.signature, width: 20, height: 10 } : 'لا يوجد',
-                        order.representative,
-                        order.employeeName,
-                        order.paymentMethod,
-                        order.deliveryValue,
-                        order.invoiceValue,
-                        order.region,
-                        order.phoneNumber,
-                        order.clientName,
-                        [order.invoiceNumber1, order.invoiceNumber2, order.invoiceNumber3].filter(Boolean).join(', '),
-                        order.orderType
-                    ].reverse();
-                });
-
-                if (tableData.length > 0) {
-                    doc.setFontSize(12);
-                    doc.text(title, doc.internal.pageSize.getWidth() - 10, startYPos, { align: 'right' }); // Table subtitle
-                    doc.autoTable({
-                        head: [header],
-                        body: tableData,
-                        startY: startYPos + 5,
-                        theme: 'grid',
-                        headStyles: { fillColor: [233, 236, 239], textColor: [73, 80, 87], font: 'Amiri', fontStyle: 'bold' },
-                        bodyStyles: { font: 'Amiri' },
-                        didDrawCell: function (data) {
-                            if (data.cell.raw && data.cell.raw.image) {
-                                doc.addImage(data.cell.raw.image, 'PNG', data.cell.x + 1, data.cell.y + 1, data.cell.raw.width, data.cell.raw.height);
-                            }
-                        },
-                        styles: { cellPadding: 2, fontSize: 8, overflow: 'linebreak', halign: 'right', cellWidth: 'wrap' },
-                    });
-                    return doc.autoTable.previous.finalY;
-                }
-                return startYPos;
-            };
-
-            let currentY = startY;
-            currentY = addTableToDoc(normalInvoices, 'فواتير عادية', currentY + 10);
-            currentY = addTableToDoc(websiteInvoices, 'فواتير الموقع', currentY + 10);
-
-            doc.setFontSize(12);
-            doc.text('الأعمال المجانية للمندوب:', doc.internal.pageSize.getWidth() - 10, currentY + 20, { align: 'right' });
-            if (repFreeWorks.length > 0) {
-                doc.text(repFreeWorks.join('\n'), doc.internal.pageSize.getWidth() - 10, currentY + 30, { align: 'right' });
-            } else {
-                doc.text(`لا يوجد أعمال مجانية لـ "${repName}" لهذا اليوم.`, doc.internal.pageSize.getWidth() - 10, currentY + 30, { align: 'right' });
-            }
-        }
-
-        doc.save(`كشف حساب المناديب بتاريخ ${formattedDate}.pdf`);
-    });
+    doc.save(`كشف حساب المناديب بتاريخ ${formattedDate}.pdf`);
+});
 }
