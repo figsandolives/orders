@@ -2,15 +2,15 @@ body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background-color: #f4f7f6;
     margin: 0;
-    padding: 20px;
-    direction: rtl; /* Right-to-left for Arabic */
+    padding: 20px; /* حشو افتراضي للصفحات الكبيرة */
+    direction: rtl; /* من اليمين إلى اليسار للعربية */
     text-align: right;
     color: #333;
 }
 
 .container {
     background-color: #ffffff;
-    padding: 30px;
+    padding: 30px; /* حشو افتراضي للحاويات */
     border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     max-width: 90%;
@@ -51,13 +51,13 @@ input[type="password"],
 input[type="number"],
 input[type="date"],
 select {
-    width: calc(100% - 22px);
+    width: calc(100% - 22px); /* لتغطية العرض مع الحشو */
     padding: 10px;
     margin: 8px 0 15px 0;
     display: inline-block;
     border: 1px solid #ccc;
     border-radius: 4px;
-    box-sizing: border-box;
+    box-sizing: border-box; /* لضمان أن العرض يشمل الحشو والحدود */
     font-size: 1em;
 }
 
@@ -88,7 +88,7 @@ tr:nth-child(even) {
 
 .logout-btn {
     background-color: #dc3545;
-    float: left; /* Aligns to top-left in RTL */
+    float: left; /* لمحاذاته أعلى اليسار في اتجاه RTL */
     margin-bottom: 20px;
 }
 
@@ -106,25 +106,25 @@ tr:nth-child(even) {
     background-color: #218838;
 }
 
-/* Modal Styles */
+/* Modal Styles - أنماط النافذة المنبثقة */
 .modal {
-    display: none; /* Hidden by default */
-    position: fixed; /* Stay in place */
-    z-index: 1; /* Sit on top */
+    display: none; /* مخفية بشكل افتراضي */
+    position: fixed; /* تبقى في مكانها */
+    z-index: 1; /* فوق العناصر الأخرى */
     left: 0;
     top: 0;
-    width: 100%; /* Full width */
-    height: 100%; /* Full height */
-    overflow: auto; /* Enable scroll if needed */
-    background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+    width: 100%; /* عرض كامل */
+    height: 100%; /* ارتفاع كامل */
+    overflow: auto; /* تمكين التمرير إذا لزم الأمر */
+    background-color: rgba(0,0,0,0.4); /* خلفية شبه شفافة */
 }
 
 .modal-content {
     background-color: #fefefe;
-    margin: 5% auto; /* 5% from the top and centered */
+    margin: 5% auto; /* 5% من الأعلى ومركزة */
     padding: 30px;
     border: 1px solid #888;
-    width: 80%; /* Could be more or less, depending on screen size */
+    width: 80%; /* يمكن تغيير العرض حسب حجم الشاشة */
     max-width: 600px;
     border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -134,7 +134,7 @@ tr:nth-child(even) {
 
 .close-button {
     color: #aaa;
-    float: left; /* Aligns to top-right in RTL */
+    float: left; /* لمحاذاته أعلى اليمين في اتجاه RTL */
     font-size: 28px;
     font-weight: bold;
 }
@@ -177,9 +177,9 @@ tr:nth-child(even) {
     border: 1px solid #000;
     background-color: #fff;
     cursor: crosshair;
-    touch-action: none; /* Disable default touch actions */
-    width: 100%; /* Make canvas responsive */
-    height: 200px; /* Set a fixed height */
+    touch-action: none; /* تعطيل إجراءات اللمس الافتراضية */
+    width: 100%; /* جعل الكانفاس متجاوبًا */
+    height: 200px; /* تعيين ارتفاع ثابت */
 }
 
 .dashboard-controls {
@@ -226,7 +226,7 @@ tr:nth-child(even) {
     text-align: center;
 }
 
-/* Edit/Delete Buttons in tables */
+/* Edit/Delete Buttons in tables - أزرار التعديل/الحذف في الجداول */
 .action-buttons button {
     padding: 6px 10px;
     font-size: 0.85em;
@@ -251,52 +251,111 @@ tr:nth-child(even) {
     background-color: #c82333;
 }
 
+/* -------------------------------------------------------------------------- */
+/* Responsive Design for Mobile - تصميم متجاوب للهواتف المحمولة */
+/* -------------------------------------------------------------------------- */
+
 @media (max-width: 768px) {
+    body {
+        padding: 10px; /* تقليل الحشو العام للصفحة على الشاشات الصغيرة */
+    }
+
     .container {
-        padding: 15px;
+        padding: 15px; /* تقليل حشو الحاويات على الشاشات الصغيرة */
+        margin: 10px auto; /* تقليل الهوامش */
     }
-    .modal-content {
-        width: 95%;
-        margin: 2% auto;
+
+    .welcome-page {
+        margin-top: 50px; /* تقليل الهامش العلوي لصفحة الترحيب */
     }
-    .dashboard-controls {
-        flex-direction: column;
-        align-items: stretch;
+
+    .button-group button,
+    button {
+        width: 100%; /* جعل الأزرار تأخذ عرضًا كاملاً */
+        margin: 5px 0; /* تقليل الهوامش بين الأزرار */
+        box-sizing: border-box;
     }
-    .dashboard-controls button,
-    .dashboard-controls input,
-    .dashboard-controls select {
-        width: 100%;
-        margin: 5px 0;
-    }
-    table, th, td {
-        display: block;
-        width: 100%;
-    }
-    thead {
-        display: none; /* Hide table headers on small screens */
-    }
-    tr {
+
+    input[type="text"],
+    input[type="password"],
+    input[type="number"],
+    input[type="date"],
+    select {
+        width: 100%; /* جعل حقول الإدخال والقوائم المنسدلة تأخذ عرضًا كاملاً */
+        padding: 10px;
         margin-bottom: 10px;
-        display: block;
+    }
+
+    /* تحسينات الجداول على الشاشات الصغيرة */
+    table {
+        border: 0; /* إزالة الحدود الخارجية للجدول */
+    }
+
+    table thead {
+        display: none; /* إخفاء رأس الجدول (العناوين) */
+    }
+
+    table tr {
+        display: block; /* جعل كل صف ككتلة منفصلة */
+        margin-bottom: 15px;
         border: 1px solid #ddd;
         border-radius: 5px;
-        padding: 10px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
     }
-    td {
-        border: none;
-        border-bottom: 1px solid #eee;
-        position: relative;
-        padding-right: 50%; /* Space for label */
+
+    table td {
+        display: block; /* جعل كل خلية ككتلة منفصلة */
         text-align: right;
+        border-bottom: 1px solid #eee; /* إضافة خط فاصل بين الخلايا */
+        padding-right: 50%; /* مساحة لعنوان الخلية */
+        position: relative;
     }
-    td::before {
-        content: attr(data-label); /* Use data-label for content */
+
+    table td::before {
+        content: attr(data-label); /* عرض قيمة "data-label" كعنوان للخلية */
         position: absolute;
         right: 10px;
         width: 45%;
         padding-left: 10px;
         font-weight: bold;
         text-align: right;
+        color: #555;
+    }
+
+    /* تحسينات خاصة ببعض العناصر في لوحات التحكم */
+    .dashboard-controls {
+        flex-direction: column; /* ترتيب العناصر عموديًا */
+        align-items: stretch; /* تمتد العناصر لتأخذ العرض الكامل */
+    }
+
+    .dashboard-controls button,
+    .dashboard-controls input[type="date"],
+    .dashboard-controls select {
+        width: 100%; /* عرض كامل */
+        margin: 5px 0; /* هوامش متساوية بين العناصر */
+    }
+
+    .logout-btn {
+        float: none; /* إلغاء الطفو ليتناسب مع الترتيب العمودي */
+        width: 100%;
+        margin-bottom: 10px;
+    }
+
+    .add-new-btn, .search-btn {
+        float: none; /* إلغاء الطفو */
+        width: 100%;
+        margin-right: 0; /* إزالة الهامش الأيمن */
+        margin-bottom: 10px;
+    }
+
+    .modal-content {
+        width: 95%; /* عرض أكبر للنافذة المنبثقة على الشاشات الصغيرة */
+        margin: 2% auto; /* تقليل الهامش العلوي */
+        padding: 20px; /* تقليل الحشو */
+    }
+
+    #signature-pad {
+        width: 100%; /* تأكد من أن لوحة التوقيع متجاوبة */
+        height: 180px; /* يمكن تعديل الارتفاع حسب الحاجة */
     }
 }
