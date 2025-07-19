@@ -395,7 +395,6 @@ if (document.getElementById('secretary-login-btn')) {
         const freeWorkText = document.getElementById('free-work-text').value;
         const dateTime = formatDateTime(new Date());
         const date = formatDate(new Date());
-        const notes = document.getElementById('notes').value; // Get notes value
 
 
         const orderData = {
@@ -416,7 +415,6 @@ if (document.getElementById('secretary-login-btn')) {
             freeWorkText: freeWorkOptionValue === 'نعم' ? freeWorkText : null,
             dateTime,
             date
-            notes: notes // Add notes field
         };
 
         // Open signature pad
