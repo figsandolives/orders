@@ -230,6 +230,7 @@ if (document.getElementById('secretary-login-btn')) {
             'توقيع المندوب': order.signature ? '<img src="' + order.signature + '" width="80" height="40" alt="Signature">' : 'لا يوجد',
             'الأعمال المجانية': order.freeWorkOption === 'نعم' ? order.freeWorkText : 'لا يوجد',
             'التاريخ والوقت': order.dateTime,
+            'الملاحظات': order.notes || '', // Add notes, default to 'لا يوجد' if empty
             'إجراءات': '' // Actions column
         };
 
@@ -324,7 +325,7 @@ if (document.getElementById('secretary-login-btn')) {
 
         if (selectedType === 'موقع') {
             deliveryValueInput.value = 2; // قيمة التوصيل 2
-            paymentMethodSelect.value = 'مدفوع'; // طريقة الدفع مدفوع
+            paymentMethodSelect.value = 'رابط'; // طريقة الدفع مدفوع
 
             // إزالة سمة required للحقول التي يتم ملؤها تلقائياً
             deliveryValueInput.removeAttribute('required');
@@ -394,6 +395,8 @@ if (document.getElementById('secretary-login-btn')) {
         const freeWorkText = document.getElementById('free-work-text').value;
         const dateTime = formatDateTime(new Date());
         const date = formatDate(new Date());
+        const notes = document.getElementById('notes').value; // Get notes value
+
 
         const orderData = {
             orderType,
@@ -413,6 +416,7 @@ if (document.getElementById('secretary-login-btn')) {
             freeWorkText: freeWorkOptionValue === 'نعم' ? freeWorkText : null,
             dateTime,
             date
+            notes: notes // Add notes field
         };
 
         // Open signature pad
