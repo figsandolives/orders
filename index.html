@@ -225,7 +225,7 @@
                     </table>
                 </div>
 
-                <h4 class="text-xl font-semibold text-gray-700 mb-2">فواتير الموقع</h4>
+                <h4 class="text-xl font-semibold text-gray-700 mb-2">فواتير الموقع - بيدو</h4>
                 <div class="overflow-x-auto mb-6">
                     <table class="min-w-full bg-white rounded-lg overflow-hidden" id="accountingWebsiteInvoicesTable">
                         <thead>
@@ -251,7 +251,7 @@
                     </table>
                 </div>
 
-                <h4 class="text-xl font-semibold text-gray-700 mb-2">الاعمال المجانية للمندوب:</h4>
+                <h4 class="text-xl font-semibold text-gray-700 mb-2">الاعمال المجانية للمندوب</h4>
                 <ul id="freeWorksList" class="list-disc pr-8 mb-6 text-gray-700">
                     <!-- Free works will be listed here -->
                 </ul>
@@ -1363,7 +1363,7 @@
             if (accountingWebsiteInvoicesTableBody) accountingWebsiteInvoicesTableBody.innerHTML = ''; // Null check
 
             const normalInvoices = orders.filter(order => order.orderType === 'فاتورة عادية' || order.orderType === 'اشتراك');
-            const websiteInvoices = orders.filter(order => order.orderType === 'فاتورة موقع');
+            const websiteInvoices = orders.filter(order => order.orderType === 'فاتورة موقع'); // Keep filter for 'فاتورة موقع'
 
             if (normalInvoices.length === 0) {
                 if (accountingNormalInvoicesTableBody) accountingNormalInvoicesTableBody.innerHTML = `<tr><td colspan="13" class="text-center py-4 text-gray-500">لا توجد فواتير عادية أو اشتراكات لهذا المندوب في هذا التاريخ.</td></tr>`; // Null check
@@ -1392,7 +1392,7 @@
             }
 
             if (websiteInvoices.length === 0) {
-                if (accountingWebsiteInvoicesTableBody) accountingWebsiteInvoicesTableBody.innerHTML = `<tr><td colspan="13" class="text-center py-4 text-gray-500">لا توجد فواتير موقع لهذا المندوب في هذا التاريخ.</td></tr>`; // Null check
+                if (accountingWebsiteInvoicesTableBody) accountingWebsiteInvoicesTableBody.innerHTML = `<tr><td colspan="13" class="text-center py-4 text-gray-500">لا توجد فواتير موقع (بيدو) لهذا المندوب في هذا التاريخ.</td></tr>`; // Null check
             } else {
                 websiteInvoices.forEach(order => {
                     const row = document.createElement('tr');
@@ -1431,9 +1431,9 @@
             if (allFreeWorks.size === 0) {
                 freeWorksList.innerHTML = `<li class="text-gray-500">لا يوجد اعمال مجانية لـ "${selectedDelivererForAccounting}" لهذا اليوم.</li>`;
             } else {
-                Array.from(allFreeWorks).forEach((work, index) => {
+                Array.from(allFreeWorks).forEach((work) => { // Removed index
                     const li = document.createElement('li');
-                    li.textContent = `${index + 1}. ${work}`;
+                    li.textContent = `${work}`; // Removed numbering
                     freeWorksList.appendChild(li);
                 });
             }
@@ -1508,8 +1508,8 @@
                         if (signatureData && signatureData !== 'لا يوجد') {
                             try {
                                 console.log("Attempting to draw signature in PDF via didDrawCell. Data (truncated):", signatureData.substring(0, 50) + '...');
-                                const imgWidth = 12; // Further adjusted image width (smaller)
-                                const imgHeight = 6; // Further adjusted image height (smaller)
+                                const imgWidth = 10; // Further adjusted image width (even smaller)
+                                const imgHeight = 5; // Further adjusted image height (even smaller)
 
                                 // Calculate position to center the image within the cell
                                 const x = data.cell.x + (data.cell.width - imgWidth) / 2;
@@ -1538,7 +1538,7 @@
 
             const websiteInvoices = orders.filter(order => order.orderType === 'فاتورة موقع');
             doc.setFontSize(12);
-            doc.text('فواتير الموقع', pageWidth - margin, y, { align: 'right' });
+            doc.text('فواتير الموقع - بيدو', pageWidth - margin, y, { align: 'right' }); // Changed text here
             y += 10;
 
             const websiteTableData = websiteInvoices.map(order => [
@@ -1583,8 +1583,8 @@
                         if (signatureData && signatureData !== 'لا يوجد') {
                             try {
                                 console.log("Attempting to draw signature in PDF via didDrawCell. Data (truncated):", signatureData.substring(0, 50) + '...');
-                                const imgWidth = 12; // Further adjusted image width (smaller)
-                                const imgHeight = 6; // Further adjusted image height (smaller)
+                                const imgWidth = 10; // Further adjusted image width (even smaller)
+                                const imgHeight = 5; // Further adjusted image height (even smaller)
 
                                 // Calculate position to center the image within the cell
                                 const x = data.cell.x + (data.cell.width - imgWidth) / 2;
@@ -1617,16 +1617,16 @@
                 }
             });
 
-            doc.text('الاعمال المجانية للمندوب:', pageWidth - margin, y, { align: 'right' });
+            doc.text('الاعمال المجانية للمندوب', pageWidth - margin, y, { align: 'right' }); // Removed colon
             y += 10;
 
             if (allFreeWorks.size === 0) {
                 doc.text(`لا يوجد اعمال مجانية لـ "${delivererName}" لهذا اليوم.`, pageWidth - margin, y, { align: 'right' });
                 y += 10;
             } else {
-                Array.from(allFreeWorks).forEach((work, index) => {
+                Array.from(allFreeWorks).forEach((work) => { // Removed index
                     // Changed to place number before the text for RTL numbering
-                    doc.text(`${index + 1}. ${work}`, pageWidth - margin, y, { align: 'right' });
+                    doc.text(`${work}`, pageWidth - margin, y, { align: 'right' }); // Removed numbering
                     y += 7;
                 });
             }
