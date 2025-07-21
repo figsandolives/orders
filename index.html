@@ -100,6 +100,10 @@
             border-radius: 0.25rem;
             box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);
         }
+        /* Style for content within table cells to be stacked vertically */
+        .stacked-content div {
+            white-space: nowrap; /* Prevent wrapping within each item */
+        }
     </style>
 </head>
 <body class="flex flex-col min-h-screen">
@@ -151,7 +155,7 @@
                             <th>طريقة الدفع</th>
                             <th>اسم الموظف</th>
                             <th>اسم المندوب</th>
-                            <th>توقيع المندوب</th>
+                            <th>توقيع المندوب باستلام الطلب</th>
                             <th>الاعمال المجانية</th>
                             <th>التاريخ والوقت</th>
                             <th>ملاحظات</th>
@@ -195,60 +199,129 @@
                     <button id="searchOrderAccountingBtn" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-xl ml-2 transition duration-300 ease-in-out transform hover:scale-105">
                         البحث عن طلب
                     </button>
+                    <button id="filterOrdersBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-xl ml-2 transition duration-300 ease-in-out transform hover:scale-105">
+                        تصفية
+                    </button>
+                    <button id="clearFilterBtn" class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-xl ml-2 transition duration-300 ease-in-out transform hover:scale-105 hidden">
+                        إلغاء التصفية
+                    </button>
                 </div>
 
                 <h3 class="text-2xl font-semibold text-gray-800 mb-4" id="accountingReportTitle"></h3>
 
-                <h4 class="text-xl font-semibold text-gray-700 mb-2">فواتير عادية</h4>
-                <div class="overflow-x-auto mb-6">
-                    <table class="min-w-full bg-white rounded-lg overflow-hidden" id="accountingNormalInvoicesTable">
-                        <thead>
-                            <tr>
-                                <th>نوع الفاتورة</th>
-                                <th>رقم الفاتورة</th>
-                                <th>اسم العميل</th>
-                                <th>رقم الهاتف</th>
-                                <th>المنطقة</th>
-                                <th>قيمة الفاتورة</th>
-                                <th>قيمة التوصيل</th>
-                                <th>طريقة الدفع</th>
-                                <th>اسم الموظف</th>
-                                <th>اسم المندوب</th>
-                                <th>توقيع المندوب</th>
-                                <th>الاعمال المجانية</th>
-                                <th>ملاحظات</th>
-                            </tr>
-                        </thead>
-                        <tbody id="accountingNormalInvoicesTableBody">
-                            <!-- Normal invoices will be loaded here -->
-                        </tbody>
-                    </table>
+                <!-- Normal Invoices - Cash -->
+                <div id="normalCashInvoicesSection">
+                    <h4 class="text-xl font-semibold text-gray-700 mb-2">الفواتير العادية - كاش</h4>
+                    <div class="overflow-x-auto mb-6">
+                        <table class="min-w-full bg-white rounded-lg overflow-hidden" id="accountingNormalCashInvoicesTable">
+                            <thead>
+                                <tr>
+                                    <th>نوع الفاتورة</th>
+                                    <th>رقم الفاتورة</th>
+                                    <th>اسم العميل</th>
+                                    <th>رقم الهاتف</th>
+                                    <th>المنطقة</th>
+                                    <th>قيمة الفاتورة</th>
+                                    <th>قيمة التوصيل</th>
+                                    <th>مطلوب استلام الكاش</th>
+                                    <th>توقيع المحاسب باستلام الكاش</th>
+                                    <th>طريقة الدفع</th>
+                                    <th>اسم الموظف</th>
+                                    <th>اسم المندوب</th>
+                                    <th>توقيع المندوب باستلام الطلب</th>
+                                    <th>الاعمال المجانية</th>
+                                    <th>التاريخ</th>
+                                    <th>ملاحظات</th>
+                                    <th>إجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody id="accountingNormalCashInvoicesTableBody">
+                                <!-- Normal cash invoices will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="text-xl font-bold text-gray-800 mb-4 text-right w-full" id="totalCashDueSummary">
+                        <!-- Total cash due will be displayed here -->
+                    </div>
+                    <div class="flex justify-end mb-6 w-full"> <!-- Changed to justify-end for right alignment -->
+                        <button id="collectAllCashBtn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-xl shadow-md transition duration-300 ease-in-out transform hover:scale-105 hidden">
+                            استلام كامل المبلغ الكاش
+                        </button>
+                    </div>
                 </div>
 
-                <h4 class="text-xl font-semibold text-gray-700 mb-2">فواتير الموقع - بيدو</h4>
-                <div class="overflow-x-auto mb-6">
-                    <table class="min-w-full bg-white rounded-lg overflow-hidden" id="accountingWebsiteInvoicesTable">
-                        <thead>
-                            <tr>
-                                <th>نوع الفاتورة</th>
-                                <th>رقم الفاتورة</th>
-                                <th>اسم العميل</th>
-                                <th>رقم الهاتف</th>
-                                <th>المنطقة</th>
-                                <th>قيمة الفاتورة</th>
-                                <th>قيمة التوصيل</th>
-                                <th>طريقة الدفع</th>
-                                <th>اسم الموظف</th>
-                                <th>اسم المندوب</th>
-                                <th>توقيع المندوب</th>
-                                <th>الاعمال المجانية</th>
-                                <th>ملاحظات</th>
-                            </tr>
-                        </thead>
-                        <tbody id="accountingWebsiteInvoicesTableBody">
-                            <!-- Website invoices will be loaded here -->
-                        </tbody>
-                    </table>
+                <!-- Normal Invoices - Link (Paid) -->
+                <div id="normalLinkInvoicesSection">
+                    <h4 class="text-xl font-semibold text-gray-700 mb-2">الفواتير العادية - رابط (من ضمنه الاشتراكات)</h4>
+                    <div class="overflow-x-auto mb-6">
+                        <table class="min-w-full bg-white rounded-lg overflow-hidden" id="accountingNormalLinkInvoicesTable">
+                            <thead>
+                                <tr>
+                                    <th>نوع الفاتورة</th>
+                                    <th>رقم الفاتورة</th>
+                                    <th>اسم العميل</th>
+                                    <th>رقم الهاتف</th>
+                                    <th>المنطقة</th>
+                                    <th>قيمة الفاتورة</th>
+                                    <th>قيمة التوصيل</th>
+                                    <th>المبلغ المستحق للمندوب</th> <!-- Changed text -->
+                                    <th>توقيع المندوب باستلام المبلغ المستحق</th>
+                                    <th>طريقة الدفع</th>
+                                    <th>اسم الموظف</th>
+                                    <th>اسم المندوب</th>
+                                    <th>توقيع المندوب باستلام الطلب</th>
+                                    <th>الاعمال المجانية</th>
+                                    <th>التاريخ</th>
+                                    <th>ملاحظات</th>
+                                    <th>إجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody id="accountingNormalLinkInvoicesTableBody">
+                                <!-- Normal link/subscription invoices will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Website Invoices - Bido -->
+                <div id="websiteInvoicesSection">
+                    <h4 class="text-xl font-semibold text-gray-700 mb-2">فواتير الموقع - بيدو</h4>
+                    <div class="overflow-x-auto mb-6">
+                        <table class="min-w-full bg-white rounded-lg overflow-hidden" id="accountingWebsiteInvoicesTable">
+                            <thead>
+                                <tr>
+                                    <th>نوع الفاتورة</th>
+                                    <th>رقم الفاتورة</th>
+                                    <th>اسم العميل</th>
+                                    <th>رقم الهاتف</th>
+                                    <th>المنطقة</th>
+                                    <th>قيمة الفاتورة</th>
+                                    <th>قيمة التوصيل</th>
+                                    <th>المبلغ المستحق للمندوب</th> <!-- Changed text -->
+                                    <th>توقيع المندوب باستلام المبلغ المستحق</th>
+                                    <th>طريقة الدفع</th>
+                                    <th>اسم الموظف</th>
+                                    <th>اسم المندوب</th>
+                                    <th>توقيع المندوب باستلام الطلب</th>
+                                    <th>الاعمال المجانية</th>
+                                    <th>التاريخ</th>
+                                    <th>ملاحظات</th>
+                                    <th>إجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody id="accountingWebsiteInvoicesTableBody">
+                                <!-- Website invoices will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="text-xl font-bold text-gray-800 mb-4 text-right w-full" id="totalHandoverDueSummary">
+                        <!-- Total handover due will be displayed here -->
+                    </div>
+                    <div class="flex justify-end mb-6 w-full"> <!-- Changed to justify-end for right alignment -->
+                        <button id="collectAllHandoverBtn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-xl shadow-md transition duration-300 ease-in-out transform hover:scale-105 hidden">
+                            تسليم كامل المبلغ للمندوب
+                        </button>
+                    </div>
                 </div>
 
                 <h4 class="text-xl font-semibold text-gray-700 mb-2">الاعمال المجانية للمندوب</h4>
@@ -263,6 +336,9 @@
                     <button id="downloadAllDeliverersPdfBtn" class="bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 px-6 rounded-xl shadow-md transition duration-300 ease-in-out transform hover:scale-105">
                         تحميل صفحات كل المناديب PDF
                     </button>
+                    <button id="downloadWebsiteOrdersPdfBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl shadow-md transition duration-300 ease-in-out transform hover:scale-105">
+                        تحميل صفحة طلبات الموقع - بيدو
+                    </button>
                 </div>
             </div>
         </div>
@@ -274,13 +350,12 @@
     <div id="newOrderModal" class="modal">
         <div class="modal-content max-w-xl">
             <span class="close-button" onclick="closeModal('newOrderModal')">&times;</span>
-            <h3 class="text-2xl font-bold mb-4">تسليم طلب جديد</h3>
+            <h3 class="text-2xl font-bold mb-4" id="newOrderModalTitle">تسليم طلب جديد</h3>
             <div id="orderFormContent">
-                <!-- Form fields will be dynamically loaded here -->
+                <!-- All form fields will be dynamically loaded here -->
             </div>
-            <div class="flex justify-between mt-6">
-                <button id="prevQuestionBtn" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-xl hidden">السابق</button>
-                <button id="nextQuestionBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-xl">التالي</button>
+            <div class="flex justify-end mt-6"> <!-- Changed to justify-end for right alignment -->
+                <button id="submitOrderBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-xl">تسليم</button>
             </div>
         </div>
     </div>
@@ -289,7 +364,7 @@
     <div id="signatureModal" class="modal">
         <div class="modal-content max-w-lg">
             <span class="close-button" onclick="closeModal('signatureModal')">&times;</span>
-            <h3 class="text-2xl font-bold mb-4">توقيع المندوب</h3>
+            <h3 class="text-2xl font-bold mb-4" id="signatureModalTitle">توقيع المندوب</h3>
             <canvas id="signatureCanvas" width="400" height="200" class="mb-4 rounded-lg"></canvas>
             <div class="flex justify-between">
                 <button id="clearSignatureBtn" class="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded-xl">مسح التوقيع</button>
@@ -352,7 +427,7 @@
                             <th>طريقة الدفع</th>
                             <th>اسم الموظف</th>
                             <th>اسم المندوب</th>
-                            <th>توقيع المندوب</th>
+                            <th>توقيع المندوب باستلام الطلب</th>
                             <th>الاعمال المجانية</th>
                             <th>التاريخ والوقت</th>
                             <th>ملاحظات</th>
@@ -368,14 +443,53 @@
         </div>
     </div>
 
-    <!-- Select Deliverer Modal -->
-    <div id="selectDelivererModal" class="modal">
-        <div class="modal-content max-w-sm text-center">
-            <span class="close-button" onclick="closeModal('selectDelivererModal')">&times;</span>
-            <h3 class="text-xl font-bold mb-4">اختر المندوب</h3>
-            <div id="delivererSelectionContent">
-                <!-- Dropdown and button will be inserted here -->
+    <!-- Filter Orders Modal -->
+    <div id="filterOrdersModal" class="modal">
+        <div class="modal-content max-w-md">
+            <span class="close-button" onclick="closeModal('filterOrdersModal')">&times;</span>
+            <h3 class="text-2xl font-bold mb-4">تصفية الفواتير</h3>
+            <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2">اختيار المندوب:</label>
+                <div class="flex gap-4">
+                    <label class="inline-flex items-center">
+                        <input type="radio" class="form-radio" name="filterDelivererOption" value="all" checked>
+                        <span class="mr-2">كل المناديب</span>
+                    </label>
+                    <label class="inline-flex items-center">
+                        <input type="radio" class="form-radio" name="filterDelivererOption" value="specific">
+                        <span class="mr-2">اختيار مندوب محدد</span>
+                    </label>
+                </div>
+                <select id="filterDelivererSelect" class="p-2 border border-gray-300 rounded-xl w-full mt-2" disabled>
+                    <option value="" disabled selected>-- اختر مندوب --</option>
+                </select>
             </div>
+            <div class="mb-4">
+                <label for="filterFromDate" class="block text-gray-700 text-sm font-bold mb-2">من تاريخ:</label>
+                <input type="date" id="filterFromDate" class="p-2 border border-gray-300 rounded-xl w-full mb-4">
+            </div>
+            <div class="mb-4">
+                <label for="filterToDate" class="block text-gray-700 text-sm font-bold mb-2">إلى تاريخ:</label>
+                <input type="date" id="filterToDate" class="p-2 border border-gray-300 rounded-xl w-full mb-4">
+            </div>
+            <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2">نوع الفواتير:</label>
+                <div class="flex gap-4">
+                    <label class="inline-flex items-center">
+                        <input type="radio" class="form-radio" name="filterInvoiceType" value="all" checked>
+                        <span class="mr-2">كل الفواتير</span>
+                    </label>
+                    <label class="inline-flex items-center">
+                        <input type="radio" class="form-radio" name="filterInvoiceType" value="cashOnly">
+                        <span class="mr-2">فواتير الكاش فقط</span>
+                    </label>
+                    <label class="inline-flex items-center">
+                        <input type="radio" class="form-radio" name="filterInvoiceType" value="paidOnly">
+                        <span class="mr-2">الفواتير المدفوعة فقط</span>
+                    </label>
+                </div>
+            </div>
+            <button id="applyFilterBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-xl mt-4 w-full">تطبيق التصفية</button>
         </div>
     </div>
 
@@ -386,15 +500,17 @@
         import { getDatabase, ref, push, set, onValue, update, remove, query, orderByChild, equalTo, get } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
 
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : `{
-            "apiKey": "AIzaSyAveMB7wW7bhywrm7oI25_uB5cA_h5ikEA",
-            "authDomain": "orders-system-3382d.firebaseapp.com",
-            "databaseURL": "https://orders-system-3382d-default-rtdb.firebaseio.com",
-            "projectId": "orders-system-3382d",
-            "storageBucket": "orders-system-3382d.firebasestorage.app",
-            "messagingSenderId": "648046045688",
-            "appId": "1:648046045688:web:a5938fdcbacdc15fdbce0d"
-        }`);
+        // Define the default Firebase config as a direct JavaScript object
+        const defaultFirebaseConfig = {
+            apiKey: "AIzaSyAveMB7wW7bhywrm7oI25_uB5cA_h5ikEA",
+            authDomain: "orders-system-3382d.firebaseapp.com",
+            databaseURL: "https://orders-system-3382d-default-rtdb.firebaseio.com",
+            projectId: "orders-system-3382d",
+            storageBucket: "orders-system-3382d.firebasestorage.app",
+            messagingSenderId: "648046045688",
+            appId: "1:648046045688:web:a5938fdcbacdc15fdbce0d"
+        };
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : defaultFirebaseConfig;
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
 
         const app = initializeApp(firebaseConfig);
@@ -405,7 +521,6 @@
         let currentUser = null;
         let isAuthReady = false;
         let currentOrderData = {};
-        let currentQuestionIndex = 0;
         let signaturePad = null;
         let currentOrderKeyForEdit = null;
         const ACCOUNTING_PASSWORD = '5564'; // Define constants at top
@@ -413,6 +528,12 @@
         let selectedDelivererForAccounting = null;
         let currentAccountingOrders = [];
         let currentSearchContext = ''; // Moved here to ensure it's defined globally
+        let currentFilterFromDate = '';
+        let currentFilterToDate = '';
+        let currentFilterInvoiceType = 'all'; // 'all', 'cashOnly', or 'paidOnly'
+        let currentFilterDelivererOption = 'all'; // 'all' or 'specific'
+        let signatureCallback = null; // Callback for signature modal
+
 
         // SignaturePad library (moved to top for proper initialization)
         class SignaturePad {
@@ -559,8 +680,20 @@
                 document.getElementById('searchResults').classList.add('hidden');
                 document.getElementById('searchResultsTableBody').innerHTML = '';
             }
-            if (modalId === 'selectDelivererModal') {
-                document.getElementById('delivererSelectionContent').innerHTML = '';
+            if (modalId === 'filterOrdersModal') {
+                // The filter values (currentFilterFromDate, etc.) are kept
+                // but the modal inputs are reset for next open.
+                document.getElementById('filterFromDate').value = '';
+                document.getElementById('filterToDate').value = '';
+                document.querySelector('input[name="filterInvoiceType"][value="all"]').checked = true;
+                document.querySelector('input[name="filterDelivererOption"][value="all"]').checked = true;
+                document.getElementById('filterDelivererSelect').disabled = true;
+                document.getElementById('filterDelivererSelect').value = '';
+                
+                // Re-apply the default report if the accounting section is active
+                if (!document.getElementById('accountingContent').classList.contains('hidden')) {
+                    updateAccountingReport();
+                }
             }
         }
 
@@ -588,6 +721,13 @@
         function getFormattedDate(date) {
             const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
             return date.toLocaleDateString('ar-EG', options);
+        }
+
+        function getFormattedDateShort(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
         }
 
         function getFormattedTime(date) {
@@ -643,26 +783,31 @@
         }
 
         // Declare variables at a higher scope but don't assign them yet
-        let secretariatTableBody, newOrderBtn, newOrderModal, orderFormContent, prevQuestionBtn, nextQuestionBtn, signatureModal, signatureCanvas, clearSignatureBtn, saveSignatureBtn, secretariatLogoutBtn, searchOrderSecretariatBtn;
+        let secretariatTableBody, newOrderBtn, newOrderModal, orderFormContent, submitOrderBtn, signatureModal, signatureCanvas, clearSignatureBtn, saveSignatureBtn, secretariatLogoutBtn, searchOrderSecretariatBtn;
         let searchOrderModal, searchQueryInput, executeSearchBtn, searchResultsDiv, searchResultsTableBody, searchTableActionsHeader;
-        let accountingLogin, accountingContent, accountingPasswordInput, accountingLoginBtn, accountingLogoutBtn, accountingDateInput, delivererSelectAccounting, accountingReportTitle, accountingNormalInvoicesTableBody, accountingWebsiteInvoicesTableBody, freeWorksList, downloadCurrentPdfBtn, downloadAllDeliverersPdfBtn, backToMainFromAccountingLogin;
+        let accountingLogin, accountingContent, accountingPasswordInput, accountingLoginBtn, accountingLogoutBtn, accountingDateInput, delivererSelectAccounting, accountingReportTitle, accountingNormalCashInvoicesTableBody, accountingNormalLinkInvoicesTableBody, accountingWebsiteInvoicesTableBody, freeWorksList, downloadCurrentPdfBtn, downloadAllDeliverersPdfBtn, downloadWebsiteOrdersPdfBtn, backToMainFromAccountingLogin, totalCashDueSummary, collectAllCashBtn, filterOrdersBtn, filterFromDateInput, filterToDateInput, applyFilterBtn, totalHandoverDueSummary, collectAllHandoverBtn, clearFilterBtn, filterDelivererSelect, filterDelivererOptionRadios;
+        let normalCashInvoicesSection, normalLinkInvoicesSection, websiteInvoicesSection, signatureModalTitle, newOrderModalTitle;
 
         const employees = ['فاطمة', 'محمود', 'يوسف', 'موده', 'رانيا فنون', 'احمد حلمي', 'سند', 'نجلاء', 'سلطان', 'رانيا دنديس', 'عاصم'];
-        const deliverers = ['خيري', 'ياسر جمال', 'رضا', 'ابو زياد', 'محمد جمال', 'محمد يسرى', 'رامو الهندي', 'شاندو', 'بركات', 'احمد محمد', 'عبداللطيف عبدالكريم', 'محمود السيسي', 'عبيدة', 'خالد سعد', 'عثمان', 'صبري', 'السيد فرج', 'رفيق الهندي', 'ابو سالم', 'رفيق المصري', 'عبد العزيز', 'محمد يوسف', 'حسام بنان', 'هيثم', 'أبو خالد', 'حسين'];
+        // Updated deliverers list
+        const deliverers = ['خيري', 'ابو خالد', 'رامو الهندي', 'حسين', 'محمد جمال', 'ياسر جمال', 'خالد السيد', 'عبيدة', 'محمود السيسي', 'خالد سعد', 'عتمان', 'رضا', 'السيد فرج', 'هيثم', 'رفيق الهندي', 'عبد العزيز', 'رفيق المصري', 'ابو سالم'];
+
+        // Delivery value options for secretariat
+        const deliveryValueOptions = [0.5, 1, 2, 3, 4, 5, 6];
 
         const orderFormQuestions = [
-            { id: 'orderType', label: 'نوع الطلب', type: 'select', options: ['فاتورة عادية', 'فاتورة موقع', 'اشتراك'] },
-            { id: 'invoiceNumber', label: 'رقم الفاتورة', type: 'invoiceNumbers' },
-            { id: 'clientName', label: 'اسم العميل', type: 'text' },
-            { id: 'phoneNumber', label: 'رقم الهاتف', type: 'number' },
-            { id: 'area', label: 'المنطقة', type: 'text' },
-            { id: 'invoiceValue', label: 'قيمة الفاتورة', type: 'number' },
-            { id: 'deliveryValue', label: 'قيمة التوصيل', type: 'number' },
-            { id: 'paymentMethod', label: 'طريقة الدفع', type: 'select', options: ['رابط', 'كاش'] },
-            { id: 'employeeName', label: 'اسم الموظف', type: 'select', options: employees },
-            { id: 'delivererName', label: 'اسم المندوب', type: 'select', options: deliverers },
-            { id: 'freeWorks', label: 'الاعمال المجانية', type: 'radio', options: ['يوجد', 'لا يوجد'] },
-            { id: 'notes', label: 'ملاحظات', type: 'textarea', optional: true }
+            { id: 'orderType', label: 'نوع الطلب', type: 'select', options: ['فاتورة عادية', 'فاتورة موقع', 'اشتراك'], required: true },
+            { id: 'invoiceNumber', label: 'رقم الفاتورة', type: 'dynamicText', placeholder: 'رقم الفاتورة', required: true },
+            { id: 'clientName', label: 'اسم العميل', type: 'text', required: true },
+            { id: 'phoneNumber', label: 'رقم الهاتف', type: 'number', inputmode: 'numeric', required: true }, // Added inputmode
+            { id: 'area', label: 'المنطقة', type: 'text', required: true },
+            { id: 'invoiceValue', label: 'قيمة الفاتورة', type: 'number', inputmode: 'numeric', required: true }, // Added inputmode
+            { id: 'deliveryValue', label: 'قيمة التوصيل', type: 'select', options: deliveryValueOptions, required: true },
+            { id: 'paymentMethod', label: 'طريقة الدفع', type: 'select', options: ['رابط', 'كاش'], required: true },
+            { id: 'employeeName', label: 'اسم الموظف', type: 'select', options: employees, required: true },
+            { id: 'delivererName', label: 'اسم المندوب', type: 'select', options: deliverers, required: true },
+            { id: 'freeWorks', label: 'الاعمال المجانية', type: 'radio', options: ['يوجد', 'لا يوجد'], required: true },
+            { id: 'notes', label: 'ملاحظات', type: 'textarea', optional: true } // Moved to the end
         ];
 
 
@@ -693,289 +838,282 @@
             }
         }
 
-        function renderQuestion() {
-            const question = orderFormQuestions[currentQuestionIndex];
-            if (!question) {
-                showSignatureModal();
-                return;
-            }
+        function renderAllQuestions() {
+            let html = '';
+            orderFormContent.innerHTML = ''; // Clear previous content
 
-            let html = `<label for="${question.id}" class="block text-gray-700 text-lg font-bold mb-2">${question.label}</label>`;
+            orderFormQuestions.forEach(question => {
+                html += `<div class="mb-4">`;
+                html += `<label for="${question.id}" class="block text-gray-700 text-lg font-bold mb-2">${question.label}${question.required ? '<span class="text-red-500">*</span>' : ''}</label>`;
 
-            if (question.type === 'select') {
-                html += `<select id="${question.id}" class="p-3 border border-gray-300 rounded-xl w-full mb-4">`;
-                html += `<option value="" disabled selected>-- اختر --</option>`;
-                question.options.forEach(option => {
-                    html += `<option value="${option}">${option}</option>`;
-                });
-                html += `</select>`;
-            } else if (question.type === 'invoiceNumbers') {
-                html += `
-                    <div class="flex gap-2 mb-4">
-                        <input type="text" id="${question.id}1" class="p-3 border border-gray-300 rounded-xl w-1/3" placeholder="رقم الفاتورة 1 (مطلوب)">
-                        <input type="text" id="${question.id}2" class="p-3 border border-gray-300 rounded-xl w-1/3" placeholder="رقم الفاتورة 2 (اختياري)">
-                        <input type="text" id="${question.id}3" class="p-3 border border-gray-300 rounded-xl w-1/3" placeholder="رقم الفاتورة 3 (اختياري)">
-                    </div>
-                `;
-            } else if (question.type === 'radio') {
-                html += `<div class="flex gap-4 mb-4">`;
-                question.options.forEach(option => {
-                    html += `
-                        <label class="inline-flex items-center">
-                            <input type="radio" class="form-radio" name="${question.id}" value="${option}">
-                            <span class="mr-2">${option}</span>
-                        </label>
-                    `;
-                });
-                html += `</div>`;
-                // Only show freeWorksInputs and addFreeWorkBtn if 'يوجد' is selected or was previously selected
-                if (currentOrderData[question.id] === 'يوجد' || (currentOrderData.freeWorksDetails && currentOrderData.freeWorksDetails.length > 0)) {
-                    html += `<div id="freeWorksInputs"></div>`;
-                    html += `<button id="addFreeWorkBtn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-xl mt-2">اضافة عمل مجاني جديد</button>`;
+                if (question.type === 'select') {
+                    html += `<select id="${question.id}" class="p-3 border border-gray-300 rounded-xl w-full">`;
+                    html += `<option value="" disabled ${!currentOrderData[question.id] ? 'selected' : ''}>-- اختر --</option>`;
+                    question.options.forEach(option => {
+                        html += `<option value="${option}" ${currentOrderData[question.id] === option ? 'selected' : ''}>${option}</option>`;
+                    });
+                    html += `</select>`;
+                } else if (question.type === 'dynamicText') {
+                    html += `<div id="${question.id}Inputs"></div>`;
+                    html += `<button type="button" id="add${question.id}Btn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-xl mt-2">اضافة ${question.label} جديد لنفس الطلب</button>`;
+                } else if (question.type === 'radio') {
+                    html += `<div class="flex gap-4">`;
+                    question.options.forEach(option => {
+                        html += `
+                            <label class="inline-flex items-center">
+                                <input type="radio" class="form-radio" name="${question.id}" value="${option}" ${currentOrderData[question.id] === option ? 'checked' : ''}>
+                                <span class="mr-2">${option}</span>
+                            </label>
+                        `;
+                    });
+                    html += `</div>`;
+                    // Add a container for free works inputs and button right after the radio buttons
+                    if (question.id === 'freeWorks') {
+                        html += `<div id="freeWorksDynamicContent_${question.id}" class="mt-2"></div>`; // Unique ID for container
+                    }
+                } else if (question.type === 'textarea') {
+                    html += `<textarea id="${question.id}" class="p-3 border border-gray-300 rounded-xl w-full h-24" placeholder="ملاحظات (اختياري)">${currentOrderData[question.id] || ''}</textarea>`;
+                } else {
+                    html += `<input type="${question.type}" id="${question.id}" class="p-3 border border-gray-300 rounded-xl w-full" placeholder="${question.label}" value="${currentOrderData[question.id] || ''}" ${question.inputmode ? `inputmode="${question.inputmode}"` : ''}>`;
                 }
-            } else if (question.type === 'textarea') {
-                html += `<textarea id="${question.id}" class="p-3 border border-gray-300 rounded-xl w-full h-24 mb-4" placeholder="ملاحظات (اختياري)"></textarea>`;
-            } else {
-                html += `<input type="${question.type}" id="${question.id}" class="p-3 border border-gray-300 rounded-xl w-full mb-4" placeholder="${question.label}">`;
-            }
+                html += `</div>`;
+            });
 
             orderFormContent.innerHTML = html;
 
-            if (currentOrderData[question.id]) {
-                if (question.type === 'invoiceNumbers') {
-                    const invNums = currentOrderData[question.id].split(',').map(s => s.trim());
-                    document.getElementById(`${question.id}1`).value = invNums[0] || '';
-                    document.getElementById(`${question.id}2`).value = invNums[1] || '';
-                    document.getElementById(`${question.id}3`).value = invNums[2] || '';
-                } else if (question.type === 'radio') {
-                    const radioButtons = document.querySelectorAll(`input[name="${question.id}"]`);
-                    radioButtons.forEach(radio => {
-                        if (radio.value === currentOrderData[question.id]) {
-                            radio.checked = true;
+            // Populate dynamic inputs and attach event listeners
+            orderFormQuestions.forEach(question => {
+                if (question.type === 'dynamicText') {
+                    const dynamicInputsDiv = document.getElementById(`${question.id}Inputs`);
+                    if (dynamicInputsDiv) {
+                        const values = Array.isArray(currentOrderData[question.id]) ? currentOrderData[question.id] : (currentOrderData[question.id] ? [currentOrderData[question.id]] : []);
+                        if (values.length > 0) {
+                            values.forEach(val => addDynamicTextInput(question.id, question.placeholder, val));
+                        } else {
+                            addDynamicTextInput(question.id, question.placeholder); // Add at least one input
                         }
-                    });
-                    if (currentOrderData[question.id] === 'يوجد' && Array.isArray(currentOrderData.freeWorksDetails)) {
-                        currentOrderData.freeWorksDetails.forEach(work => addFreeWorkInput(work));
+                        document.getElementById(`add${question.id}Btn`).addEventListener('click', () => addDynamicTextInput(question.id, question.placeholder));
                     }
-                } else {
-                    const element = document.getElementById(question.id);
-                    if (element) {
-                        element.value = currentOrderData[question.id];
-                    }
-                }
-            }
+                } else if (question.id === 'freeWorks') {
+                    const freeWorksDynamicContentDiv = document.getElementById(`freeWorksDynamicContent_${question.id}`);
+                    if (freeWorksDynamicContentDiv) {
+                        // Attach change listener to radios
+                        document.querySelectorAll('input[name="freeWorks"]').forEach(radio => {
+                            radio.addEventListener('change', (e) => handleFreeWorksChangeLogic(e.target.value, freeWorksDynamicContentDiv));
+                        });
 
-            if (question.id === 'orderType') {
-                const orderTypeElement = document.getElementById('orderType');
-                if (orderTypeElement) {
-                    orderTypeElement.addEventListener('change', handleOrderTypeChange);
+                        // Initial render of free works inputs if 'يوجد' is selected or data exists
+                        const initialFreeWorksOption = document.querySelector(`input[name="freeWorks"]:checked`)?.value || 'لا يوجد';
+                        handleFreeWorksChangeLogic(initialFreeWorksOption, freeWorksDynamicContentDiv, currentOrderData.freeWorksDetails);
+                    }
+                } else if (question.id === 'orderType') {
+                    const orderTypeElement = document.getElementById('orderType');
+                    if (orderTypeElement) {
+                        orderTypeElement.addEventListener('change', handleOrderTypeChange);
+                    }
                 }
-            }
-            if (question.id === 'freeWorks') {
-                document.querySelectorAll('input[name="freeWorks"]').forEach(radio => {
-                    radio.addEventListener('change', handleFreeWorksChange);
-                });
-                const addFreeWorkBtnElement = document.getElementById('addFreeWorkBtn');
-                if (addFreeWorkBtnElement) {
-                    addFreeWorkBtnElement.addEventListener('click', () => addFreeWorkInput());
-                }
-            }
-            if (question.id === 'notes') {
-                const notesElement = document.getElementById('notes');
-                if (notesElement) {
-                    notesElement.addEventListener('input', updateNotesButton);
-                    updateNotesButton();
-                }
-            }
+            });
+        }
 
-            updateNavigationButtons();
-            const firstInput = orderFormContent.querySelector('input, select, textarea');
-            if (firstInput) {
-                firstInput.focus();
-                firstInput.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter') {
-                        e.preventDefault();
-                        nextQuestion();
+        function addDynamicTextInput(idPrefix, placeholder, value = '') {
+            const dynamicInputsDiv = document.getElementById(`${idPrefix}Inputs`);
+            if (dynamicInputsDiv) {
+                const inputWrapper = document.createElement('div');
+                inputWrapper.className = 'flex items-center mb-2';
+                const newInput = document.createElement('input');
+                newInput.type = 'text';
+                newInput.className = 'p-3 border border-gray-300 rounded-xl w-full';
+                newInput.placeholder = placeholder;
+                newInput.value = value;
+                inputWrapper.appendChild(newInput);
+
+                const removeButton = document.createElement('button');
+                removeButton.type = 'button';
+                removeButton.className = 'ml-2 bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-3 rounded-xl';
+                removeButton.innerHTML = '&times;';
+                removeButton.addEventListener('click', () => {
+                    if (dynamicInputsDiv.children.length > 1) { // Ensure at least one input remains
+                        dynamicInputsDiv.removeChild(inputWrapper);
+                    } else {
+                        showMessageModal("يجب أن يكون هناك رقم فاتورة واحد على الأقل.");
                     }
                 });
+                inputWrapper.appendChild(removeButton);
+                dynamicInputsDiv.appendChild(inputWrapper);
             }
         }
 
         function addFreeWorkInput(value = '') {
-            const freeWorksInputsDiv = document.getElementById('freeWorksInputs');
-            if (freeWorksInputsDiv) { // Null check
-                const inputCount = freeWorksInputsDiv.querySelectorAll('input').length;
+            const freeWorksInputsDiv = document.getElementById('freeWorksInputs'); // This ID is now inside the dynamic content container
+            if (freeWorksInputsDiv) {
+                const inputWrapper = document.createElement('div');
+                inputWrapper.className = 'flex items-center mb-2';
                 const newInput = document.createElement('input');
                 newInput.type = 'text';
-                newInput.className = 'p-3 border border-gray-300 rounded-xl w-full mb-2';
-                newInput.placeholder = `العمل المجاني ${inputCount + 1}`;
+                newInput.className = 'p-3 border border-gray-300 rounded-xl w-full';
+                newInput.placeholder = `العمل المجاني ${freeWorksInputsDiv.children.length + 1}`;
                 newInput.value = value;
-                freeWorksInputsDiv.appendChild(newInput);
+                inputWrapper.appendChild(newInput);
+
+                const removeButton = document.createElement('button');
+                removeButton.type = 'button';
+                removeButton.className = 'ml-2 bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-3 rounded-xl';
+                removeButton.innerHTML = '&times;';
+                removeButton.addEventListener('click', () => {
+                    freeWorksInputsDiv.removeChild(inputWrapper);
+                });
+                inputWrapper.appendChild(removeButton);
+                freeWorksInputsDiv.appendChild(inputWrapper);
             }
         }
 
         function handleOrderTypeChange() {
             const orderTypeElement = document.getElementById('orderType');
-            if (!orderTypeElement) return; // Null check
+            if (!orderTypeElement) return;
             const orderType = orderTypeElement.value;
-            if (orderType === 'فاتورة موقع') {
-                currentOrderData.deliveryValue = 2;
-                currentOrderData.paymentMethod = 'رابط';
-            } else if (orderType === 'اشتراك') {
-                currentOrderData.invoiceValue = 0;
-                currentOrderData.deliveryValue = 0;
-                currentOrderData.paymentMethod = 'كاش'; // Changed to cash for subscription as per previous logic
-            }
-            // Update the form fields if they exist in the current view
+
+            // Get references to other fields
             const deliveryValueElement = document.getElementById('deliveryValue');
-            if (deliveryValueElement) deliveryValueElement.value = currentOrderData.deliveryValue;
             const invoiceValueElement = document.getElementById('invoiceValue');
-            if (invoiceValueElement) invoiceValueElement.value = currentOrderData.invoiceValue;
             const paymentMethodElement = document.getElementById('paymentMethod');
-            if (paymentMethodElement) paymentMethodElement.value = currentOrderData.paymentMethod;
+
+            if (orderType === 'فاتورة موقع') {
+                if (deliveryValueElement) deliveryValueElement.value = 2;
+                if (paymentMethodElement) paymentMethodElement.value = 'رابط';
+            } else if (orderType === 'اشتراك') {
+                if (invoiceValueElement) invoiceValueElement.value = 0;
+                if (deliveryValueElement) deliveryValueElement.value = 0;
+                if (paymentMethodElement) paymentMethodElement.value = 'رابط'; // Changed to 'رابط'
+            }
         }
 
-        function handleFreeWorksChange() {
-            const selectedOption = document.querySelector(`input[name="freeWorks"]:checked`);
-            if (!selectedOption) return; // Null check
-            const freeWorksOption = selectedOption.value;
-            let freeWorksInputsDiv = document.getElementById('freeWorksInputs');
-            let addFreeWorkBtn = document.getElementById('addFreeWorkBtn');
+        function handleFreeWorksChangeLogic(freeWorksOption, containerDiv, initialDetails = []) {
+            containerDiv.innerHTML = ''; // Clear existing content
 
             if (freeWorksOption === 'يوجد') {
-                if (!freeWorksInputsDiv) {
-                    freeWorksInputsDiv = document.createElement('div');
-                    freeWorksInputsDiv.id = 'freeWorksInputs';
-                    orderFormContent.appendChild(freeWorksInputsDiv);
-                }
-                if (!addFreeWorkBtn) {
-                    addFreeWorkBtn = document.createElement('button');
-                    addFreeWorkBtn.id = 'addFreeWorkBtn';
-                    addFreeWorkBtn.className = 'bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-xl mt-2';
-                    addFreeWorkBtn.textContent = 'اضافة عمل مجاني جديد';
-                    addFreeWorkBtn.addEventListener('click', () => addFreeWorkInput());
-                    orderFormContent.appendChild(addFreeWorkBtn);
-                }
-                if (freeWorksInputsDiv.children.length === 0 && (!currentOrderData.freeWorksDetails || currentOrderData.freeWorksDetails.length === 0)) {
-                    addFreeWorkInput(); // Add one input if 'يوجد' is selected and no existing details
-                }
-            } else {
-                if (freeWorksInputsDiv) freeWorksInputsDiv.remove();
-                if (addFreeWorkBtn) addFreeWorkBtn.remove();
-            }
-        }
+                const freeWorksInputsDiv = document.createElement('div');
+                freeWorksInputsDiv.id = 'freeWorksInputs'; // Keep this ID for data collection
+                freeWorksInputsDiv.className = 'mt-2';
+                containerDiv.appendChild(freeWorksInputsDiv);
 
-        function updateNotesButton() {
-            const notesInput = document.getElementById('notes');
-            if (notesInput && nextQuestionBtn) { // Null check for nextQuestionBtn
-                if (notesInput.value.trim() === '') {
-                    nextQuestionBtn.textContent = 'تخطي';
+                if (initialDetails.length > 0) {
+                    initialDetails.forEach(work => addFreeWorkInput(work));
                 } else {
-                    nextQuestionBtn.textContent = 'التالي';
+                    addFreeWorkInput(); // Add one empty input if 'يوجد' is selected and no initial details
                 }
+
+                const addFreeWorkBtn = document.createElement('button');
+                addFreeWorkBtn.type = 'button';
+                addFreeWorkBtn.id = 'addFreeWorkBtn';
+                addFreeWorkBtn.className = 'bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-xl mt-2';
+                addFreeWorkBtn.textContent = 'اضافة عمل مجاني جديد';
+                addFreeWorkBtn.addEventListener('click', () => addFreeWorkInput());
+                containerDiv.appendChild(addFreeWorkBtn);
             }
+            // If 'لا يوجد', containerDiv is already cleared.
         }
 
-        function updateNavigationButtons() {
-            if (prevQuestionBtn) { // Null check
-                prevQuestionBtn.classList.toggle('hidden', currentQuestionIndex === 0);
-            }
-            if (nextQuestionBtn) { // Null check
-                nextQuestionBtn.textContent = (currentQuestionIndex === orderFormQuestions.length - 1) ? 'تسليم' : 'التالي';
-            }
-            if (orderFormQuestions[currentQuestionIndex] && orderFormQuestions[currentQuestionIndex].id === 'notes') {
-                updateNotesButton();
-            }
-        }
+        function collectAllFormData() {
+            const formData = {};
+            let isValid = true;
 
-        function saveCurrentQuestionData() {
-            const question = orderFormQuestions[currentQuestionIndex];
-            if (!question) return true;
+            orderFormQuestions.forEach(question => {
+                const element = document.getElementById(question.id);
+                if (!element) {
+                    console.warn(`Element with ID ${question.id} not found.`);
+                    return;
+                }
 
-            if (question.type === 'select') {
-                const selectElement = document.getElementById(question.id);
-                if (!selectElement || selectElement.value === "") { // Null check
-                    showMessageModal(`الرجاء اختيار ${question.label}.`);
-                    return false;
-                }
-                currentOrderData[question.id] = selectElement.value;
-            } else if (question.type === 'invoiceNumbers') {
-                const inv1 = document.getElementById(`${question.id}1`);
-                const inv2 = document.getElementById(`${question.id}2`);
-                const inv3 = document.getElementById(`${question.id}3`);
-                if (!inv1 || inv1.value.trim() === '') { // Null check
-                    showMessageModal('رقم الفاتورة الأول مطلوب.');
-                    return false;
-                }
-                currentOrderData[question.id] = [inv1.value.trim(), inv2 ? inv2.value.trim() : '', inv3 ? inv3.value.trim() : ''].filter(Boolean).join(', ');
-            } else if (question.type === 'radio') {
-                const selectedOption = document.querySelector(`input[name="${question.id}"]:checked`);
-                if (!selectedOption) { // Null check
-                    showMessageModal('الرجاء اختيار خيار.');
-                    return false;
-                }
-                currentOrderData[question.id] = selectedOption.value;
-                if (selectedOption.value === 'يوجد') {
-                    const freeWorksInputs = document.querySelectorAll('#freeWorksInputs input');
-                    const freeWorksDetails = Array.from(freeWorksInputs).map(input => input.value.trim()).filter(Boolean);
-                    if (freeWorksDetails.length === 0) {
-                        showMessageModal('الرجاء إضافة عمل مجاني واحد على الأقل أو اختيار "لا يوجد".');
-                        return false;
+                if (question.type === 'dynamicText') {
+                    const dynamicInputs = document.querySelectorAll(`#${question.id}Inputs input`);
+                    const values = Array.from(dynamicInputs).map(input => input.value.trim()).filter(Boolean);
+                    if (question.required && values.length === 0) {
+                        showMessageModal(`الرجاء إدخال ${question.label} واحد على الأقل.`);
+                        isValid = false;
+                        return;
                     }
-                    currentOrderData.freeWorksDetails = freeWorksDetails;
-                } else {
-                    currentOrderData.freeWorksDetails = [];
+                    formData[question.id] = values;
+                } else if (question.type === 'radio') {
+                    const selectedOption = document.querySelector(`input[name="${question.id}"]:checked`);
+                    if (question.required && !selectedOption) {
+                        showMessageModal(`الرجاء اختيار خيار لـ ${question.label}.`);
+                        isValid = false;
+                        return;
+                    }
+                    formData[question.id] = selectedOption ? selectedOption.value : '';
+                    if (selectedOption && selectedOption.value === 'يوجد') {
+                        const freeWorksInputs = document.querySelectorAll('#freeWorksInputs input');
+                        const freeWorksDetails = Array.from(freeWorksInputs).map(input => input.value.trim()).filter(Boolean);
+                        if (freeWorksDetails.length === 0) {
+                            showMessageModal('الرجاء إضافة عمل مجاني واحد على الأقل أو اختيار "لا يوجد".');
+                            isValid = false;
+                            return;
+                        }
+                        formData.freeWorksDetails = freeWorksDetails;
+                    } else {
+                        formData.freeWorksDetails = [];
+                    }
+                } else if (question.type === 'number') {
+                    const value = element.value.trim();
+                    if (question.required && value === '') {
+                        showMessageModal(`الرجاء إدخال ${question.label}.`);
+                        isValid = false;
+                        return;
+                    }
+                    if (value !== '' && isNaN(Number(value))) {
+                        showMessageModal(`الرجاء إدخال أرقام فقط في ${question.label}.`);
+                        isValid = false;
+                        return;
+                    }
+                    formData[question.id] = value === '' ? null : Number(value);
+                } else if (question.type === 'select') {
+                    if (question.required && element.value === '') {
+                        showMessageModal(`الرجاء اختيار ${question.label}.`);
+                        isValid = false;
+                        return;
+                    }
+                    formData[question.id] = element.value;
                 }
-            } else {
-                const inputElement = document.getElementById(question.id);
-                if (!inputElement) return false;
-
-                const value = inputElement.value.trim();
-
-                if (!question.optional && value === '') {
-                    showMessageModal(`الرجاء إدخال ${question.label}.`);
-                    return false;
+                else {
+                    const value = element.value.trim();
+                    if (question.required && value === '') {
+                        showMessageModal(`الرجاء إدخال ${question.label}.`);
+                        isValid = false;
+                        return;
+                    }
+                    formData[question.id] = value;
                 }
-
-                if (question.type === 'number' && isNaN(Number(value)) && value !== '') {
-                    showMessageModal(`الرجاء إدخال أرقام فقط في ${question.label}.`);
-                    return false;
-                }
-
-                currentOrderData[question.id] = value;
+            });
+            
+            if (!isValid) {
+                return null; // Return null if validation fails
             }
 
-            if (question.id === 'orderType') {
-                handleOrderTypeChange();
+            // Apply specific logic based on orderType and paymentMethod
+            if (formData.orderType === 'فاتورة موقع') {
+                formData.deliveryValue = 2;
+                formData.paymentMethod = 'رابط';
+            } else if (formData.orderType === 'اشتراك') {
+                formData.invoiceValue = 0;
+                formData.deliveryValue = 0;
+                formData.paymentMethod = 'رابط'; // Changed to 'رابط'
             }
 
-            return true;
+            return formData;
         }
 
-        function nextQuestion() {
-            if (saveCurrentQuestionData()) {
-                currentQuestionIndex++;
-                if (currentQuestionIndex < orderFormQuestions.length) {
-                    renderQuestion();
-                } else {
-                    showSignatureModal();
-                }
-            }
-        }
 
-        function prevQuestion() {
-            currentQuestionIndex--;
-            renderQuestion();
-        }
-
-        function showSignatureModal() {
+        function showSignatureModal(title = 'توقيع المندوب باستلام الطلب', callback = null) {
+            signatureModalTitle.textContent = title;
+            signatureCallback = callback; // Store the callback
             if (newOrderModal) closeModal('newOrderModal'); // Null check
             if (signatureModal) showModal('signatureModal'); // Null check
             if (signatureCanvas) initSignaturePad(); // Null check
-            if (currentOrderData.signatureImage && signaturePad) {
+            // Only load existing signature if it's the main order signature
+            if (title === 'توقيع المندوب باستلام الطلب' && currentOrderData.signatureImage && signaturePad) {
                 signaturePad.fromDataURL(currentOrderData.signatureImage);
             } else if (signaturePad) {
-                signaturePad.clear(); // Clear if no existing signature
+                signaturePad.clear(); // Clear for other types of signatures
             }
         }
 
@@ -1010,9 +1148,12 @@
 
             orders.forEach(order => {
                 const row = document.createElement('tr');
+                const invoiceNumberDisplay = Array.isArray(order.invoiceNumber) ? order.invoiceNumber.join('<br>') : (order.invoiceNumber || '');
+                const freeWorksDisplay = Array.isArray(order.freeWorksDetails) && order.freeWorksDetails.length > 0 ? order.freeWorksDetails.join('<br>') : 'لا يوجد';
+
                 row.innerHTML = `
                     <td class="editable-cell" data-key="${order.key}" data-field="orderType">${order.orderType || ''}</td>
-                    <td class="editable-cell" data-key="${order.key}" data-field="invoiceNumber">${order.invoiceNumber || ''}</td>
+                    <td class="editable-cell stacked-content" data-key="${order.key}" data-field="invoiceNumber">${invoiceNumberDisplay}</td>
                     <td class="editable-cell" data-key="${order.key}" data-field="clientName">${order.clientName || ''}</td>
                     <td class="editable-cell" data-key="${order.key}" data-field="phoneNumber">${order.phoneNumber || ''}</td>
                     <td class="editable-cell" data-key="${order.key}" data-field="area">${order.area || ''}</td>
@@ -1022,10 +1163,9 @@
                     <td class="editable-cell" data-key="${order.key}" data-field="employeeName">${order.employeeName || ''}</td>
                     <td class="editable-cell" data-key="${order.key}" data-field="delivererName">${order.delivererName || ''}</td>
                     <td data-key="${order.key}" data-field="signatureImage">
-                        ${order.signatureImage ? `<img src="${order.signatureImage}" alt="Signature" class="w-12 h-6 object-contain mx-auto">` : 'لا يوجد'}
-                        <!-- Removed change signature button as per user request -->
+                        ${order.signatureImage ? `<img src="${order.signatureImage}" alt="Signature" class="w-10 h-5 object-contain mx-auto">` : 'لا يوجد'}
                     </td>
-                    <td class="editable-cell" data-key="${order.key}" data-field="freeWorks">${Array.isArray(order.freeWorksDetails) && order.freeWorksDetails.length > 0 ? order.freeWorksDetails.join(', ') : 'لا يوجد'}</td>
+                    <td class="editable-cell stacked-content" data-key="${order.key}" data-field="freeWorks">${freeWorksDisplay}</td>
                     <td data-key="${order.key}" data-field="dateTime">${order.dateTime || ''}</td>
                     <td class="editable-cell" data-key="${order.key}" data-field="notes">${order.notes || ''}</td>
                     <td>
@@ -1065,22 +1205,6 @@
                     activateInlineEdit(e.currentTarget, orderData); // Pass the cell and full order data
                 });
             });
-
-            // Removed listener for change signature button as per user request
-            // document.querySelectorAll('.change-signature-btn').forEach(button => {
-            //     button.addEventListener('click', async (e) => {
-            //         const orderKey = e.target.dataset.key;
-            //         const orderRef = ref(db, `artifacts/${appId}/public/data/orders/${orderKey}`);
-            //         const snapshot = await get(orderRef);
-            //         if (!snapshot.exists()) {
-            //             showMessageModal('الطلب غير موجود!');
-            //             return;
-            //         }
-            //         currentOrderData = snapshot.val(); // Load current order data for signature
-            //         currentOrderKeyForEdit = orderKey;
-            //         showSignatureModal(); // Open the signature modal
-            //     });
-            // });
         }
 
         // Function to open the full order edit modal (used for search results)
@@ -1093,10 +1217,10 @@
             }
             currentOrderData = snapshot.val();
             currentOrderKeyForEdit = orderKey;
-            currentQuestionIndex = 0; // Start from the first question for full edit
-
+            
+            newOrderModalTitle.textContent = 'تعديل الطلب'; // Change modal title for editing
+            renderAllQuestions(); // Render all questions with existing data
             showModal('newOrderModal');
-            renderQuestion(); // Start the multi-step form with existing data
         }
 
         // Function to activate inline editing for a cell
@@ -1124,6 +1248,7 @@
             } else if (fieldName === 'invoiceValue' || fieldName === 'deliveryValue' || fieldName === 'phoneNumber') {
                 inputElement = document.createElement('input');
                 inputElement.type = 'number';
+                inputElement.inputmode = 'numeric'; // Ensure numeric keyboard
                 inputElement.value = originalValue;
             } else if (fieldName === 'notes') {
                 inputElement = document.createElement('textarea');
@@ -1141,7 +1266,8 @@
                 // For invoiceNumber, allow editing as a single text field
                 inputElement = document.createElement('input');
                 inputElement.type = 'text';
-                inputElement.value = originalValue;
+                inputElement.value = Array.isArray(orderData.invoiceNumber) ? orderData.invoiceNumber.join(', ') : (orderData.invoiceNumber || '');
+                inputElement.placeholder = 'أدخل أرقام الفواتير مفصولة بفواصل';
             }
             else {
                 inputElement = document.createElement('input');
@@ -1175,9 +1301,19 @@
                             freeWorksDetails: newFreeWorksDetails,
                             freeWorks: newFreeWorksDetails.length > 0 ? 'يوجد' : 'لا يوجد'
                         };
-                        displayValue = newFreeWorksDetails.length > 0 ? newFreeWorksDetails.join(', ') : 'لا يوجد';
+                        displayValue = newFreeWorksDetails.length > 0 ? newFreeWorksDetails.join('<br>') : 'لا يوجد';
                     } else {
                         displayValue = originalStoredValue; // No change, revert to original display
+                    }
+                } else if (fieldName === 'invoiceNumber') {
+                    const newInvoiceNumbers = newValue.split(',').map(s => s.trim()).filter(Boolean);
+                    const originalInvoiceNumbers = Array.isArray(orderData.invoiceNumber) ? orderData.invoiceNumber.join(', ') : (orderData.invoiceNumber || '');
+
+                    if (newInvoiceNumbers.join(', ') !== originalInvoiceNumbers) {
+                        updateData[fieldName] = newInvoiceNumbers;
+                        displayValue = newInvoiceNumbers.join('<br>');
+                    } else {
+                        displayValue = originalStoredValue;
                     }
                 } else if (fieldName === 'delivererName' && newValue !== originalStoredValue) {
                     // Special handling for delivererName change
@@ -1194,7 +1330,7 @@
                         if (isNaN(valueToSave)) {
                             showMessageModal('الرجاء إدخال قيمة رقمية صحيحة.');
                             // Revert to original value and stop
-                            cellElement.textContent = originalStoredValue;
+                            cellElement.innerHTML = originalStoredValue; // Use innerHTML
                             cellElement.classList.remove('editing');
                             return;
                         }
@@ -1217,12 +1353,13 @@
                         displayValue = originalStoredValue; // Revert on error
                     }
                 }
-                cellElement.textContent = displayValue; // Update cell with final display value
+                cellElement.innerHTML = displayValue; // Use innerHTML to allow <br> tags
                 cellElement.classList.remove('editing');
 
                 if (shouldShowSignatureModal) {
                     currentOrderData = { ...orderData, ...updateData }; // Update currentOrderData with the new deliverer name and cleared signature
                     currentOrderKeyForEdit = orderKey; // Ensure correct order key is set
+                    signatureModalTitle.textContent = 'توقيع المندوب باستلام الطلب';
                     showSignatureModal();
                 }
             };
@@ -1239,9 +1376,11 @@
         }
 
         async function deleteOrder(key) {
+            console.log("Attempting to delete order with key:", key); // Debug log
             try {
                 const orderRef = ref(db, `artifacts/${appId}/public/data/orders/${key}`);
                 await remove(orderRef);
+                console.log("Order deleted successfully:", key); // Debug log
                 showMessageModal('تم حذف الطلب بنجاح!');
             } catch (error) {
                 console.error("Error deleting order:", error);
@@ -1259,7 +1398,31 @@
             if (ordersSnapshot) {
                 ordersSnapshot.forEach(childSnapshot => {
                     const order = childSnapshot.val();
-                    if (order.date === date && order.delivererName) {
+                    const orderDateString = order.date; // Assuming order.date is "YYYY-MM-DD"
+
+                    let dateMatches = false;
+
+                    if (currentFilterFromDate && currentFilterToDate) {
+                        // Range filtering
+                        const orderDate = new Date(orderDateString);
+                        const fromDate = new Date(currentFilterFromDate);
+                        const toDate = new Date(currentFilterToDate);
+                        toDate.setHours(23, 59, 59, 999); // End of day for 'to' date
+
+                        if (orderDate >= fromDate && orderDate <= toDate) {
+                            dateMatches = true;
+                        }
+                    } else if (selectedAccountingDate) {
+                        // Single date filtering
+                        if (orderDateString === selectedAccountingDate) {
+                            dateMatches = true;
+                        }
+                    } else {
+                        // No date filter applied (show all if no date or range selected)
+                        dateMatches = true;
+                    }
+
+                    if (dateMatches && order.delivererName) {
                         deliverersWithOrders.add(order.delivererName);
                     }
                 });
@@ -1267,26 +1430,42 @@
             return Array.from(deliverersWithOrders);
         }
 
-        async function populateDelivererDropdown(date) {
-            const deliverers = await fetchDeliverersForDate(date);
-            if (delivererSelectAccounting) { // Add null check here
-                delivererSelectAccounting.innerHTML = '<option value="" disabled selected>-- اختر مندوب --</option>';
 
-                if (deliverers.length === 0) {
+        async function populateDelivererDropdown(date) {
+            const deliverersWithOrders = await fetchDeliverersForDate(date);
+            
+            // Populate main deliverer dropdown (only deliverers with orders for the selected date/range)
+            if (delivererSelectAccounting) {
+                delivererSelectAccounting.innerHTML = '<option value="" disabled selected>-- اختر مندوب --</option>';
+                if (deliverersWithOrders.length === 0) {
                     delivererSelectAccounting.disabled = true;
                 } else {
                     delivererSelectAccounting.disabled = false;
-                    deliverers.forEach(deliverer => {
+                    deliverersWithOrders.forEach(deliverer => {
                         const option = document.createElement('option');
                         option.value = deliverer;
                         option.textContent = deliverer;
                         delivererSelectAccounting.appendChild(option);
                     });
                 }
-                if (selectedDelivererForAccounting && deliverers.includes(selectedDelivererForAccounting)) {
+                if (selectedDelivererForAccounting && deliverersWithOrders.includes(selectedDelivererForAccounting)) {
                     delivererSelectAccounting.value = selectedDelivererForAccounting;
                 } else {
                     selectedDelivererForAccounting = null;
+                }
+            }
+
+            // Populate filter deliverer dropdown (all predefined deliverers)
+            if (filterDelivererSelect) {
+                filterDelivererSelect.innerHTML = '<option value="" disabled selected>-- اختر مندوب --</option>';
+                deliverers.forEach(deliverer => { // Use the global 'deliverers' array
+                    const option = document.createElement('option');
+                    option.value = deliverer;
+                    option.textContent = deliverer;
+                    filterDelivererSelect.appendChild(option);
+                });
+                if (currentFilterDelivererOption === 'specific' && selectedDelivererForAccounting && deliverers.includes(selectedDelivererForAccounting)) {
+                    filterDelivererSelect.value = selectedDelivererForAccounting;
                 }
             }
         }
@@ -1322,104 +1501,493 @@
                 return;
             }
 
-            if (!selectedDelivererForAccounting || !selectedAccountingDate) {
-                if (accountingReportTitle) accountingReportTitle.textContent = 'الرجاء اختيار التاريخ والمندوب لعرض التقرير.'; // Null check
-                if (accountingNormalInvoicesTableBody) accountingNormalInvoicesTableBody.innerHTML = ''; // Null check
-                if (accountingWebsiteInvoicesTableBody) accountingWebsiteInvoicesTableBody.innerHTML = ''; // Null check
-                if (freeWorksList) freeWorksList.innerHTML = ''; // Null check
+            if (!selectedDelivererForAccounting && currentFilterDelivererOption === 'specific') {
+                if (accountingReportTitle) accountingReportTitle.textContent = 'الرجاء اختيار المندوب لعرض التقرير.';
+                // Hide all tables and summaries if no specific deliverer is selected in specific mode
+                normalCashInvoicesSection.classList.add('hidden');
+                normalLinkInvoicesSection.classList.add('hidden');
+                websiteInvoicesSection.classList.add('hidden');
+                freeWorksList.innerHTML = '';
+                totalCashDueSummary.innerHTML = '';
+                collectAllCashBtn.classList.add('hidden');
+                totalHandoverDueSummary.innerHTML = '';
+                collectAllHandoverBtn.classList.add('hidden');
                 return;
             }
 
-            if (accountingReportTitle) accountingReportTitle.textContent = `كشف حساب المندوب "${selectedDelivererForAccounting}" بتاريخ "${getFormattedDate(new Date(selectedAccountingDate))}"`; // Null check
+            if (accountingReportTitle) {
+                let dateRangeText = '';
+                if (currentFilterFromDate && currentFilterToDate) {
+                    dateRangeText = `من ${getFormattedDate(new Date(currentFilterFromDate))} إلى ${getFormattedDate(new Date(currentFilterToDate))}`;
+                } else if (selectedAccountingDate) {
+                    dateRangeText = `بتاريخ "${getFormattedDate(new Date(selectedAccountingDate))}"`;
+                } else {
+                    dateRangeText = `لجميع التواريخ`; // If no date or range selected
+                }
+
+                let delivererText = '';
+                if (currentFilterDelivererOption === 'all') {
+                    delivererText = 'لكل المناديب';
+                } else if (selectedDelivererForAccounting) {
+                    delivererText = `للمندوب "${selectedDelivererForAccounting}"`;
+                } else {
+                    delivererText = 'الرجاء اختيار مندوب'; // Should not happen if specific is selected
+                }
+                
+                accountingReportTitle.textContent = `كشف حساب ${delivererText} ${dateRangeText}`;
+            }
+
+            // Show/hide clear filter button
+            if (currentFilterFromDate || currentFilterToDate || currentFilterInvoiceType !== 'all' || currentFilterDelivererOption !== 'all') {
+                clearFilterBtn.classList.remove('hidden');
+            } else {
+                clearFilterBtn.classList.add('hidden');
+            }
 
             const ordersRef = ref(db, `artifacts/${appId}/public/data/orders`);
             onValue(ordersRef, (snapshot) => {
-                const allOrders = [];
+                let allOrders = [];
                 if (snapshot) {
                     snapshot.forEach((childSnapshot) => {
                         const order = childSnapshot.val();
-                        if (order.date === selectedAccountingDate && order.delivererName === selectedDelivererForAccounting) {
-                            allOrders.push({ key: childSnapshot.key, ...order });
+                        
+                        const orderDateString = order.date; // Assuming order.date is "YYYY-MM-DD"
+                        let dateMatches = false;
+
+                        if (currentFilterFromDate && currentFilterToDate) {
+                            // Range filtering
+                            const orderDate = new Date(orderDateString);
+                            const fromDate = new Date(currentFilterFromDate);
+                            const toDate = new Date(currentFilterToDate);
+                            toDate.setHours(23, 59, 59, 999); // End of day for 'to' date
+
+                            if (orderDate >= fromDate && orderDate <= toDate) {
+                                dateMatches = true;
+                            }
+                        } else if (selectedAccountingDate) {
+                            // Single date filtering
+                            if (orderDateString === selectedAccountingDate) {
+                                dateMatches = true;
+                            }
+                        } else {
+                            // No date filter applied (show all if no date or range selected)
+                            dateMatches = true;
+                        }
+
+                        // Apply deliverer filter
+                        let delivererMatches = true;
+                        if (currentFilterDelivererOption === 'specific' && selectedDelivererForAccounting) {
+                            delivererMatches = (order.delivererName === selectedDelivererForAccounting);
+                        } else if (currentFilterDelivererOption === 'specific' && !selectedDelivererForAccounting) {
+                            // If specific is chosen but no deliverer, no orders match
+                            delivererMatches = false;
+                        }
+
+
+                        if (dateMatches && delivererMatches) {
+                            // Apply invoice type filter
+                            if (currentFilterInvoiceType === 'cashOnly' && order.paymentMethod !== 'كاش') {
+                                // Skip non-cash orders if filter is cashOnly
+                            } else if (currentFilterInvoiceType === 'paidOnly' && order.paymentMethod !== 'رابط') {
+                                // Skip non-paid orders if filter is paidOnly
+                            }
+                            else {
+                                allOrders.push({ key: childSnapshot.key, ...order });
+                            }
                         }
                     });
                 }
 
                 allOrders.sort((a, b) => {
+                    // Sort by payment method (cash first), then by timestamp
                     if (a.paymentMethod === 'كاش' && b.paymentMethod !== 'كاش') return -1;
                     if (a.paymentMethod !== 'كاش' && b.paymentMethod === 'كاش') return 1;
-                    return 0;
+                    return b.timestamp - a.timestamp;
                 });
 
                 // Update the global currentAccountingOrders with the filtered data
                 currentAccountingOrders = allOrders; 
 
+                // Determine if totals and buttons should be hidden (more than one unique deliverer in filtered view)
+                const uniqueDeliverersInView = new Set(currentAccountingOrders.map(order => order.delivererName)).size;
+                const shouldHideTotalsAndButtons = uniqueDeliverersInView > 1 || currentFilterDelivererOption === 'all';
+
+
                 renderAccountingTables(allOrders);
-                renderFreeWorks(allOrders);
+                renderFreeWorks(allOrders, shouldHideTotalsAndButtons); // Pass the flag here
+                updateCashSummary(allOrders, shouldHideTotalsAndButtons);
+                updateHandoverSummary(allOrders, shouldHideTotalsAndButtons);
             });
         }
 
         function renderAccountingTables(orders) {
-            if (accountingNormalInvoicesTableBody) accountingNormalInvoicesTableBody.innerHTML = ''; // Null check
-            if (accountingWebsiteInvoicesTableBody) accountingWebsiteInvoicesTableBody.innerHTML = ''; // Null check
+            if (!accountingNormalCashInvoicesTableBody || !accountingNormalLinkInvoicesTableBody || !accountingWebsiteInvoicesTableBody) return;
 
-            const normalInvoices = orders.filter(order => order.orderType === 'فاتورة عادية' || order.orderType === 'اشتراك');
-            const websiteInvoices = orders.filter(order => order.orderType === 'فاتورة موقع'); // Keep filter for 'فاتورة موقع'
+            accountingNormalCashInvoicesTableBody.innerHTML = '';
+            accountingNormalLinkInvoicesTableBody.innerHTML = '';
+            accountingWebsiteInvoicesTableBody.innerHTML = '';
 
-            if (normalInvoices.length === 0) {
-                if (accountingNormalInvoicesTableBody) accountingNormalInvoicesTableBody.innerHTML = `<tr><td colspan="13" class="text-center py-4 text-gray-500">لا توجد فواتير عادية أو اشتراكات لهذا المندوب في هذا التاريخ.</td></tr>`; // Null check
+            const cashInvoices = orders.filter(order => order.paymentMethod === 'كاش');
+            const linkInvoices = orders.filter(order => order.paymentMethod === 'رابط' && order.orderType !== 'فاتورة موقع');
+            const websiteInvoices = orders.filter(order => order.orderType === 'فاتورة موقع');
+
+            // Render Cash Invoices Table
+            if (cashInvoices.length === 0) {
+                accountingNormalCashInvoicesTableBody.innerHTML = `<tr><td colspan="17" class="text-center py-4 text-gray-500">لا توجد فواتير كاش لهذا المندوب في هذا التاريخ/التصفية.</td></tr>`;
+                normalCashInvoicesSection.classList.add('hidden');
             } else {
-                normalInvoices.forEach(order => {
+                cashInvoices.forEach(order => {
+                    const cashDue = (order.cashCollected === undefined || order.cashCollected !== 0)
+                                    ? (order.invoiceValue || 0) - (order.deliveryValue || 0)
+                                    : 0;
+                    const cashButtonText = (order.cashCollected === 0) ? 'تم الاستلام' : 'استلام الكاش';
+                    const cashButtonClass = (order.cashCollected === 0) ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700';
+                    const cashButtonDisabled = (order.cashCollected === 0) ? 'disabled' : '';
+                    const invoiceNumberDisplay = Array.isArray(order.invoiceNumber) ? order.invoiceNumber.join('<br>') : (order.invoiceNumber || '');
+                    const freeWorksDisplay = Array.isArray(order.freeWorksDetails) && order.freeWorksDetails.length > 0 ? order.freeWorksDetails.join('<br>') : 'لا يوجد';
+                    const cashierSignatureDisplay = order.cashierSignature ? `<img src="${order.cashierSignature}" alt="Cashier Signature" class="w-10 h-5 object-contain mx-auto">` : '';
+
                     const row = document.createElement('tr');
                     row.innerHTML = `
-                        <td>${order.orderType || ''}</td>
-                        <td>${order.invoiceNumber || ''}</td>
-                        <td>${order.clientName || ''}</td>
-                        <td>${order.phoneNumber || ''}</td>
-                        <td>${order.area || ''}</td>
-                        <td>${order.invoiceValue || 0}</td>
-                        <td>${order.deliveryValue || 0}</td>
-                        <td>${order.paymentMethod || ''}</td>
-                        <td>${order.employeeName || ''}</td>
-                        <td>${order.delivererName || ''}</td>
+                        <td class="editable-cell" data-key="${order.key}" data-field="orderType">${order.orderType || ''}</td>
+                        <td class="editable-cell stacked-content" data-key="${order.key}" data-field="invoiceNumber">${invoiceNumberDisplay}</td>
+                        <td class="editable-cell" data-key="${order.key}" data-field="clientName">${order.clientName || ''}</td>
+                        <td class="editable-cell" data-key="${order.key}" data-field="phoneNumber">${order.phoneNumber || ''}</td>
+                        <td class="editable-cell" data-key="${order.key}" data-field="area">${order.area || ''}</td>
+                        <td class="editable-cell" data-key="${order.key}" data-field="invoiceValue">${order.invoiceValue || 0}</td>
+                        <td class="editable-cell" data-key="${order.key}" data-field="deliveryValue">${order.deliveryValue || 0}</td>
+                        <td>${cashDue.toFixed(2)}</td>
                         <td>
-                            ${order.signatureImage ? `<img src="${order.signatureImage}" alt="Signature" class="w-12 h-6 object-contain mx-auto">` : 'لا يوجد'}
+                            ${(order.cashCollected === 0 || order.cashierSignature) ? cashierSignatureDisplay : `<button class="${cashButtonClass} text-white font-bold py-1 px-3 rounded-xl collect-cash-btn" data-key="${order.key}" ${cashButtonDisabled}>${cashButtonText}</button>`}
                         </td>
-                        <td>${Array.isArray(order.freeWorksDetails) && order.freeWorksDetails.length > 0 ? order.freeWorksDetails.join(', ') : 'لا يوجد'}</td>
-                        <td>${order.notes || ''}</td>
+                        <td class="editable-cell" data-key="${order.key}" data-field="paymentMethod">${order.paymentMethod || ''}</td>
+                        <td class="editable-cell" data-key="${order.key}" data-field="employeeName">${order.employeeName || ''}</td>
+                        <td class="editable-cell" data-key="${order.key}" data-field="delivererName">${order.delivererName || ''}</td>
+                        <td data-key="${order.key}" data-field="signatureImage">
+                            ${order.signatureImage ? `<img src="${order.signatureImage}" alt="Signature" class="w-10 h-5 object-contain mx-auto">` : 'لا يوجد'}
+                        </td>
+                        <td class="editable-cell stacked-content" data-key="${order.key}" data-field="freeWorks">${freeWorksDisplay}</td>
+                        <td>${order.date || ''}</td>
+                        <td class="editable-cell" data-key="${order.key}" data-field="notes">${order.notes || ''}</td>
+                        <td>
+                            <button class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded-xl delete-order-btn-accounting" data-key="${order.key}">حذف</button>
+                        </td>
                     `;
-                    if (accountingNormalInvoicesTableBody) accountingNormalInvoicesTableBody.appendChild(row); // Null check
+                    accountingNormalCashInvoicesTableBody.appendChild(row);
                 });
+                normalCashInvoicesSection.classList.remove('hidden');
             }
 
-            if (websiteInvoices.length === 0) {
-                if (accountingWebsiteInvoicesTableBody) accountingWebsiteInvoicesTableBody.innerHTML = `<tr><td colspan="13" class="text-center py-4 text-gray-500">لا توجد فواتير موقع (بيدو) لهذا المندوب في هذا التاريخ.</td></tr>`; // Null check
+            // Render Link Invoices Table
+            if (linkInvoices.length === 0) {
+                accountingNormalLinkInvoicesTableBody.innerHTML = `<tr><td colspan="17" class="text-center py-4 text-gray-500">لا توجد فواتير رابط/اشتراكات لهذا المندوب في هذا التاريخ/التصفية.</td></tr>`;
+                normalLinkInvoicesSection.classList.add('hidden');
             } else {
-                websiteInvoices.forEach(order => {
+                linkInvoices.forEach(order => {
+                    let delivererHandoverAmount = 0;
+                    if (order.orderType === 'اشتراك') {
+                        delivererHandoverAmount = (order.deliveryValue <= 1) ? 0.5 : 1;
+                    } else if (order.orderType === 'فاتورة عادية' && order.paymentMethod === 'رابط') { // New logic
+                        delivererHandoverAmount = order.deliveryValue || 0;
+                    }
+                    const handoverButtonText = (order.delivererHandoverCollected === 0) ? 'تم التسليم' : 'تسليم';
+                    const handoverButtonClass = (order.delivererHandoverCollected === 0) ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700';
+                    const handoverButtonDisabled = (order.delivererHandoverCollected === 0) ? 'disabled' : '';
+                    const invoiceNumberDisplay = Array.isArray(order.invoiceNumber) ? order.invoiceNumber.join('<br>') : (order.invoiceNumber || '');
+                    const freeWorksDisplay = Array.isArray(order.freeWorksDetails) && order.freeWorksDetails.length > 0 ? order.freeWorksDetails.join('<br>') : 'لا يوجد';
+                    const delivererHandoverSignatureDisplay = order.delivererHandoverSignature ? `<img src="${order.delivererHandoverSignature}" alt="Handover Signature" class="w-10 h-5 object-contain mx-auto">` : '';
+
                     const row = document.createElement('tr');
                     row.innerHTML = `
-                        <td>${order.orderType || ''}</td>
-                        <td>${order.invoiceNumber || ''}</td>
-                        <td>${order.clientName || ''}</td>
-                        <td>${order.phoneNumber || ''}</td>
-                        <td>${order.area || ''}</td>
-                        <td>${order.invoiceValue || 0}</td>
-                        <td>${order.deliveryValue || 0}</td>
-                        <td>${order.paymentMethod || ''}</td>
-                        <td>${order.employeeName || ''}</td>
-                        <td>${order.delivererName || ''}</td>
+                        <td class="editable-cell" data-key="${order.key}" data-field="orderType">${order.orderType || ''}</td>
+                        <td class="editable-cell stacked-content" data-key="${order.key}" data-field="invoiceNumber">${invoiceNumberDisplay}</td>
+                        <td class="editable-cell" data-key="${order.key}" data-field="clientName">${order.clientName || ''}</td>
+                        <td class="editable-cell" data-key="${order.key}" data-field="phoneNumber">${order.phoneNumber || ''}</td>
+                        <td class="editable-cell" data-key="${order.key}" data-field="area">${order.area || ''}</td>
+                        <td class="editable-cell" data-key="${order.key}" data-field="invoiceValue">${order.invoiceValue || 0}</td>
+                        <td class="editable-cell" data-key="${order.key}" data-field="deliveryValue">${order.deliveryValue || 0}</td>
+                        <td>${delivererHandoverAmount.toFixed(2)}</td>
                         <td>
-                            ${order.signatureImage ? `<img src="${order.signatureImage}" alt="Signature" class="w-12 h-6 object-contain mx-auto">` : 'لا يوجد'}
+                            ${(order.delivererHandoverCollected === 0 || order.delivererHandoverSignature) ? delivererHandoverSignatureDisplay : `<button class="${handoverButtonClass} text-white font-bold py-1 px-3 rounded-xl collect-handover-btn" data-key="${order.key}" ${handoverButtonDisabled}>${handoverButtonText}</button>`}
                         </td>
-                        <td>${Array.isArray(order.freeWorksDetails) && order.freeWorksDetails.length > 0 ? order.freeWorksDetails.join(', ') : 'لا يوجد'}</td>
-                        <td>${order.notes || ''}</td>
+                        <td class="editable-cell" data-key="${order.key}" data-field="paymentMethod">${order.paymentMethod || ''}</td>
+                        <td class="editable-cell" data-key="${order.key}" data-field="employeeName">${order.employeeName || ''}</td>
+                        <td class="editable-cell" data-key="${order.key}" data-field="delivererName">${order.delivererName || ''}</td>
+                        <td data-key="${order.key}" data-field="signatureImage">
+                            ${order.signatureImage ? `<img src="${order.signatureImage}" alt="Signature" class="w-10 h-5 object-contain mx-auto">` : 'لا يوجد'}
+                        </td>
+                        <td class="editable-cell stacked-content" data-key="${order.key}" data-field="freeWorks">${freeWorksDisplay}</td>
+                        <td>${order.date || ''}</td>
+                        <td class="editable-cell" data-key="${order.key}" data-field="notes">${order.notes || ''}</td>
+                        <td>
+                            <button class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded-xl delete-order-btn-accounting" data-key="${order.key}">حذف</button>
+                        </td>
                     `;
-                    if (accountingWebsiteInvoicesTableBody) accountingWebsiteInvoicesTableBody.appendChild(row); // Null check
+                    accountingNormalLinkInvoicesTableBody.appendChild(row);
                 });
+                normalLinkInvoicesSection.classList.remove('hidden');
+            }
+
+            // Render Website Invoices Table
+            if (websiteInvoices.length === 0) {
+                accountingWebsiteInvoicesTableBody.innerHTML = `<tr><td colspan="17" class="text-center py-4 text-gray-500">لا توجد فواتير موقع - بيدو لهذا المندوب في هذا التاريخ/التصفية.</td></tr>`;
+                websiteInvoicesSection.classList.add('hidden');
+            } else {
+                websiteInvoices.forEach(order => {
+                    let delivererHandoverAmount = 0;
+                    if (order.orderType === 'فاتورة موقع') {
+                        delivererHandoverAmount = 2;
+                    }
+                    const handoverButtonText = (order.delivererHandoverCollected === 0) ? 'تم التسليم' : 'تسليم';
+                    const handoverButtonClass = (order.delivererHandoverCollected === 0) ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700';
+                    const handoverButtonDisabled = (order.delivererHandoverCollected === 0) ? 'disabled' : '';
+                    const invoiceNumberDisplay = Array.isArray(order.invoiceNumber) ? order.invoiceNumber.join('<br>') : (order.invoiceNumber || '');
+                    const freeWorksDisplay = Array.isArray(order.freeWorksDetails) && order.freeWorksDetails.length > 0 ? order.freeWorksDetails.join('<br>') : 'لا يوجد';
+                    const delivererHandoverSignatureDisplay = order.delivererHandoverSignature ? `<img src="${order.delivererHandoverSignature}" alt="Handover Signature" class="w-10 h-5 object-contain mx-auto">` : '';
+
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td class="editable-cell" data-key="${order.key}" data-field="orderType">${order.orderType || ''}</td>
+                        <td class="editable-cell stacked-content" data-key="${order.key}" data-field="invoiceNumber">${invoiceNumberDisplay}</td>
+                        <td class="editable-cell" data-key="${order.key}" data-field="clientName">${order.clientName || ''}</td>
+                        <td class="editable-cell" data-key="${order.key}" data-field="phoneNumber">${order.phoneNumber || ''}</td>
+                        <td class="editable-cell" data-key="${order.key}" data-field="area">${order.area || ''}</td>
+                        <td class="editable-cell" data-key="${order.key}" data-field="invoiceValue">${order.invoiceValue || 0}</td>
+                        <td class="editable-cell" data-key="${order.key}" data-field="deliveryValue">${order.deliveryValue || 0}</td>
+                        <td>${delivererHandoverAmount.toFixed(2)}</td>
+                        <td>
+                            ${(order.delivererHandoverCollected === 0 || order.delivererHandoverSignature) ? delivererHandoverSignatureDisplay : `<button class="${handoverButtonClass} text-white font-bold py-1 px-3 rounded-xl collect-handover-btn" data-key="${order.key}" ${handoverButtonDisabled}>${handoverButtonText}</button>`}
+                        </td>
+                        <td class="editable-cell" data-key="${order.key}" data-field="paymentMethod">${order.paymentMethod || ''}</td>
+                        <td class="editable-cell" data-key="${order.key}" data-field="employeeName">${order.employeeName || ''}</td>
+                        <td class="editable-cell" data-key="${order.key}" data-field="delivererName">${order.delivererName || ''}</td>
+                        <td data-key="${order.key}" data-field="signatureImage">
+                            ${order.signatureImage ? `<img src="${order.signatureImage}" alt="Signature" class="w-10 h-5 object-contain mx-auto">` : 'لا يوجد'}
+                        </td>
+                        <td class="editable-cell stacked-content" data-key="${order.key}" data-field="freeWorks">${freeWorksDisplay}</td>
+                        <td>${order.date || ''}</td>
+                        <td class="editable-cell" data-key="${order.key}" data-field="notes">${order.notes || ''}</td>
+                        <td>
+                            <button class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded-xl delete-order-btn-accounting" data-key="${order.key}">حذف</button>
+                        </td>
+                    `;
+                    accountingWebsiteInvoicesTableBody.appendChild(row);
+                });
+                websiteInvoicesSection.classList.remove('hidden');
+            }
+
+            // Attach event listeners for accounting tables
+            document.querySelectorAll('#accountingNormalCashInvoicesTable .collect-cash-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const orderKey = e.target.dataset.key;
+                    showSignatureModal('توقيع المحاسب باستلام الكاش', async (signature) => {
+                        await updateOrderCashStatus(orderKey, 0, signature);
+                    });
+                });
+            });
+
+            document.querySelectorAll('#accountingNormalLinkInvoicesTable .collect-handover-btn, #accountingWebsiteInvoicesTable .collect-handover-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const orderKey = e.target.dataset.key;
+                    showSignatureModal('توقيع المندوب باستلام المبلغ المستحق', async (signature) => {
+                        await updateOrderHandoverStatus(orderKey, 0, signature);
+                    });
+                });
+            });
+
+            document.querySelectorAll('#accountingNormalCashInvoicesTable .editable-cell, #accountingNormalLinkInvoicesTable .editable-cell, #accountingWebsiteInvoicesTable .editable-cell').forEach(cell => {
+                cell.addEventListener('dblclick', async (e) => {
+                    if (e.currentTarget.querySelector('input, select, textarea')) {
+                        return;
+                    }
+                    const orderKey = e.currentTarget.dataset.key;
+                    const orderRef = ref(db, `artifacts/${appId}/public/data/orders/${orderKey}`);
+                    const snapshot = await get(orderRef);
+                    if (!snapshot.exists()) {
+                        showMessageModal('الطلب غير موجود!');
+                        return;
+                    }
+                    const orderData = snapshot.val();
+                    activateInlineEdit(e.currentTarget, orderData);
+                });
+            });
+
+            document.querySelectorAll('.delete-order-btn-accounting').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const orderKey = e.target.dataset.key;
+                    showConfirmationModal('هل أنت متأكد من حذف هذا الطلب؟', (confirmed) => {
+                        if (confirmed) {
+                            deleteOrder(orderKey);
+                        }
+                    });
+                });
+            });
+        }
+
+        async function updateOrderCashStatus(orderKey, statusValue, signature = null) {
+            try {
+                const orderRef = ref(db, `artifacts/${appId}/public/data/orders/${orderKey}`);
+                const updates = { cashCollected: statusValue };
+                if (signature) {
+                    updates.cashierSignature = signature;
+                }
+                await update(orderRef, updates);
+                showMessageModal('تم تحديث حالة استلام الكاش بنجاح!');
+            } catch (error) {
+                console.error("Error updating cash status:", error);
+                showMessageModal("حدث خطأ أثناء تحديث حالة استلام الكاش: " + error.message);
             }
         }
 
-        function renderFreeWorks(orders) {
+        async function updateOrderHandoverStatus(orderKey, statusValue, signature = null) {
+            try {
+                const orderRef = ref(db, `artifacts/${appId}/public/data/orders/${orderKey}`);
+                const updates = { delivererHandoverCollected: statusValue };
+                if (signature) {
+                    updates.delivererHandoverSignature = signature;
+                }
+                await update(orderRef, updates);
+                showMessageModal('تم تحديث حالة تسليم المندوب بنجاح!');
+            } catch (error) {
+                console.error("Error updating handover status:", error);
+                showMessageModal("حدث خطأ أثناء تحديث حالة تسليم المندوب: " + error.message);
+            }
+        }
+
+        function updateCashSummary(orders, shouldHideTotalsAndButtons) {
+            if (shouldHideTotalsAndButtons) {
+                totalCashDueSummary.classList.add('hidden');
+                collectAllCashBtn.classList.add('hidden');
+                return;
+            } else {
+                totalCashDueSummary.classList.remove('hidden');
+            }
+
+            let totalCashDue = 0;
+            orders.forEach(order => {
+                if (order.paymentMethod === 'كاش' && (order.cashCollected === undefined || order.cashCollected !== 0)) {
+                    totalCashDue += (order.invoiceValue || 0) - (order.deliveryValue || 0);
+                }
+            });
+
+            if (totalCashDueSummary) {
+                totalCashDueSummary.textContent = `مجموع الكاش المطلوب استلامه: ${totalCashDue.toFixed(2)}`;
+            }
+
+            if (collectAllCashBtn) {
+                if (totalCashDue > 0) {
+                    collectAllCashBtn.classList.remove('hidden');
+                } else {
+                    collectAllCashBtn.classList.add('hidden');
+                }
+            }
+        }
+
+        function updateHandoverSummary(orders, shouldHideTotalsAndButtons) {
+            if (shouldHideTotalsAndButtons) {
+                totalHandoverDueSummary.classList.add('hidden');
+                collectAllHandoverBtn.classList.add('hidden');
+                return;
+            } else {
+                totalHandoverDueSummary.classList.remove('hidden');
+            }
+
+            let totalHandoverDue = 0;
+            orders.forEach(order => {
+                let handoverAmount = 0;
+                if (order.orderType === 'اشتراك') {
+                    handoverAmount = (order.deliveryValue <= 1) ? 0.5 : 1;
+                } else if (order.orderType === 'فاتورة موقع') {
+                    handoverAmount = 2;
+                } else if (order.orderType === 'فاتورة عادية' && order.paymentMethod === 'رابط') { // New logic
+                    handoverAmount = order.deliveryValue || 0;
+                }
+
+                if (handoverAmount > 0 && (order.delivererHandoverCollected === undefined || order.delivererHandoverCollected !== 0)) {
+                    totalHandoverDue += handoverAmount;
+                }
+            });
+
+            if (totalHandoverDueSummary) {
+                totalHandoverDueSummary.textContent = `مجموع المبلغ المستحق للمندوب: ${totalHandoverDue.toFixed(2)}`; // Changed text
+            }
+
+            if (collectAllHandoverBtn) {
+                if (totalHandoverDue > 0) {
+                    collectAllHandoverBtn.classList.remove('hidden');
+                } else {
+                    collectAllHandoverBtn.classList.add('hidden');
+                }
+            }
+        }
+
+
+        async function collectAllOutstandingCash() {
+            showSignatureModal('توقيع المحاسب باستلام كامل مبلغ الكاش', async (signature) => {
+                const updates = {};
+                currentAccountingOrders.forEach(order => {
+                    if (order.paymentMethod === 'كاش' && (order.cashCollected === undefined || order.cashCollected !== 0)) {
+                        updates[`artifacts/${appId}/public/data/orders/${order.key}/cashCollected`] = 0;
+                        updates[`artifacts/${appId}/public/data/orders/${order.key}/cashierSignature`] = signature;
+                    }
+                });
+
+                if (Object.keys(updates).length > 0) {
+                    try {
+                        await update(ref(db), updates);
+                        showMessageModal('تم استلام كامل المبلغ المطلوب بنجاح!');
+                    } catch (error) {
+                        console.error("Error collecting all cash:", error);
+                        showMessageModal("حدث خطأ أثناء استلام كامل المبلغ: " + error.message);
+                    }
+                } else {
+                    showMessageModal('لا توجد مبالغ كاش مستحقة للاستلام.');
+                }
+            });
+        }
+
+        async function collectAllOutstandingHandover() {
+            showSignatureModal('توقيع المندوب باستلام كامل المبلغ المستحق', async (signature) => { // Changed title
+                const updates = {};
+                currentAccountingOrders.forEach(order => {
+                    let handoverAmount = 0;
+                    if (order.orderType === 'اشتراك') {
+                        handoverAmount = (order.deliveryValue <= 1) ? 0.5 : 1;
+                    } else if (order.orderType === 'فاتورة موقع') {
+                        handoverAmount = 2;
+                    } else if (order.orderType === 'فاتورة عادية' && order.paymentMethod === 'رابط') { // New logic
+                        handoverAmount = order.deliveryValue || 0;
+                    }
+
+                    if (handoverAmount > 0 && (order.delivererHandoverCollected === undefined || order.delivererHandoverCollected !== 0)) {
+                        updates[`artifacts/${appId}/public/data/orders/${order.key}/delivererHandoverCollected`] = 0;
+                        updates[`artifacts/${appId}/public/data/orders/${order.key}/delivererHandoverSignature`] = signature;
+                    }
+                });
+
+                if (Object.keys(updates).length > 0) {
+                    try {
+                        await update(ref(db), updates);
+                        showMessageModal('تم تسليم كامل المبلغ للمندوب بنجاح!');
+                    } catch (error) {
+                        console.error("Error collecting all handover amounts:", error);
+                        showMessageModal("حدث خطأ أثناء تسليم كامل المبلغ للمندوب: " + error.message);
+                    }
+                } else {
+                    showMessageModal('لا توجد مبالغ تسليم مستحقة للمندوب.');
+                }
+            });
+        }
+
+
+        function renderFreeWorks(orders, shouldHide) {
             if (!freeWorksList) return; // Null check
+            
+            if (shouldHide) {
+                freeWorksList.innerHTML = `<li class="text-gray-500">الرجاء اختيار مندوب محدد لعرض الأعمال المجانية.</li>`;
+                return;
+            }
+
             freeWorksList.innerHTML = '';
             const allFreeWorks = new Set();
             orders.forEach(order => {
@@ -1429,7 +1997,7 @@
             });
 
             if (allFreeWorks.size === 0) {
-                freeWorksList.innerHTML = `<li class="text-gray-500">لا يوجد اعمال مجانية لـ "${selectedDelivererForAccounting}" لهذا اليوم.</li>`;
+                freeWorksList.innerHTML = `<li class="text-gray-500">لا يوجد اعمال مجانية لـ "${selectedDelivererForAccounting}" لهذا اليوم/التصفية.</li>`;
             } else {
                 Array.from(allFreeWorks).forEach((work) => { // Removed index
                     const li = document.createElement('li');
@@ -1439,177 +2007,199 @@
             }
         }
 
+        /**
+         * Generates a PDF report for a specific deliverer, including normal invoices and free works.
+         * This function now generates two tables: one for cash invoices and one for link/subscription invoices.
+         * @param {jsPDF} doc - The jsPDF document instance.
+         * @param {string} delivererName - The name of the deliverer.
+         * @param {string} date - The date for the report (YYYY-MM-DD).
+         * @param {Array<Object>} orders - Array of order objects for the deliverer on the specified date (already filtered for normal/subscription).
+         * @param {boolean} includeTitle - Whether to include the report title.
+         */
         async function generatePdfForDeliverer(doc, delivererName, date, orders, includeTitle = true) {
             const margin = 10;
             let y = margin;
             const pageWidth = doc.internal.pageSize.getWidth();
+            const pageHeight = doc.internal.pageSize.getHeight();
 
-            // Set the custom Arabic font 'gess'
             doc.setFont('gess', 'normal');
             doc.setFontSize(14);
 
             if (includeTitle) {
                 const title = `كشف حساب المندوب "${delivererName}" بتاريخ "${getFormattedDate(new Date(date))}"`;
-                // Use doc.text directly; jspdf-arabic plugin should handle shaping and RTL
                 doc.text(title, pageWidth / 2, y, { align: 'center' });
                 y += 15;
             }
 
-            const normalInvoices = orders.filter(order => order.orderType === 'فاتورة عادية' || order.orderType === 'اشتراك');
-            doc.setFontSize(12);
-            // Use doc.text directly
-            doc.text('فواتير عادية', pageWidth - margin, y, { align: 'right' });
-            y += 10;
+            // Separate orders into cash, link, and subscriptions for this specific deliverer's report
+            const cashInvoices = orders.filter(order => order.paymentMethod === 'كاش' && order.orderType !== 'اشتراك');
+            const linkInvoices = orders.filter(order => order.paymentMethod === 'رابط' && order.orderType !== 'اشتراك');
+            const subscriptionInvoices = orders.filter(order => order.orderType === 'اشتراك');
 
-            const normalTableHeaders = [
-                'ملاحظات', 'الاعمال المجانية', 'توقيع المندوب', 'اسم المندوب', 'اسم الموظف',
-                'طريقة الدفع', 'قيمة التوصيل', 'قيمة الفاتورة', 'المنطقة', 'رقم الهاتف',
-                'اسم العميل', 'رقم الفاتورة', 'نوع الفاتورة'
-            ];
+            // Combine link and subscription for the "deliverer handover" table
+            const linkAndSubscriptionInvoices = [...linkInvoices, ...subscriptionInvoices];
 
-            doc.autoTable({
-                startY: y,
-                head: [normalTableHeaders],
-                body: normalInvoices.map(order => [
-                    order.notes || '',
-                    (Array.isArray(order.freeWorksDetails) && order.freeWorksDetails.length > 0 ? order.freeWorksDetails.join(', ') : 'لا يوجد'),
-                    order.signatureImage || 'لا يوجد', // Pass the Base64 string directly
-                    order.delivererName || '',
-                    order.employeeName || '',
-                    order.paymentMethod || '',
-                    order.deliveryValue || 0,
-                    order.invoiceValue || 0,
-                    order.area || '',
-                    order.phoneNumber || '',
-                    order.clientName || '',
-                    order.invoiceNumber || '',
-                    order.orderType || ''
-                ]),
-                theme: 'grid',
-                styles: { font: 'gess', fontStyle: 'normal', halign: 'right', cellPadding: 2, fontSize: 8 },
-                headStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], halign: 'right' },
-                columnStyles: {
-                    // Only define column width and height for the signature column to allow others to auto-adjust
-                    2: { cellWidth: 28, cellHeight: 45, halign: 'center', valign: 'middle' } // توقيع المندوب - Increased height for more space
-                },
-                didParseCell: function (data) {
-                    // Column index for 'توقيع المندوب' is 2 (0-indexed from right in the headers array)
-                    if (data.column.index === 2 && data.cell.section === 'body') {
-                        // If there is signature data, clear the cell's text content
-                        if (data.cell.raw && data.cell.raw !== 'لا يوجد') {
-                            data.cell.text = []; // Clear text to prepare for image
-                        }
-                    }
-                },
-                didDrawCell: function (data) {
-                    // Column index for 'توقيع المندوب' is 2
-                    if (data.column.index === 2 && data.cell.section === 'body') {
-                        const signatureData = data.cell.raw; // This is the Base64 string from the order
-                        if (signatureData && signatureData !== 'لا يوجد') {
-                            try {
-                                console.log("Attempting to draw signature in PDF via didDrawCell. Data (truncated):", signatureData.substring(0, 50) + '...');
-                                const imgWidth = 10; // Further adjusted image width (even smaller)
-                                const imgHeight = 5; // Further adjusted image height (even smaller)
+            // --- Cash Invoices Table ---
+            if (cashInvoices.length > 0) {
+                doc.setFontSize(12);
+                doc.text('الفواتير العادية - كاش', pageWidth - margin, y, { align: 'right' });
+                y += 10;
 
-                                // Calculate position to center the image within the cell
-                                const x = data.cell.x + (data.cell.width - imgWidth) / 2;
-                                const y = data.cell.y + (data.cell.height - imgHeight) / 2;
+                const cashTableHeaders = [
+                    'ملاحظات', 'الاعمال المجانية', 'توقيع المحاسب باستلام الكاش', 'توقيع المندوب باستلام الطلب', 'اسم المندوب', 'اسم الموظف',
+                    'طريقة الدفع', 'قيمة التوصيل', 'قيمة الفاتورة', 'المنطقة', 'رقم الهاتف',
+                    'اسم العميل', 'رقم الفاتورة', 'نوع الفاتورة'
+                ];
 
-                                // Directly add the Base64 image data
-                                // The format ('JPEG') must match the dataURL mime type
-                                data.doc.addImage(signatureData, 'JPEG', x, y, imgWidth, imgHeight);
+                doc.autoTable({
+                    startY: y,
+                    head: [cashTableHeaders],
+                    body: cashInvoices.map(order => {
+                        const invoiceNumberDisplay = Array.isArray(order.invoiceNumber) ? order.invoiceNumber.join('\n') : (order.invoiceNumber || '');
+                        const freeWorksDisplay = Array.isArray(order.freeWorksDetails) && order.freeWorksDetails.length > 0 ? order.freeWorksDetails.join('\n') : 'لا يوجد';
 
-                            } catch (e) {
-                                console.error("Error drawing signature in didDrawCell:", e, "Signature data (truncated):", signatureData ? signatureData.substring(0, 100) + '...' : 'No data');
-                                // Draw fallback text in case of error
-                                data.doc.setFontSize(8);
-                                data.doc.text('خطأ في عرض التوقيع (تحقق من Console)', data.cell.x + data.cell.width / 2, data.cell.y + data.cell.height / 2, { align: 'center' });
+                        return [
+                            order.notes || '',
+                            freeWorksDisplay,
+                            order.cashierSignature || '', // Cashier Signature
+                            order.signatureImage || '', // Deliverer Order Signature
+                            order.delivererName || '',
+                            order.employeeName || '',
+                            order.paymentMethod || '',
+                            order.deliveryValue || 0,
+                            order.invoiceValue || 0,
+                            order.area || '',
+                            order.phoneNumber || '',
+                            order.clientName || '',
+                            invoiceNumberDisplay,
+                            order.orderType || ''
+                        ];
+                    }),
+                    theme: 'grid',
+                    styles: { font: 'gess', fontStyle: 'normal', halign: 'right', cellPadding: 1, fontSize: 8 },
+                    headStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], halign: 'right', fontStyle: 'bold', fontSize: 8 },
+                    columnStyles: {
+                        2: { cellWidth: 15, cellHeight: 10, halign: 'center', valign: 'middle' }, // Cashier Signature
+                        3: { cellWidth: 15, cellHeight: 10, halign: 'center', valign: 'middle' }  // Deliverer Order Signature
+                    },
+                    didParseCell: function (data) {
+                        const signatureCols = [2, 3];
+                        if (signatureCols.includes(data.column.index) && data.cell.section === 'body') {
+                            if (data.cell.raw && data.cell.raw !== '') {
+                                data.cell.text = [];
+                            } else {
+                                data.cell.text = ['لا يوجد'];
                             }
-                        } else {
-                            // If no signature data, draw 'لا يوجد'
-                            data.doc.setFontSize(8);
-                            data.doc.text('لا يوجد', data.cell.x + data.cell.width / 2, data.cell.y + data.cell.height / 2, { align: 'center' });
                         }
-                    }
-                },
-                didDrawPage: (data) => {}
-            });
-            y = doc.autoTable.previous.finalY + 10;
-
-            const websiteInvoices = orders.filter(order => order.orderType === 'فاتورة موقع');
-            doc.setFontSize(12);
-            doc.text('فواتير الموقع - بيدو', pageWidth - margin, y, { align: 'right' }); // Changed text here
-            y += 10;
-
-            const websiteTableData = websiteInvoices.map(order => [
-                order.notes || '',
-                (Array.isArray(order.freeWorksDetails) && order.freeWorksDetails.length > 0 ? order.freeWorksDetails.join(', ') : 'لا يوجد'),
-                order.signatureImage || 'لا يوجد', // Pass the Base64 string directly
-                order.delivererName || '',
-                order.employeeName || '',
-                order.paymentMethod || '',
-                order.deliveryValue || 0,
-                order.invoiceValue || 0,
-                order.area || '',
-                order.phoneNumber || '',
-                order.clientName || '',
-                order.invoiceNumber || '',
-                order.orderType || ''
-            ]);
-
-            doc.autoTable({
-                startY: y,
-                head: [normalTableHeaders],
-                body: websiteTableData,
-                theme: 'grid',
-                styles: { font: 'gess', fontStyle: 'normal', halign: 'right', cellPadding: 2, fontSize: 8 },
-                headStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], halign: 'right' },
-                columnStyles: {
-                    // Only define column width and height for the signature column to allow others to auto-adjust
-                    2: { cellWidth: 28, cellHeight: 45, halign: 'center', valign: 'middle' } // توقيع المندوب - Increased height for more space
-                },
-                didParseCell: function (data) {
-                    // Column index for 'توقيع المندوب' is 2
-                    if (data.column.index === 2 && data.cell.section === 'body') {
-                        if (data.cell.raw && data.cell.raw !== 'لا يوجد') {
-                            data.cell.text = []; // Clear text to prepare for image
-                        }
-                    }
-                },
-                didDrawCell: function (data) {
-                    // Column index for 'توقيع المندوب' is 2
-                    if (data.column.index === 2 && data.cell.section === 'body') {
-                        const signatureData = data.cell.raw; // This is the Base64 string from the order
-                        if (signatureData && signatureData !== 'لا يوجد') {
-                            try {
-                                console.log("Attempting to draw signature in PDF via didDrawCell. Data (truncated):", signatureData.substring(0, 50) + '...');
-                                const imgWidth = 10; // Further adjusted image width (even smaller)
-                                const imgHeight = 5; // Further adjusted image height (even smaller)
-
-                                // Calculate position to center the image within the cell
-                                const x = data.cell.x + (data.cell.width - imgWidth) / 2;
-                                const y = data.cell.y + (data.cell.height - imgHeight) / 2;
-
-                                // Directly add the Base64 image data
-                                // The format ('JPEG') must match the dataURL mime type
-                                data.doc.addImage(signatureData, 'JPEG', x, y, imgWidth, imgHeight);
-
-                            } catch (e) {
-                                console.error("Error drawing signature in didDrawCell:", e, "Signature data (truncated):", signatureData ? signatureData.substring(0, 100) + '...' : 'No data');
-                                // Draw fallback text in case of error
-                                data.doc.setFontSize(8);
-                                data.doc.text('خطأ في عرض التوقيع (تحقق من Console)', data.cell.x + data.cell.width / 2, data.cell.y + data.cell.height / 2, { align: 'center' });
+                    },
+                    didDrawCell: function (data) {
+                        const signatureCols = [2, 3];
+                        if (signatureCols.includes(data.column.index) && data.cell.section === 'body') {
+                            const signatureData = data.cell.raw;
+                            if (signatureData && signatureData !== '') {
+                                try {
+                                    const imgWidth = 10;
+                                    const imgHeight = 5;
+                                    const x = data.cell.x + (data.cell.width - imgWidth) / 2;
+                                    const y = data.cell.y + (data.cell.height - imgHeight) / 2;
+                                    data.doc.addImage(signatureData, 'JPEG', x, y, imgWidth, imgHeight);
+                                } catch (e) {
+                                    console.error("Error drawing signature in didDrawCell:", e);
+                                    data.doc.setFontSize(6);
+                                    data.doc.text('خطأ', data.cell.x + data.cell.width / 2, data.cell.y + data.cell.height / 2, { align: 'center' });
+                                }
                             }
-                        } else {
-                            // If no signature data, draw 'لا يوجد'
-                            data.doc.setFontSize(8);
-                            data.doc.text('لا يوجد', data.cell.x + data.cell.width / 2, data.cell.y + data.cell.height / 2, { align: 'center' });
                         }
+                    },
+                    didDrawPage: (data) => {
+                        doc.setFontSize(8);
+                        doc.text(`صفحة ${data.pageNumber}`, pageWidth / 2, pageHeight - margin, { align: 'center' });
                     }
-                }
-            });
-            y = doc.autoTable.previous.finalY + 10;
+                });
+                y = doc.autoTable.previous.finalY + 10;
+            }
 
+            // --- Link/Subscription Invoices Table ---
+            if (linkAndSubscriptionInvoices.length > 0) {
+                doc.setFontSize(12);
+                doc.text('الفواتير العادية - رابط (من ضمنه الاشتراكات)', pageWidth - margin, y, { align: 'right' });
+                y += 10;
+
+                const linkTableHeaders = [
+                    'ملاحظات', 'الاعمال المجانية', 'توقيع المندوب باستلام المبلغ المستحق', 'توقيع المندوب باستلام الطلب', 'اسم المندوب', 'اسم الموظف',
+                    'طريقة الدفع', 'قيمة التوصيل', 'قيمة الفاتورة', 'المنطقة', 'رقم الهاتف',
+                    'اسم العميل', 'رقم الفاتورة', 'نوع الفاتورة'
+                ];
+
+                doc.autoTable({
+                    startY: y,
+                    head: [linkTableHeaders],
+                    body: linkAndSubscriptionInvoices.map(order => {
+                        const invoiceNumberDisplay = Array.isArray(order.invoiceNumber) ? order.invoiceNumber.join('\n') : (order.invoiceNumber || '');
+                        const freeWorksDisplay = Array.isArray(order.freeWorksDetails) && order.freeWorksDetails.length > 0 ? order.freeWorksDetails.join('\n') : 'لا يوجد';
+
+                        return [
+                            order.notes || '',
+                            freeWorksDisplay,
+                            order.delivererHandoverSignature || '', // Deliverer Handover Signature
+                            order.signatureImage || '', // Deliverer Order Signature
+                            order.delivererName || '',
+                            order.employeeName || '',
+                            order.paymentMethod || '',
+                            order.deliveryValue || 0,
+                            order.invoiceValue || 0,
+                            order.area || '',
+                            order.phoneNumber || '',
+                            order.clientName || '',
+                            invoiceNumberDisplay,
+                            order.orderType || ''
+                        ];
+                    }),
+                    theme: 'grid',
+                    styles: { font: 'gess', fontStyle: 'normal', halign: 'right', cellPadding: 1, fontSize: 8 },
+                    headStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], halign: 'right', fontStyle: 'bold', fontSize: 8 },
+                    columnStyles: {
+                        2: { cellWidth: 15, cellHeight: 10, halign: 'center', valign: 'middle' }, // Deliverer Handover Signature
+                        3: { cellWidth: 15, cellHeight: 10, halign: 'center', valign: 'middle' }  // Deliverer Order Signature
+                    },
+                    didParseCell: function (data) {
+                        const signatureCols = [2, 3];
+                        if (signatureCols.includes(data.column.index) && data.cell.section === 'body') {
+                            if (data.cell.raw && data.cell.raw !== '') {
+                                data.cell.text = [];
+                            } else {
+                                data.cell.text = ['لا يوجد'];
+                            }
+                        }
+                    },
+                    didDrawCell: function (data) {
+                        const signatureCols = [2, 3];
+                        if (signatureCols.includes(data.column.index) && data.cell.section === 'body') {
+                            const signatureData = data.cell.raw;
+                            if (signatureData && signatureData !== '') {
+                                try {
+                                    const imgWidth = 10;
+                                    const imgHeight = 5;
+                                    const x = data.cell.x + (data.cell.width - imgWidth) / 2;
+                                    const y = data.cell.y + (data.cell.height - imgHeight) / 2;
+                                    data.doc.addImage(signatureData, 'JPEG', x, y, imgWidth, imgHeight);
+                                } catch (e) {
+                                    console.error("Error drawing signature in didDrawCell:", e);
+                                    data.doc.setFontSize(6);
+                                    data.doc.text('خطأ', data.cell.x + data.cell.width / 2, data.cell.y + data.cell.height / 2, { align: 'center' });
+                                }
+                            }
+                        }
+                    },
+                    didDrawPage: (data) => {
+                        doc.setFontSize(8);
+                        doc.text(`صفحة ${data.pageNumber}`, pageWidth / 2, pageHeight - margin, { align: 'center' });
+                    }
+                });
+                y = doc.autoTable.previous.finalY + 10;
+            }
+
+            // The free works section should now aggregate from all orders for this deliverer, regardless of payment type.
             const allFreeWorks = new Set();
             orders.forEach(order => {
                 if (Array.isArray(order.freeWorksDetails)) {
@@ -1617,16 +2207,141 @@
                 }
             });
 
-            doc.text('الاعمال المجانية للمندوب', pageWidth - margin, y, { align: 'right' }); // Removed colon
+            doc.text('الاعمال المجانية للمندوب', pageWidth - margin, y, { align: 'right' });
             y += 10;
 
             if (allFreeWorks.size === 0) {
                 doc.text(`لا يوجد اعمال مجانية لـ "${delivererName}" لهذا اليوم.`, pageWidth - margin, y, { align: 'right' });
                 y += 10;
             } else {
-                Array.from(allFreeWorks).forEach((work) => { // Removed index
-                    // Changed to place number before the text for RTL numbering
-                    doc.text(`${work}`, pageWidth - margin, y, { align: 'right' }); // Removed numbering
+                Array.from(allFreeWorks).forEach((work) => {
+                    doc.text(`${work}`, pageWidth - margin, y, { align: 'right' });
+                    y += 7;
+                });
+            }
+            return y;
+        }
+
+        /**
+         * Generates a consolidated PDF report for all website orders for a specific date.
+         * @param {jsPDF} doc - The jsPDF document instance.
+         * @param {string} date - The date for the report (YYYY-MM-DD).
+         * @param {Array<Object>} allOrders - Array of all order objects for the specified date.
+         */
+        async function generateConsolidatedWebsiteOrdersPdf(doc, date, allOrders) {
+            const margin = 10;
+            let y = margin;
+            const pageWidth = doc.internal.pageSize.getWidth();
+            const pageHeight = doc.internal.pageSize.getHeight();
+
+            doc.setFont('gess', 'normal');
+            doc.setFontSize(14);
+
+            const title = `فواتير موقع بيدو بتاريخ ${getFormattedDate(new Date(date))}`;
+            doc.text(title, pageWidth / 2, y, { align: 'center' });
+            y += 15;
+
+            const websiteInvoices = allOrders.filter(order => order.orderType === 'فاتورة موقع');
+
+            if (websiteInvoices.length === 0) {
+                doc.setFontSize(12);
+                doc.text('لا توجد فواتير موقع (بيدو) لهذا التاريخ.', pageWidth - margin, y, { align: 'right' });
+                return y + 10;
+            }
+
+            doc.setFontSize(12);
+            doc.text('فواتير الموقع - بيدو', pageWidth - margin, y, { align: 'right' });
+            y += 10;
+
+            const websiteTableHeaders = [
+                'ملاحظات', 'الاعمال المجانية', 'توقيع المندوب باستلام المبلغ المستحق', 'توقيع المندوب باستلام الطلب', 'اسم المندوب', 'اسم الموظف',
+                'طريقة الدفع', 'قيمة التوصيل', 'قيمة الفاتورة', 'المنطقة', 'رقم الهاتف',
+                'اسم العميل', 'رقم الفاتورة', 'نوع الفاتورة'
+            ];
+
+            doc.autoTable({
+                startY: y,
+                head: [websiteTableHeaders],
+                body: websiteInvoices.map(order => {
+                    const invoiceNumberDisplay = Array.isArray(order.invoiceNumber) ? order.invoiceNumber.join('\n') : (order.invoiceNumber || '');
+                    const freeWorksDisplay = Array.isArray(order.freeWorksDetails) && order.freeWorksDetails.length > 0 ? order.freeWorksDetails.join('\n') : 'لا يوجد';
+
+                    return [
+                        order.notes || '',
+                        freeWorksDisplay,
+                        order.delivererHandoverSignature || '',
+                        order.signatureImage || '',
+                        order.delivererName || '',
+                        order.employeeName || '',
+                        order.paymentMethod || '',
+                        order.deliveryValue || 0,
+                        order.invoiceValue || 0,
+                        order.area || '',
+                        order.phoneNumber || '',
+                        order.clientName || '',
+                        invoiceNumberDisplay,
+                        order.orderType || ''
+                    ];
+                }),
+                theme: 'grid',
+                styles: { font: 'gess', fontStyle: 'normal', halign: 'right', cellPadding: 1, fontSize: 8 }, // Smaller font for more compact table
+                headStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], halign: 'right', fontStyle: 'bold', fontSize: 8 },
+                columnStyles: {
+                    2: { cellWidth: 15, cellHeight: 10, halign: 'center', valign: 'middle' }, // Deliverer Handover Signature
+                    3: { cellWidth: 15, cellHeight: 10, halign: 'center', valign: 'middle' }  // Deliverer Order Signature
+                },
+                didParseCell: function (data) {
+                    const signatureCols = [2, 3];
+                    if (signatureCols.includes(data.column.index) && data.cell.section === 'body') {
+                        if (data.cell.raw && data.cell.raw !== '') {
+                            data.cell.text = [];
+                        } else {
+                            data.cell.text = ['لا يوجد'];
+                        }
+                    }
+                },
+                didDrawCell: function (data) {
+                    const signatureCols = [2, 3];
+                    if (signatureCols.includes(data.column.index) && data.cell.section === 'body') {
+                        const signatureData = data.cell.raw;
+                        if (signatureData && signatureData !== '') {
+                            try {
+                                const imgWidth = 10;
+                                const imgHeight = 5;
+                                const x = data.cell.x + (data.cell.width - imgWidth) / 2;
+                                const y = data.cell.y + (data.cell.height - imgHeight) / 2;
+                                data.doc.addImage(signatureData, 'JPEG', x, y, imgWidth, imgHeight);
+                            } catch (e) {
+                                console.error("Error drawing signature in didDrawCell:", e);
+                                data.doc.setFontSize(6);
+                                data.doc.text('خطأ', data.cell.x + data.cell.width / 2, data.cell.y + data.cell.height / 2, { align: 'center' });
+                            }
+                        }
+                    }
+                },
+                didDrawPage: (data) => {
+                    doc.setFontSize(8);
+                    doc.text(`صفحة ${data.pageNumber}`, pageWidth / 2, pageHeight - margin, { align: 'center' });
+                }
+            });
+            y = doc.autoTable.previous.finalY + 10;
+
+            const allFreeWorks = new Set();
+            websiteInvoices.forEach(order => {
+                if (Array.isArray(order.freeWorksDetails)) {
+                    order.freeWorksDetails.forEach(work => allFreeWorks.add(work));
+                }
+            });
+
+            doc.text('الاعمال المجانية للمندوب', pageWidth - margin, y, { align: 'right' });
+            y += 10;
+
+            if (allFreeWorks.size === 0) {
+                doc.text(`لا يوجد اعمال مجانية لطلبات الموقع لهذا اليوم.`, pageWidth - margin, y, { align: 'right' });
+                y += 10;
+            } else {
+                Array.from(allFreeWorks).forEach((work) => {
+                    doc.text(`${work}`, pageWidth - margin, y, { align: 'right' });
                     y += 7;
                 });
             }
@@ -1649,10 +2364,12 @@
                 const actionsColumnHtml = currentSearchContext === 'secretariat' ?
                     `<td><button class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-3 rounded-xl edit-search-result-btn" data-key="${order.key}">تعديل</button></td>` :
                     '';
+                const invoiceNumberDisplay = Array.isArray(order.invoiceNumber) ? order.invoiceNumber.join('<br>') : (order.invoiceNumber || '');
+                const freeWorksDisplay = Array.isArray(order.freeWorksDetails) && order.freeWorksDetails.length > 0 ? order.freeWorksDetails.join('<br>') : 'لا يوجد';
 
                 row.innerHTML = `
                     <td>${order.orderType || ''}</td>
-                    <td>${order.invoiceNumber || ''}</td>
+                    <td class="stacked-content">${invoiceNumberDisplay}</td>
                     <td>${order.clientName || ''}</td>
                     <td>${order.phoneNumber || ''}</td>
                     <td>${order.area || ''}</td>
@@ -1662,9 +2379,9 @@
                     <td>${order.employeeName || ''}</td>
                     <td>${order.delivererName || ''}</td>
                     <td>
-                        ${order.signatureImage ? `<img src="${order.signatureImage}" alt="Signature" class="w-12 h-6 object-contain mx-auto">` : 'لا يوجد'}
+                        ${order.signatureImage ? `<img src="${order.signatureImage}" alt="Signature" class="w-10 h-5 object-contain mx-auto">` : 'لا يوجد'}
                     </td>
-                    <td>${Array.isArray(order.freeWorksDetails) && order.freeWorksDetails.length > 0 ? order.freeWorksDetails.join(', ') : 'لا يوجد'}</td>
+                    <td class="stacked-content">${freeWorksDisplay}</td>
                     <td>${order.dateTime || ''}</td>
                     <td>${order.notes || ''}</td>
                     ${actionsColumnHtml}
@@ -1693,14 +2410,15 @@
             newOrderBtn = document.getElementById('newOrderBtn');
             newOrderModal = document.getElementById('newOrderModal');
             orderFormContent = document.getElementById('orderFormContent');
-            prevQuestionBtn = document.getElementById('prevQuestionBtn');
-            nextQuestionBtn = document.getElementById('nextQuestionBtn');
+            submitOrderBtn = document.getElementById('submitOrderBtn'); // Renamed from nextQuestionBtn
             signatureModal = document.getElementById('signatureModal');
             signatureCanvas = document.getElementById('signatureCanvas');
             clearSignatureBtn = document.getElementById('clearSignatureBtn');
             saveSignatureBtn = document.getElementById('saveSignatureBtn');
             secretariatLogoutBtn = document.getElementById('secretariatLogoutBtn');
             searchOrderSecretariatBtn = document.getElementById('searchOrderSecretariatBtn');
+            signatureModalTitle = document.getElementById('signatureModalTitle'); // New reference
+            newOrderModalTitle = document.getElementById('newOrderModalTitle'); // New reference
 
             searchOrderModal = document.getElementById('searchOrderModal');
             searchQueryInput = document.getElementById('searchQueryInput');
@@ -1717,12 +2435,30 @@
             accountingDateInput = document.getElementById('accountingDate');
             delivererSelectAccounting = document.getElementById('delivererSelectAccounting');
             accountingReportTitle = document.getElementById('accountingReportTitle');
-            accountingNormalInvoicesTableBody = document.getElementById('accountingNormalInvoicesTableBody');
+            accountingNormalCashInvoicesTableBody = document.getElementById('accountingNormalCashInvoicesTableBody');
+            accountingNormalLinkInvoicesTableBody = document.getElementById('accountingNormalLinkInvoicesTableBody');
             accountingWebsiteInvoicesTableBody = document.getElementById('accountingWebsiteInvoicesTableBody');
             freeWorksList = document.getElementById('freeWorksList');
             downloadCurrentPdfBtn = document.getElementById('downloadCurrentPdfBtn');
             downloadAllDeliverersPdfBtn = document.getElementById('downloadAllDeliverersPdfBtn');
+            downloadWebsiteOrdersPdfBtn = document.getElementById('downloadWebsiteOrdersPdfBtn'); // New button reference
             backToMainFromAccountingLogin = document.getElementById('backToMainFromAccountingLogin');
+            totalCashDueSummary = document.getElementById('totalCashDueSummary');
+            collectAllCashBtn = document.getElementById('collectAllCashBtn');
+            filterOrdersBtn = document.getElementById('filterOrdersBtn');
+            filterFromDateInput = document.getElementById('filterFromDate');
+            filterToDateInput = document.getElementById('filterToDate');
+            applyFilterBtn = document.getElementById('applyFilterBtn');
+            totalHandoverDueSummary = document.getElementById('totalHandoverDueSummary');
+            collectAllHandoverBtn = document.getElementById('collectAllHandoverBtn');
+            clearFilterBtn = document.getElementById('clearFilterBtn');
+            filterDelivererSelect = document.getElementById('filterDelivererSelect');
+            filterDelivererOptionRadios = document.querySelectorAll('input[name="filterDelivererOption"]');
+            
+            normalCashInvoicesSection = document.getElementById('normalCashInvoicesSection');
+            normalLinkInvoicesSection = document.getElementById('normalLinkInvoicesSection');
+            websiteInvoicesSection = document.getElementById('websiteInvoicesSection');
+
 
             // Attach all event listeners here with null checks
             if (document.getElementById('secretariatBtn')) {
@@ -1757,18 +2493,21 @@
             if (newOrderBtn) {
                 newOrderBtn.addEventListener('click', () => {
                     currentOrderData = {};
-                    currentQuestionIndex = 0;
                     currentOrderKeyForEdit = null;
+                    newOrderModalTitle.textContent = 'تسليم طلب جديد'; // Reset modal title for new order
+                    renderAllQuestions();
                     showModal('newOrderModal');
-                    renderQuestion();
                 });
             }
 
-            if (prevQuestionBtn) {
-                prevQuestionBtn.addEventListener('click', prevQuestion);
-            }
-            if (nextQuestionBtn) {
-                nextQuestionBtn.addEventListener('click', nextQuestion);
+            if (submitOrderBtn) {
+                submitOrderBtn.addEventListener('click', () => {
+                    const formData = collectAllFormData();
+                    if (formData) {
+                        currentOrderData = formData;
+                        showSignatureModal('توقيع المندوب باستلام الطلب');
+                    }
+                });
             }
 
             if (clearSignatureBtn) {
@@ -1780,31 +2519,54 @@
             if (saveSignatureBtn) {
                 saveSignatureBtn.addEventListener('click', async () => {
                     if (signaturePad && !signaturePad.isEmpty()) {
-                        // Change to JPEG for better jsPDF compatibility
-                        const signatureImage = signatureCanvas.toDataURL('image/jpeg', 0.8); // 0.8 is quality
-                        console.log("Full Signature Data Before Save (JPEG):", signatureImage.substring(0, 100) + '...'); // Log for verification
-                        currentOrderData.signatureImage = signatureImage;
-                        currentOrderData.timestamp = Date.now();
-                        const now = new Date();
-                        currentOrderData.date = getCurrentDateString();
-                        currentOrderData.dateTime = `${getFormattedDate(now)} ${getFormattedTime(now)}`;
+                        const signatureImage = signatureCanvas.toDataURL('image/jpeg', 0.8);
 
-                        try {
-                            if (currentOrderKeyForEdit) {
-                                const orderRef = ref(db, `artifacts/${appId}/public/data/orders/${currentOrderKeyForEdit}`);
-                                await update(orderRef, currentOrderData);
-                                showMessageModal('تم تحديث الطلب بنجاح!');
-                            } else {
-                                const ordersRef = ref(db, `artifacts/${appId}/public/data/orders`);
-                                await push(ordersRef, currentOrderData);
-                                showMessageModal('تم تسليم الطلب بنجاح!');
+                        if (signatureCallback) {
+                            signatureCallback(signatureImage); // Execute the stored callback
+                            signatureCallback = null; // Clear the callback
+                        } else {
+                            // This is the main order submission signature
+                            currentOrderData.signatureImage = signatureImage;
+                            currentOrderData.timestamp = Date.now();
+                            const now = new Date();
+                            currentOrderData.date = getCurrentDateString();
+                            currentOrderData.dateTime = `${getFormattedDate(now)} ${getFormattedTime(now)}`;
+
+                            // Initialize cashCollected for new cash orders
+                            if (currentOrderData.paymentMethod === 'كاش' && currentOrderData.cashCollected === undefined) {
+                                currentOrderData.cashCollected = (currentOrderData.invoiceValue || 0) - (currentOrderData.deliveryValue || 0);
+                            } else if (currentOrderData.cashCollected === undefined) { // For link orders or others
+                                currentOrderData.cashCollected = 0; // Not applicable for non-cash orders
                             }
-                            closeModal('signatureModal');
-                            signaturePad.clear();
-                        } catch (error) {
-                            console.error("Error saving order:", error);
-                            showMessageModal("حدث خطأ أثناء حفظ الطلب: " + error.message);
+
+                            // Initialize delivererHandoverCollected for new orders
+                            if (currentOrderData.orderType === 'اشتراك' && currentOrderData.delivererHandoverCollected === undefined) {
+                                currentOrderData.delivererHandoverCollected = (currentOrderData.deliveryValue <= 1) ? 0.5 : 1;
+                            } else if (currentOrderData.orderType === 'فاتورة موقع' && currentOrderData.delivererHandoverCollected === undefined) {
+                                currentOrderData.delivererHandoverCollected = 2;
+                            } else if (currentOrderData.orderType === 'فاتورة عادية' && currentOrderData.paymentMethod === 'رابط' && currentOrderData.delivererHandoverCollected === undefined) {
+                                currentOrderData.delivererHandoverCollected = currentOrderData.deliveryValue || 0;
+                            } else if (currentOrderData.delivererHandoverCollected === undefined) {
+                                currentOrderData.delivererHandoverCollected = 0; // Default for other types
+                            }
+
+                            try {
+                                if (currentOrderKeyForEdit) {
+                                    const orderRef = ref(db, `artifacts/${appId}/public/data/orders/${currentOrderKeyForEdit}`);
+                                    await update(orderRef, currentOrderData);
+                                    showMessageModal('تم تحديث الطلب بنجاح!');
+                                } else {
+                                    const ordersRef = ref(db, `artifacts/${appId}/public/data/orders`);
+                                    await push(ordersRef, currentOrderData);
+                                    showMessageModal('تم تسليم الطلب بنجاح!');
+                                }
+                            } catch (error) {
+                                console.error("Error saving order:", error);
+                                showMessageModal("حدث خطأ أثناء حفظ الطلب: " + error.message);
+                            }
                         }
+                        closeModal('signatureModal');
+                        signaturePad.clear();
                     } else {
                         showMessageModal('الرجاء التوقيع قبل الحفظ.');
                     }
@@ -1856,8 +2618,9 @@
                             if (searchSnapshot.exists()) {
                                 searchSnapshot.forEach(childSnapshot => {
                                     const order = childSnapshot.val();
-                                    // Ensure invoiceNumber is a string before using .includes()
-                                    if (order.invoiceNumber && typeof order.invoiceNumber === 'string' && order.invoiceNumber.includes(queryValue)) {
+                                    // Ensure invoiceNumber is an array or string before checking
+                                    const invoiceNumbers = Array.isArray(order.invoiceNumber) ? order.invoiceNumber : [order.invoiceNumber];
+                                    if (invoiceNumbers.some(invNum => typeof invNum === 'string' && invNum.includes(queryValue))) {
                                         orders.push({ key: childSnapshot.key, ...order });
                                     }
                                 });
@@ -1913,7 +2676,15 @@
             if (accountingDateInput) {
                 accountingDateInput.addEventListener('change', async (e) => {
                     selectedAccountingDate = e.target.value;
-                    selectedDelivererForAccounting = null;
+                    currentFilterFromDate = ''; // Clear range filters when single date is selected
+                    currentFilterToDate = '';
+                    // Reset filter deliverer option to 'all' and disable filterDelivererSelect
+                    document.querySelector('input[name="filterDelivererOption"][value="all"]').checked = true;
+                    currentFilterDelivererOption = 'all';
+                    filterDelivererSelect.disabled = true;
+                    filterDelivererSelect.value = '';
+
+                    selectedDelivererForAccounting = null; // Reset selected deliverer for dropdown
                     await populateDelivererDropdown(selectedAccountingDate);
                     updateAccountingReport();
                 });
@@ -1922,9 +2693,125 @@
             if (delivererSelectAccounting) {
                 delivererSelectAccounting.addEventListener('change', (e) => {
                     selectedDelivererForAccounting = e.target.value;
+                    // When selecting from main dropdown, set filter option to 'specific'
+                    document.querySelector('input[name="filterDelivererOption"][value="specific"]').checked = true;
+                    currentFilterDelivererOption = 'specific';
+                    filterDelivererSelect.disabled = false;
+                    filterDelivererSelect.value = selectedDelivererForAccounting;
+
                     updateAccountingReport();
                 });
             }
+
+            if (collectAllCashBtn) {
+                collectAllCashBtn.addEventListener('click', () => {
+                    collectAllOutstandingCash();
+                });
+            }
+
+            if (collectAllHandoverBtn) {
+                collectAllHandoverBtn.addEventListener('click', () => {
+                    collectAllOutstandingHandover();
+                });
+            }
+
+            if (filterOrdersBtn) {
+                filterOrdersBtn.addEventListener('click', async () => {
+                    // Pre-fill dates if they were previously set
+                    if (currentFilterFromDate) filterFromDateInput.value = currentFilterFromDate;
+                    if (currentFilterToDate) filterToDateInput.value = currentFilterToDate;
+                    document.querySelector(`input[name="filterInvoiceType"][value="${currentFilterInvoiceType}"]`).checked = true;
+                    document.querySelector(`input[name="filterDelivererOption"][value="${currentFilterDelivererOption}"]`).checked = true;
+
+                    // Populate deliverer dropdown in filter modal and enable/disable based on currentFilterDelivererOption
+                    await populateDelivererDropdown(selectedAccountingDate || currentFilterFromDate || getCurrentDateString());
+                    if (currentFilterDelivererOption === 'specific') {
+                        filterDelivererSelect.disabled = false;
+                        if (selectedDelivererForAccounting) {
+                            filterDelivererSelect.value = selectedDelivererForAccounting;
+                        }
+                    } else {
+                        filterDelivererSelect.disabled = true;
+                        filterDelivererSelect.value = ''; // Clear selection if 'all' is chosen
+                    }
+
+                    showModal('filterOrdersModal');
+                });
+            }
+
+            if (filterDelivererOptionRadios) {
+                filterDelivererOptionRadios.forEach(radio => {
+                    radio.addEventListener('change', (e) => {
+                        if (e.target.value === 'specific') {
+                            filterDelivererSelect.disabled = false;
+                            // If a deliverer is already selected in the main dropdown, pre-select it here
+                            if (selectedDelivererForAccounting) {
+                                filterDelivererSelect.value = selectedDelivererForAccounting;
+                            }
+                        } else {
+                            filterDelivererSelect.disabled = true;
+                            filterDelivererSelect.value = ''; // Clear selection if 'all' is chosen
+                        }
+                    });
+                });
+            }
+
+            if (applyFilterBtn) {
+                applyFilterBtn.addEventListener('click', () => {
+                    currentFilterFromDate = filterFromDateInput.value;
+                    currentFilterToDate = filterToDateInput.value;
+                    currentFilterInvoiceType = document.querySelector('input[name="filterInvoiceType"]:checked').value;
+                    currentFilterDelivererOption = document.querySelector('input[name="filterDelivererOption"]:checked').value;
+
+                    if (currentFilterDelivererOption === 'specific') {
+                        selectedDelivererForAccounting = filterDelivererSelect.value;
+                        if (!selectedDelivererForAccounting) {
+                            showMessageModal('الرجاء اختيار مندوب محدد لتطبيق التصفية.');
+                            return;
+                        }
+                    } else {
+                        selectedDelivererForAccounting = null; // Clear specific deliverer if 'all' is chosen
+                    }
+
+                    // If a date range is selected, clear the single selectedAccountingDate
+                    if (currentFilterFromDate || currentFilterToDate) {
+                        selectedAccountingDate = '';
+                        if (accountingDateInput) accountingDateInput.value = '';
+                    } else {
+                        // If no range, revert to showing current day's data if no single date was selected before
+                        selectedAccountingDate = getCurrentDateString();
+                        if (accountingDateInput) accountingDateInput.value = selectedAccountingDate;
+                    }
+
+                    closeModal('filterOrdersModal');
+                    updateAccountingReport(); // Re-fetch and re-render with new filters
+                });
+            }
+
+            if (clearFilterBtn) {
+                clearFilterBtn.addEventListener('click', () => {
+                    currentFilterFromDate = '';
+                    currentFilterToDate = '';
+                    currentFilterInvoiceType = 'all';
+                    currentFilterDelivererOption = 'all';
+                    selectedDelivererForAccounting = null; // Reset selected deliverer for accounting section
+                    accountingDateInput.value = getCurrentDateString(); // Reset date input to current day
+                    selectedAccountingDate = getCurrentDateString(); // Update selectedAccountingDate
+                    
+                    // Reset filter modal inputs to default as well
+                    filterFromDateInput.value = '';
+                    filterToDateInput.value = '';
+                    document.querySelector('input[name="filterInvoiceType"][value="all"]').checked = true;
+                    document.querySelector('input[name="filterDelivererOption"][value="all"]').checked = true;
+                    filterDelivererSelect.disabled = true;
+                    filterDelivererSelect.value = '';
+
+                    populateDelivererDropdown(selectedAccountingDate).then(() => {
+                        updateAccountingReport(); // Re-fetch and re-render without filters
+                    });
+                });
+            }
+
 
             if (downloadCurrentPdfBtn) {
                 downloadCurrentPdfBtn.addEventListener('click', async () => {
@@ -1940,17 +2827,22 @@
                         format: 'a4'
                     });
 
-                    await generatePdfForDeliverer(doc, selectedDelivererForAccounting, selectedAccountingDate, currentAccountingOrders);
+                    // Filter orders for the current deliverer to include only normal invoices
+                    const ordersForCurrentDeliverer = currentAccountingOrders.filter(order =>
+                        order.orderType === 'فاتورة عادية' || order.orderType === 'اشتراك'
+                    );
 
-                    const fileName = `كشف حساب المندوب ${selectedDelivererForAccounting} بتاريخ ${selectedAccountingDate}.pdf`;
+                    await generatePdfForDeliverer(doc, selectedDelivererForAccounting, selectedAccountingDate || currentFilterFromDate || getCurrentDateString(), ordersForCurrentDeliverer, true);
+
+                    const fileName = `كشف حساب المندوب ${selectedDelivererForAccounting} بتاريخ ${selectedAccountingDate || currentFilterFromDate || getCurrentDateString()}.pdf`;
                     doc.save(fileName);
                 });
             }
 
             if (downloadAllDeliverersPdfBtn) {
                 downloadAllDeliverersPdfBtn.addEventListener('click', async () => {
-                    if (!selectedAccountingDate) {
-                        showMessageModal('الرجاء اختيار تاريخ.');
+                    if (!selectedAccountingDate && !currentFilterFromDate) {
+                        showMessageModal('الرجاء اختيار تاريخ أو نطاق تاريخ.');
                         return;
                     }
 
@@ -1963,45 +2855,143 @@
 
                     const ordersRef = ref(db, `artifacts/${appId}/public/data/orders`);
                     const ordersSnapshot = await get(ordersRef);
-                    const allOrdersForDate = [];
+                    const allOrdersForDateRange = [];
                     if (ordersSnapshot) {
                         ordersSnapshot.forEach(childSnapshot => {
                             const order = childSnapshot.val();
-                            if (order.date === selectedAccountingDate) {
-                                allOrdersForDate.push({ key: childSnapshot.key, ...order });
+                            const orderDateString = order.date; // Assuming order.date is "YYYY-MM-DD"
+                            let dateMatches = false;
+
+                            if (currentFilterFromDate && currentFilterToDate) {
+                                // Range filtering
+                                const orderDate = new Date(orderDateString);
+                                const fromDate = new Date(currentFilterFromDate);
+                                const toDate = new Date(currentFilterToDate);
+                                toDate.setHours(23, 59, 59, 999); // End of day for 'to' date
+
+                                if (orderDate >= fromDate && orderDate <= toDate) {
+                                    dateMatches = true;
+                                }
+                            } else if (selectedAccountingDate) {
+                                // Single date filtering
+                                if (orderDateString === selectedAccountingDate) {
+                                    dateMatches = true;
+                                }
+                            } else {
+                                // No date filter applied (show all if no date or range selected)
+                                dateMatches = true;
+                            }
+
+                            if (dateMatches) {
+                                allOrdersForDateRange.push({ key: childSnapshot.key, ...order });
                             }
                         });
                     }
 
-                    if (allOrdersForDate.length === 0) {
+                    if (allOrdersForDateRange.length === 0) {
                         showMessageModal('لا توجد طلبات في هذا التاريخ لإنشاء تقارير المناديب.');
                         return;
                     }
 
-                    const ordersByDeliverer = allOrdersForDate.reduce((acc, order) => {
+                    const ordersByDeliverer = allOrdersForDateRange.reduce((acc, order) => {
                         if (order.delivererName) {
                             if (!acc[order.delivererName]) {
                                 acc[order.delivererName] = [];
                             }
-                            acc[order.delivererName].push(order);
+                            // Only include normal invoices for this report
+                            if (order.orderType === 'فاتورة عادية' || order.orderType === 'اشتراك') {
+                                acc[order.delivererName].push(order);
+                            }
                         }
                         return acc;
                     }, {});
 
                     let firstPage = true;
                     for (const delivererName in ordersByDeliverer) {
-                        if (!firstPage) {
-                            doc.addPage();
+                        // Only generate page if there are normal invoices for this deliverer
+                        if (ordersByDeliverer[delivererName].length > 0) {
+                            if (!firstPage) {
+                                doc.addPage();
+                            }
+                            await generatePdfForDeliverer(doc, delivererName, selectedAccountingDate || currentFilterFromDate || getCurrentDateString(), ordersByDeliverer[delivererName], true);
+                            firstPage = false;
                         }
-                        await generatePdfForDeliverer(doc, delivererName, selectedAccountingDate, ordersByDeliverer[delivererName]);
-                        firstPage = false;
                     }
 
-                    const fileName = `كشف حساب المناديب بتاريخ ${selectedAccountingDate}.pdf`;
+                    if (firstPage) { // If no normal invoices were found for any deliverer
+                        showMessageModal('لا توجد فواتير عادية أو اشتراكات لإنشاء تقارير المناديب لهذا التاريخ.');
+                        return;
+                    }
+
+                    const fileName = `كشف حساب المناديب (فواتير عادية) بتاريخ ${selectedAccountingDate || currentFilterFromDate || getCurrentDateString()}.pdf`;
+                    doc.save(fileName);
+                });
+            }
+
+            if (downloadWebsiteOrdersPdfBtn) {
+                downloadWebsiteOrdersPdfBtn.addEventListener('click', async () => {
+                    if (!selectedAccountingDate && !currentFilterFromDate) {
+                        showMessageModal('الرجاء اختيار تاريخ أو نطاق تاريخ.');
+                        return;
+                    }
+
+                    const { jsPDF } = window.jspdf;
+                    const doc = new jsPDF({
+                        orientation: 'landscape',
+                        unit: 'mm',
+                        format: 'a4'
+                    });
+
+                    const ordersRef = ref(db, `artifacts/${appId}/public/data/orders`);
+                    const ordersSnapshot = await get(ordersRef);
+                    const allOrdersForDateRange = [];
+                    if (ordersSnapshot) {
+                        ordersSnapshot.forEach(childSnapshot => {
+                            const order = childSnapshot.val();
+                            const orderDateString = order.date; // Assuming order.date is "YYYY-MM-DD"
+                            let dateMatches = false;
+
+                            if (currentFilterFromDate && currentFilterToDate) {
+                                // Range filtering
+                                const orderDate = new Date(orderDateString);
+                                const fromDate = new Date(currentFilterFromDate);
+                                const toDate = new Date(currentFilterToDate);
+                                toDate.setHours(23, 59, 59, 999); // End of day for 'to' date
+
+                                if (orderDate >= fromDate && orderDate <= toDate) {
+                                    dateMatches = true;
+                                }
+                            } else if (selectedAccountingDate) {
+                                // Single date filtering
+                                if (orderDateString === selectedAccountingDate) {
+                                    dateMatches = true;
+                                }
+                            } else {
+                                // No date filter applied (show all if no date or range selected)
+                                dateMatches = true;
+                            }
+
+                            if (dateMatches) {
+                                allOrdersForDateRange.push({ key: childSnapshot.key, ...order });
+                            }
+                        });
+                    }
+
+                    const websiteOrders = allOrdersForDateRange.filter(order => order.orderType === 'فاتورة موقع');
+
+                    if (websiteOrders.length === 0) {
+                        showMessageModal('لا توجد طلبات موقع (بيدو) لهذا التاريخ لإنشاء تقرير.');
+                        return;
+                    }
+
+                    await generateConsolidatedWebsiteOrdersPdf(doc, selectedAccountingDate || currentFilterFromDate || getCurrentDateString(), websiteOrders);
+
+                    const fileName = `فواتير موقع بيدو بتاريخ ${selectedAccountingDate || currentFilterFromDate || getCurrentDateString()}.pdf`; // Changed filename here
                     doc.save(fileName);
                 });
             }
         }
+
 
         window.onload = () => {
             initApp(); // Initialize all elements and listeners
