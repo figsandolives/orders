@@ -518,7 +518,7 @@
             appId: "1:648046045688:web:a5938fdcbacdc15fdbce0d"
         };
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : defaultFirebaseConfig;
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null; // Fixed the ReferenceError here
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app); // Corrected: Use getAuth for authentication
@@ -715,15 +715,34 @@
         // Data Constants
         const employees = ['فاطمة', 'محمود', 'يوسف', 'موده', 'رانيا فنون', 'احمد حلمي', 'سند', 'نجلاء', 'سلطان', 'رانيا دنديس', 'عاصم'];
         const deliverers = ['خيري', 'ابو خالد', 'رامو الهندي', 'حسين', 'محمد جمال', 'ياسر جمال', 'خالد السيد', 'عبيدة', 'محمود السيسي', 'خالد سعد', 'عتمان', 'رضا', 'السيد فرج', 'هيثم', 'رفيق الهندي', 'عبد العزيز', 'رفيق المصري'];
-        const deliveryValueOptions = [0.5, 1, 2, 3, 4, 5, 6];
+        
+        // New: Delivery Zones and Areas
+        const deliveryZones = {
+            'fixed': {
+                'الزهراء': 1, 'السلام': 1, 'حطين': 1, 'الفيحاء': 1, 'القادسية': 1, 'مشرف': 1, 'كيفان': 1, 'الروضة': 1, 'العديلية': 1, 'الخالدية': 1, 'النزهة': 1, 'الدعية': 1, 'المنصورية': 1, 'قرطبة': 1, 'الشامية': 1, 'الرميثية': 1, 'عبدالله السالم': 1, 'الجابرية': 1, 'الصديق': 1, 'الشهداء': 1, 'اليرموك': 1,
+                'الفروانية': 2, 'خيطان': 2, 'بنيد القار': 2, 'الدسمة': 2, 'حولي': 2, 'ميدان حولي': 2, 'مبارك الكبير': 2, 'القصور': 2, 'الرابية': 2, 'العمرية': 2, 'الرقعي': 2, 'غرناطة': 2, 'القرين': 2, 'الشويخ': 2, 'المسيلة': 2, 'الكويت': 2, 'اشبيليا': 2, 'السالمية': 2, 'شرق': 2, 'الرحاب': 2, 'المرقاب': 2, 'الفردوس': 2, 'صباح الناصر': 2, 'الاندلس': 2, 'العارضية': 2, 'سلوى': 2, 'العدان': 2, 'الشعب': 2,
+                'هدية': 3, 'الصليبيخات': 3, 'الجهراء': 3, 'الفنطاس': 3, 'سعد العبدالله': 3, 'الفنيطيس': 3, 'الدوحة': 3, 'العقيلة': 3, 'جابر العلي': 3, 'جابر الاحمد': 3, 'عبدالله مبارك': 3, 'المهبولة': 3, 'المنقف': 3, 'الاحمدي': 3, 'الصليبية': 3, 'الصباحية': 3, 'فهد الاحمد': 3, 'صبحان': 3, 'ابو فطيرة': 3, 'ابو الحصانية': 3, 'الظهر': 3, 'ابو حليفة': 3, 'الفحيحيل': 3, 'جليب الشيوخ': 3,
+                'ام الهيمان': 4,
+                'المطلاع': 5,
+                'صباح الاحمد': 6,
+                'الوفرة': 8
+            },
+            'editable': ['السعودية', 'قطر', 'عمان', 'الامارات', 'البحرين']
+        };
+
+        const allAreas = [
+            ...Object.keys(deliveryZones.fixed),
+            ...deliveryZones.editable
+        ].sort((a, b) => a.localeCompare(b, 'ar')); // Sort alphabetically for Arabic
+
         const orderFormQuestions = [
-            { id: 'orderType', label: 'نوع الطلب', type: 'select', options: ['فاتورة عادية', 'فاتورة موقع', 'اشتراك'], required: true },
+            { id: 'orderType', label: 'نوع الطلب', type: 'select', options: ['فاتورة عادية', 'فاتورة موقع', 'اشتراك', 'فاتورة شحن'], required: true }, // Added 'فاتورة شحن'
             { id: 'invoiceNumber', label: 'رقم الفاتورة', type: 'dynamicText', placeholder: 'رقم الفاتورة', required: true },
             { id: 'clientName', label: 'اسم العميل', type: 'text', required: true },
             { id: 'phoneNumber', label: 'رقم الهاتف', type: 'text', required: true },
-            { id: 'area', label: 'المنطقة', type: 'text', required: true },
+            { id: 'area', label: 'المنطقة', type: 'datalist', options: allAreas, required: true }, // Changed type to 'datalist'
+            { id: 'deliveryValue', label: 'قيمة التوصيل', type: 'text', required: true }, // Added here explicitly
             { id: 'invoiceValue', label: 'قيمة الفاتورة', type: 'text', required: true }, 
-            { id: 'deliveryValue', label: 'قيمة التوصيل', type: 'select', options: deliveryValueOptions, required: true },
             { id: 'paymentMethod', label: 'طريقة الدفع', type: 'select', options: ['رابط', 'كاش'], required: true },
             { id: 'employeeName', label: 'اسم الموظف', type: 'select', options: employees, required: true },
             { id: 'delivererName', label: 'اسم المندوب', type: 'select', options: deliverers, required: true },
@@ -768,7 +787,28 @@
                         question.options.map(opt => `<option value="${opt}" ${currentOrderData[question.id] === opt ? 'selected' : ''}>${opt}</option>`).join('');
                     if (question.id === 'orderType') select.addEventListener('change', handleOrderTypeChange);
                     div.appendChild(select);
-                } else if (question.type === 'dynamicText') {
+                } else if (question.type === 'datalist') { // New: Datalist type for searchable dropdown
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.id = question.id;
+                    input.className = 'p-3 border border-gray-300 rounded-xl w-full';
+                    input.placeholder = `ابحث عن ${question.label}`;
+                    input.setAttribute('list', `${question.id}Options`);
+                    input.value = currentOrderData[question.id] || '';
+                    input.addEventListener('change', handleAreaChange); // Listen to change event on the input
+                    input.addEventListener('input', handleAreaChange); // Listen to input for real-time suggestions
+
+                    const datalist = document.createElement('datalist');
+                    datalist.id = `${question.id}Options`;
+                    question.options.forEach(opt => {
+                        const optionElem = document.createElement('option');
+                        optionElem.value = opt;
+                        datalist.appendChild(optionElem);
+                    });
+                    div.appendChild(input);
+                    div.appendChild(datalist);
+                }
+                else if (question.type === 'dynamicText') {
                     const container = document.createElement('div');
                     container.id = `${question.id}Inputs`;
                     div.appendChild(container);
@@ -824,20 +864,24 @@
                     textarea.placeholder = 'ملاحظات (اختياري)';
                     textarea.value = currentOrderData[question.id] || '';
                     div.appendChild(textarea);
-                } else { // text inputs (including invoiceValue now)
+                } else { // text inputs (including invoiceValue and deliveryValue now)
                     const input = document.createElement('input');
                     input.type = question.type;
                     input.id = question.id;
                     input.className = 'p-3 border border-gray-300 rounded-xl w-full';
                     input.placeholder = question.label;
                     input.value = currentOrderData[question.id] || '';
-                    if (question.id === 'phoneNumber' || question.id === 'invoiceValue') { 
+                    if (question.id === 'phoneNumber' || question.id === 'invoiceValue' || question.id === 'deliveryValue') { 
                         input.addEventListener('keyup', (e) => e.target.value = convertArabicToEnglishNumerals(e.target.value));
                     }
                     div.appendChild(input);
                 }
                 orderFormContent.appendChild(div);
             });
+
+            // Initial calls to ensure correct state based on pre-filled data or defaults
+            handleAreaChange(); 
+            handleOrderTypeChange(); 
         }
 
         function addDynamicTextInput(containerElement, placeholder, value = '') { // Changed function signature
@@ -898,20 +942,76 @@
             });
         }
 
+        // New: Handle area change to update delivery value
+        function handleAreaChange() {
+            const areaInput = document.getElementById('area'); // Now an input field
+            const deliveryValueInput = document.getElementById('deliveryValue');
+            const orderTypeSelect = document.getElementById('orderType');
+
+            if (!areaInput || !deliveryValueInput || !orderTypeSelect) return;
+
+            const selectedArea = areaInput.value.trim();
+            const selectedOrderType = orderTypeSelect.value;
+
+            // Override: If orderType is 'فاتورة موقع', delivery is fixed at 2 and disabled.
+            if (selectedOrderType === 'فاتورة موقع') {
+                deliveryValueInput.value = 2;
+                deliveryValueInput.disabled = true;
+                return; // Exit early as order type dictates delivery
+            }
+
+            // Default state: if no area selected or recognized, delivery is empty and editable.
+            if (!selectedArea || (!deliveryZones.fixed[selectedArea] && !deliveryZones.editable.includes(selectedArea))) {
+                deliveryValueInput.value = '';
+                deliveryValueInput.disabled = false;
+                return;
+            }
+
+            // Fixed price area
+            if (deliveryZones.fixed[selectedArea] !== undefined) {
+                deliveryValueInput.value = deliveryZones.fixed[selectedArea];
+                deliveryValueInput.disabled = true;
+            }
+            // Editable price area
+            else if (deliveryZones.editable.includes(selectedArea)) {
+                deliveryValueInput.disabled = false;
+                // If it's a new entry (currentOrderData.area is undefined) or area has changed, clear the delivery value.
+                // This ensures editable areas start fresh or clear on area change.
+                if (currentOrderData.area === undefined || currentOrderData.area !== selectedArea) {
+                    deliveryValueInput.value = '';
+                }
+                // If currentOrderData.area === selectedArea, it means we are editing an existing order,
+                // so we preserve currentOrderData.deliveryValue (which was used to pre-fill the input).
+            }
+        }
+
 
         function handleOrderTypeChange() {
             const orderType = document.getElementById('orderType').value;
             const deliveryValueElem = document.getElementById('deliveryValue');
             const invoiceValueElem = document.getElementById('invoiceValue');
             const paymentMethodElem = document.getElementById('paymentMethod');
+            const areaInput = document.getElementById('area');
+
+            if (!deliveryValueElem || !invoiceValueElem || !paymentMethodElem || !areaInput) return;
+
+            // Always reset disabled state first for safety
+            deliveryValueElem.disabled = false;
 
             if (orderType === 'فاتورة موقع') {
-                if (deliveryValueElem) deliveryValueElem.value = 2;
-                if (paymentMethodElem) paymentMethodElem.value = 'رابط';
+                deliveryValueElem.value = 2;
+                deliveryValueElem.disabled = true;
+                paymentMethodElem.value = 'رابط';
             } else if (orderType === 'اشتراك') {
-                if (invoiceValueElem) invoiceValueElem.value = 0;
-                // Removed: if (deliveryValueElem) deliveryValueElem.value = 0;
-                if (paymentMethodElem) paymentMethodElem.value = 'رابط';
+                invoiceValueElem.value = 0;
+                paymentMethodElem.value = 'رابط';
+                handleAreaChange(); // Re-evaluate delivery based on area
+            } else if (orderType === 'فاتورة عادية' || orderType === 'فاتورة شحن') {
+                // For normal or shipping invoices, delivery value depends solely on the area
+                handleAreaChange(); // Re-evaluate delivery based on area
+            } else {
+                // Default case if no order type is selected or an unknown type
+                handleAreaChange(); // Let area determine delivery
             }
         }
 
@@ -957,6 +1057,7 @@
         function collectAllFormData() {
             const formData = {};
             let isValid = true;
+
             for (const question of orderFormQuestions) {
                 if (!isValid) break; 
                 const element = document.getElementById(question.id);
@@ -1003,7 +1104,7 @@
                         isValid = false;
                     }
                     formData[question.id] = value === '' ? null : Number(value);
-                } else {
+                } else { // All other text and select/datalist inputs
                     const value = convertArabicToEnglishNumerals(element.value.trim());
                     if (question.required && value === '') {
                         showMessageModal(`الرجاء إدخال ${question.label}.`);
@@ -1017,12 +1118,10 @@
 
             // Apply specific rules after all data is collected and validated
             if (formData.orderType === 'فاتورة موقع') {
-                formData.deliveryValue = 2;
+                formData.deliveryValue = 2; // Force to 2 for website invoices
                 formData.paymentMethod = 'رابط';
             } else if (formData.orderType === 'اشتراك') {
                 formData.invoiceValue = 0;
-                // Do NOT force deliveryValue to 0 for subscriptions here.
-                // The user's input for deliveryValue will be used for handover calculation.
                 formData.paymentMethod = 'رابط';
             }
 
@@ -1129,7 +1228,71 @@
             let inputElement;
             const question = orderFormQuestions.find(q => q.id === fieldName);
 
-            if (question && question.type === 'select') {
+            if (fieldName === 'area') { // Special handling for area (now datalist input)
+                inputElement = document.createElement('input');
+                inputElement.type = 'text';
+                inputElement.value = originalValue;
+                inputElement.setAttribute('list', 'areaDatalistOptionsInline'); // Unique ID for inline datalist
+                inputElement.className = 'w-full p-1 border rounded-md text-right';
+
+                const datalist = document.createElement('datalist');
+                datalist.id = 'areaDatalistOptionsInline';
+                allAreas.forEach(option => {
+                    const optionElem = document.createElement('option');
+                    optionElem.value = option;
+                    datalist.appendChild(optionElem);
+                });
+                cellElement.appendChild(inputElement);
+                cellElement.appendChild(datalist);
+
+                inputElement.addEventListener('change', () => { // Listen to change on the input
+                    const deliveryValueCell = document.querySelector(`[data-key="${orderKey}"][data-field="deliveryValue"]`);
+                    if (deliveryValueCell && !deliveryValueCell.classList.contains('editing')) { // Only update if deliveryValue is not currently being edited
+                        const selectedArea = inputElement.value;
+                        const orderType = orderData.orderType; // Get order type from existing data
+                        let newDeliveryValue = null;
+                        let isDisabled = false;
+
+                        if (orderType === 'فاتورة موقع') {
+                            newDeliveryValue = 2;
+                            isDisabled = true;
+                        } else if (deliveryZones.fixed[selectedArea] !== undefined) {
+                            newDeliveryValue = deliveryZones.fixed[selectedArea];
+                            isDisabled = true;
+                        } else if (deliveryZones.editable.includes(selectedArea)) {
+                            newDeliveryValue = orderData.deliveryValue; // Keep current delivery value for editable areas
+                            isDisabled = false;
+                        }
+
+                        if (newDeliveryValue !== null) {
+                            deliveryValueCell.innerHTML = newDeliveryValue;
+                            if (isDisabled) {
+                                deliveryValueCell.style.backgroundColor = '#e0e0e0';
+                            } else {
+                                deliveryValueCell.style.backgroundColor = '';
+                            }
+                        }
+                    }
+                });
+            } else if (fieldName === 'deliveryValue') { // Special handling for deliveryValue
+                inputElement = document.createElement('input');
+                inputElement.type = 'text'; // Use text for flexibility with number/decimal
+                inputElement.value = originalValue;
+                inputElement.addEventListener('keyup', (e) => e.target.value = convertArabicToEnglishNumerals(e.target.value));
+                // Check if it should be disabled based on area/orderType
+                const currentOrderType = orderData.orderType;
+                const currentArea = orderData.area;
+                let shouldBeDisabled = false;
+                if (currentOrderType === 'فاتورة موقع') {
+                    shouldBeDisabled = true;
+                } else if (deliveryZones.fixed[currentArea] !== undefined) {
+                    shouldBeDisabled = true;
+                }
+                inputElement.disabled = shouldBeDisabled;
+                if (shouldBeDisabled) {
+                    inputElement.style.backgroundColor = '#e0e0e0';
+                }
+            } else if (question && question.type === 'select') {
                 inputElement = document.createElement('select');
                 question.options.forEach(option => {
                     const optionElem = document.createElement('option');
@@ -1138,7 +1301,7 @@
                     inputElement.appendChild(optionElem);
                 });
                 inputElement.value = originalValue;
-            } else if (fieldName === 'invoiceValue' || fieldName === 'deliveryValue') {
+            } else if (fieldName === 'invoiceValue') {
                 inputElement = document.createElement('input');
                 inputElement.type = 'text'; 
                 inputElement.value = originalValue;
@@ -1174,8 +1337,10 @@
             }
 
             inputElement.className = 'w-full p-1 border rounded-md text-right';
-            cellElement.innerHTML = '';
-            cellElement.appendChild(inputElement);
+            if (fieldName !== 'area') { // If not area, append directly
+                cellElement.innerHTML = '';
+                cellElement.appendChild(inputElement);
+            }
             inputElement.focus();
 
             const saveChanges = async () => {
@@ -1486,8 +1651,8 @@
             const cashInvoices = orders.filter(order => order.paymentMethod === 'كاش');
             const linkInvoices = orders.filter(order => order.paymentMethod === 'رابط' && order.orderType !== 'فاتورة موقع');
             const subscriptionInvoices = orders.filter(order => order.orderType === 'اشتراك');
-            const linkAndSubscriptionInvoices = [...linkInvoices, ...subscriptionInvoices];
-            const websiteInvoices = orders.filter(order => order.orderType === 'فاتورة موقع'); // Added this line
+            // No need for linkAndSubscriptionInvoices here, as they are rendered separately
+            const websiteInvoices = orders.filter(order => order.orderType === 'فاتورة موقع'); 
 
             if (cashInvoices.length === 0) {
                 accountingNormalCashInvoicesTableBody.innerHTML = `<tr><td colspan="17" class="text-center py-4 text-gray-500">لا توجد فواتير كاش لهذا المندوب في هذا التاريخ/التصفية.</td></tr>`;
@@ -1536,16 +1701,18 @@
                 normalCashInvoicesSection.classList.remove('hidden');
             }
 
-            if (linkInvoices.length === 0) {
+            if (linkInvoices.length === 0 && subscriptionInvoices.length === 0) {
                 accountingNormalLinkInvoicesTableBody.innerHTML = `<tr><td colspan="17" class="text-center py-4 text-gray-500">لا توجد فواتير رابط/اشتراكات لهذا المندوب في هذا التاريخ/التصفية.</td></tr>`;
                 normalLinkInvoicesSection.classList.add('hidden');
             } else {
-                linkInvoices.forEach(order => {
+                [...linkInvoices, ...subscriptionInvoices].forEach(order => {
                     let delivererHandoverAmount = 0;
                     const deliveryVal = Number(order.deliveryValue) || 0; 
                     if (order.orderType === 'اشتراك') {
                         delivererHandoverAmount = (deliveryVal <= 1) ? 0.5 : 1;
                     } else if (order.orderType === 'فاتورة عادية' && order.paymentMethod === 'رابط') {
+                        delivererHandoverAmount = deliveryVal;
+                    } else if (order.orderType === 'فاتورة شحن' && order.paymentMethod === 'رابط') { // New: Shipping invoice handover
                         delivererHandoverAmount = deliveryVal;
                     }
                     const handoverButtonText = (order.delivererHandoverCollected === 0) ? 'تم التسليم' : 'تسليم';
@@ -1593,8 +1760,10 @@
             } else {
                 websiteInvoices.forEach(order => {
                     let delivererHandoverAmount = 0;
+                    const deliveryVal = Number(order.deliveryValue) || 0; // Get delivery value
                     if (order.orderType === 'فاتورة موقع') {
-                        delivererHandoverAmount = 2;
+                        // New logic: if deliveryValue <= 2, handover is deliveryValue, else fixed 2
+                        delivererHandoverAmount = (deliveryVal <= 2) ? deliveryVal : 2; 
                     }
                     const handoverButtonText = (order.delivererHandoverCollected === 0) ? 'تم التسليم' : 'تسليم';
                     const handoverButtonClass = (order.delivererHandoverCollected === 0) ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700';
@@ -1736,8 +1905,8 @@
                 if (order.orderType === 'اشتراك') {
                     handoverAmount = (deliveryVal <= 1) ? 0.5 : 1;
                 } else if (order.orderType === 'فاتورة موقع') {
-                    handoverAmount = 2;
-                } else if (order.orderType === 'فاتورة عادية' && order.paymentMethod === 'رابط') {
+                    handoverAmount = (deliveryVal <= 2) ? deliveryVal : 2; // Updated logic
+                } else if ((order.orderType === 'فاتورة عادية' || order.orderType === 'فاتورة شحن') && order.paymentMethod === 'رابط') { // Added 'فاتورة شحن'
                     handoverAmount = deliveryVal;
                 }
 
@@ -1793,10 +1962,11 @@
                 y += 15;
             }
 
-            const cashInvoices = orders.filter(order => order.paymentMethod === 'كاش' && order.orderType !== 'اشتراك');
+            const cashInvoices = orders.filter(order => order.paymentMethod === 'كاش' && order.orderType !== 'اشتراك' && order.orderType !== 'فاتورة شحن');
             const linkInvoices = orders.filter(order => order.paymentMethod === 'رابط' && order.orderType !== 'فاتورة موقع');
             const subscriptionInvoices = orders.filter(order => order.orderType === 'اشتراك');
-            const linkAndSubscriptionInvoices = [...linkInvoices, ...subscriptionInvoices];
+            const shippingInvoices = orders.filter(order => order.orderType === 'فاتورة شحن'); // New: Shipping invoices
+            const linkAndSubscriptionAndShippingInvoices = [...linkInvoices, ...subscriptionInvoices, ...shippingInvoices]; // Combined
 
             if (cashInvoices.length > 0) {
                 doc.setFontSize(12);
@@ -1864,9 +2034,9 @@
                 y = doc.autoTable.previous.finalY + 10;
             }
 
-            if (linkAndSubscriptionInvoices.length > 0) {
+            if (linkAndSubscriptionAndShippingInvoices.length > 0) { // Updated to include shipping
                 doc.setFontSize(12);
-                doc.text('الفواتير العادية - رابط ', pageWidth - margin, y, { align: 'right' });
+                doc.text('الفواتير العادية - رابط / اشتراك / شحن', pageWidth - margin, y, { align: 'right' }); // Updated title
                 y += 10;
 
                 const linkTableHeaders = [
@@ -1878,7 +2048,7 @@
                 doc.autoTable({
                     startY: y,
                     head: [linkTableHeaders],
-                    body: linkAndSubscriptionInvoices.map(order => {
+                    body: linkAndSubscriptionAndShippingInvoices.map(order => { // Updated to use combined array
                         const invoiceNumberDisplay = Array.isArray(order.invoiceNumber) ? order.invoiceNumber.join(', ') : (order.invoiceNumber || '');
                         const phoneNumberDisplay = order.phoneNumber || '';
                         const freeWorksDisplay = Array.isArray(order.freeWorksDetails) && order.freeWorksDetails.length > 0 ? order.freeWorksDetails.join('\n') : 'لا يوجد';
@@ -2048,10 +2218,155 @@
                 y += 10;
             } else {
                 Array.from(allFreeWorks).forEach((work) => {
-                    const li = document.createElement('li');
-                    li.textContent = `${work}`;
-                    freeWorksList.appendChild(li);
+                    doc.text(`${work}`, pageWidth - margin, y, { align: 'right' });
+                    y += 7;
                 });
+            }
+            return y;
+        }
+
+        // New: Function to generate PDF for the current accounting view
+        async function generateCurrentViewPdf(doc, orders, reportTitle) {
+            const margin = 10;
+            let y = margin;
+            const pageWidth = doc.internal.pageSize.getWidth();
+            const pageHeight = doc.internal.pageSize.getHeight();
+
+            doc.setFont('gess', 'normal');
+            doc.setFontSize(14);
+            doc.text(reportTitle, pageWidth / 2, y, { align: 'center' });
+            y += 15;
+
+            const cashInvoices = orders.filter(order => order.paymentMethod === 'كاش');
+            const linkAndSubscriptionInvoices = orders.filter(order => (order.paymentMethod === 'رابط' && order.orderType !== 'فاتورة موقع') || order.orderType === 'اشتراك' || order.orderType === 'فاتورة شحن');
+            const websiteInvoices = orders.filter(order => order.orderType === 'فاتورة موقع');
+
+            // Helper to draw a table
+            const drawTable = (title, tableOrders, headers, startY, includeHandoverSignature = false) => {
+                if (tableOrders.length === 0) {
+                    doc.setFontSize(10);
+                    doc.text(`لا توجد ${title} في هذا التصفية.`, pageWidth - margin, startY, { align: 'right' });
+                    return startY + 10;
+                }
+
+                doc.setFontSize(12);
+                doc.text(title, pageWidth - margin, startY, { align: 'right' });
+                startY += 10;
+
+                doc.autoTable({
+                    startY: startY,
+                    head: [headers],
+                    body: tableOrders.map(order => {
+                        const invoiceNumberDisplay = Array.isArray(order.invoiceNumber) ? order.invoiceNumber.join(', ') : (order.invoiceNumber || '');
+                        const phoneNumberDisplay = order.phoneNumber || '';
+                        const freeWorksDisplay = Array.isArray(order.freeWorksDetails) && order.freeWorksDetails.length > 0 ? order.freeWorksDetails.join('\n') : 'لا يوجد';
+
+                        let rowData = [
+                            order.notes || '', freeWorksDisplay, order.signatureImage || '',
+                            order.delivererName || '', order.employeeName || '', order.paymentMethod || '',
+                            Number(order.deliveryValue) || 0, Number(order.invoiceValue) || 0, order.area || '',
+                            phoneNumberDisplay, order.clientName || '', invoiceNumberDisplay, order.orderType || ''
+                        ];
+
+                        if (includeHandoverSignature) {
+                            rowData.splice(2, 0, order.delivererHandoverSignature || ''); // Insert at index 2 for handover signature
+                        } else {
+                            rowData.splice(2, 0, order.cashierSignature || ''); // Insert at index 2 for cashier signature
+                        }
+                        return rowData;
+                    }),
+                    theme: 'grid',
+                    styles: { font: 'gess', fontStyle: 'normal', halign: 'right', cellPadding: 1, fontSize: 8 },
+                    headStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], halign: 'right', fontStyle: 'bold', fontSize: 8 },
+                    columnStyles: {
+                        2: { cellWidth: 15, cellHeight: 10, halign: 'center', valign: 'middle' }, // Signature columns
+                        3: { cellWidth: 15, cellHeight: 10, halign: 'center', valign: 'middle' }  // Signature columns
+                    },
+                    didParseCell: function (data) {
+                        const signatureCols = [2, 3];
+                        if (signatureCols.includes(data.column.index) && data.cell.section === 'body') {
+                            if (data.cell.raw && data.cell.raw !== '') data.cell.text = [];
+                            else data.cell.text = ['لا يوجد'];
+                        }
+                    },
+                    didDrawCell: function (data) {
+                        const signatureCols = [2, 3];
+                        if (signatureCols.includes(data.column.index) && data.cell.section === 'body') {
+                            const signatureData = data.cell.raw;
+                            if (signatureData && signatureData !== '') {
+                                try {
+                                    const imgWidth = 10; const imgHeight = 5;
+                                    const x = data.cell.x + (data.cell.width - imgWidth) / 2;
+                                    const y = data.cell.y + (data.cell.height - imgHeight) / 2;
+                                    data.doc.addImage(signatureData, 'JPEG', x, y, imgWidth, imgHeight);
+                                } catch (e) {
+                                    console.error("Error drawing signature in didDrawCell:", e);
+                                    data.doc.setFontSize(6);
+                                    data.doc.text('خطأ', data.cell.x + data.cell.width / 2, data.cell.y + data.cell.height / 2, { align: 'center' });
+                                }
+                            }
+                        }
+                    },
+                    didDrawPage: (data) => {
+                        doc.setFontSize(8);
+                        doc.text(`صفحة ${data.pageNumber}`, pageWidth / 2, pageHeight - margin, { align: 'center' });
+                    }
+                });
+                return doc.autoTable.previous.finalY + 10;
+            };
+
+            // Cash Invoices Table
+            y = drawTable('الفواتير العادية - كاش', cashInvoices, [
+                'ملاحظات', 'الاعمال المجانية', 'توقيع المحاسب باستلام الكاش', 'توقيع المندوب باستلام الطلب', 'اسم المندوب', 'اسم الموظف',
+                'طريقة الدفع', 'قيمة التوصيل', 'قيمة الفاتورة', 'المنطقة', 'رقم الهاتف',
+                'اسم العميل', 'رقم الفاتورة', 'نوع الفاتورة'
+            ], y, false);
+
+            // Link/Subscription/Shipping Invoices Table
+            y = drawTable('الفواتير العادية - رابط / اشتراك / شحن', linkAndSubscriptionInvoices, [
+                'ملاحظات', 'الاعمال المجانية', 'توقيع المندوب باستلام المبلغ المستحق', 'توقيع المندوب باستلام الطلب', 'اسم المندوب', 'اسم الموظف',
+                'طريقة الدفع', 'قيمة التوصيل', 'قيمة الفاتورة', 'المنطقة', 'رقم الهاتف',
+                'اسم العميل', 'رقم الفاتورة', 'نوع الفاتورة'
+            ], y, true);
+
+            // Website Invoices Table
+            y = drawTable('فواتير الموقع - بيدو', websiteInvoices, [
+                'ملاحظات', 'الاعمال المجانية', 'توقيع المندوب باستلام المبلغ المستحق', 'توقيع المندوب باستلام الطلب', 'اسم المندوب', 'اسم الموظف',
+                'طريقة الدفع', 'قيمة التوصيل', 'قيمة الفاتورة', 'المنطقة', 'رقم الهاتف',
+                'اسم العميل', 'رقم الفاتورة', 'نوع الفاتورة'
+            ], y, true);
+
+            // Free Works Section
+            const allFreeWorks = new Set();
+            const uniqueDeliverersInView = new Set(orders.map(order => order.delivererName)).size;
+            const shouldHideFreeWorksSummary = uniqueDeliverersInView > 1 || currentFilterDelivererOption === 'all';
+
+            if (shouldHideFreeWorksSummary) {
+                doc.setFontSize(10);
+                doc.text('الرجاء اختيار مندوب محدد لعرض الأعمال المجانية.', pageWidth - margin, y, { align: 'right' });
+                y += 10;
+            } else {
+                orders.forEach(order => {
+                    if (Array.isArray(order.freeWorksDetails)) {
+                        order.freeWorksDetails.forEach(work => allFreeWorks.add(work));
+                    }
+                });
+
+                doc.setFontSize(12);
+                doc.text('الاعمال المجانية للمندوب', pageWidth - margin, y, { align: 'right' });
+                y += 10;
+
+                if (allFreeWorks.size === 0) {
+                    doc.setFontSize(10);
+                    doc.text(`لا يوجد اعمال مجانية لـ "${selectedDelivererForAccounting}" في هذا التصفية.`, pageWidth - margin, y, { align: 'right' });
+                    y += 10;
+                } else {
+                    Array.from(allFreeWorks).forEach((work) => {
+                        doc.setFontSize(10);
+                        doc.text(`${work}`, pageWidth - margin, y, { align: 'right' });
+                        y += 7;
+                    });
+                }
             }
             return y;
         }
@@ -2163,8 +2478,8 @@
                     if (order.orderType === 'اشتراك') {
                         handoverAmount = (deliveryVal <= 1) ? 0.5 : 1;
                     } else if (order.orderType === 'فاتورة موقع') {
-                        handoverAmount = 2;
-                    } else if (order.orderType === 'فاتورة عادية' && order.paymentMethod === 'رابط') {
+                        handoverAmount = (deliveryVal <= 2) ? deliveryVal : 2; // Updated logic
+                    } else if ((order.orderType === 'فاتورة عادية' || order.orderType === 'فاتورة شحن') && order.paymentMethod === 'رابط') { // Added 'فاتورة شحن'
                         handoverAmount = deliveryVal;
                     }
                     return handoverAmount > 0 && (order.delivererHandoverCollected === undefined || order.delivererHandoverCollected !== 0);
@@ -2353,8 +2668,8 @@
                                 if (orderToSave.orderType === 'اشتراك' && orderToSave.delivererHandoverCollected === undefined) {
                                     orderToSave.delivererHandoverCollected = (Number(orderToSave.deliveryValue) <= 1) ? 0.5 : 1;
                                 } else if (orderToSave.orderType === 'فاتورة موقع' && orderToSave.delivererHandoverCollected === undefined) {
-                                    orderToSave.delivererHandoverCollected = 2;
-                                } else if (orderToSave.orderType === 'فاتورة عادية' && orderToSave.paymentMethod === 'رابط' && orderToSave.delivererHandoverCollected === undefined) {
+                                    orderToSave.delivererHandoverCollected = (Number(orderToSave.deliveryValue) <= 2) ? Number(orderToSave.deliveryValue) : 2; // Updated logic
+                                } else if ((orderToSave.orderType === 'فاتورة عادية' || orderToSave.orderType === 'فاتورة شحن') && orderToSave.paymentMethod === 'رابط' && orderToSave.delivererHandoverCollected === undefined) {
                                     orderToSave.delivererHandoverCollected = Number(orderToSave.deliveryValue) || 0;
                                 } else if (orderToSave.delivererHandoverCollected === undefined) {
                                     orderToSave.delivererHandoverCollected = 0;
@@ -2406,8 +2721,8 @@
                         if (currentOrderData.orderType === 'اشتراك' && currentOrderData.delivererHandoverCollected === undefined) {
                             currentOrderData.delivererHandoverCollected = (Number(currentOrderData.deliveryValue) <= 1) ? 0.5 : 1;
                         } else if (currentOrderData.orderType === 'فاتورة موقع' && currentOrderData.delivererHandoverCollected === undefined) {
-                            currentOrderData.delivererHandoverCollected = 2;
-                        } else if (currentOrderData.orderType === 'فاتورة عادية' && currentOrderData.paymentMethod === 'رابط' && currentOrderData.delivererHandoverCollected === undefined) {
+                            currentOrderData.delivererHandoverCollected = (Number(currentOrderData.deliveryValue) <= 2) ? Number(currentOrderData.deliveryValue) : 2; // Updated logic
+                        } else if ((currentOrderData.orderType === 'فاتورة عادية' || currentOrderData.orderType === 'فاتورة شحن') && currentOrderData.paymentMethod === 'رابط' && currentOrderData.delivererHandoverCollected === undefined) {
                             currentOrderData.delivererHandoverCollected = Number(currentOrderData.deliveryValue) || 0;
                         } else if (currentOrderData.delivererHandoverCollected === undefined) {
                             currentOrderData.delivererHandoverCollected = 0;
@@ -2575,17 +2890,32 @@
             });
 
             downloadCurrentPdfBtn.addEventListener('click', async () => {
-                if (!selectedDelivererForAccounting || currentAccountingOrders.length === 0) {
-                    showMessageModal('الرجاء اختيار مندوب وتأكد من وجود طلبات لعرضها.');
+                if (currentAccountingOrders.length === 0) {
+                    showMessageModal('لا توجد طلبات في العرض الحالي لإنشاء تقرير PDF.');
                     return;
                 }
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-                const ordersForCurrentDeliverer = currentAccountingOrders.filter(order =>
-                    order.orderType === 'فاتورة عادية' || order.orderType === 'اشتراك'
-                );
-                await generatePdfForDeliverer(doc, selectedDelivererForAccounting, selectedAccountingDate || currentFilterFromDate || getCurrentDateString(), ordersForCurrentDeliverer, true);
-                const fileName = `كشف حساب المندوب ${selectedDelivererForAccounting} بتاريخ ${selectedAccountingDate || currentFilterFromDate || getCurrentDateString()}.pdf`;
+
+                let fileNameDatePart = '';
+                if (currentFilterFromDate && currentFilterToDate) {
+                    fileNameDatePart = `من ${getFormattedDate(new Date(currentFilterFromDate))} إلى ${getFormattedDate(new Date(currentFilterToDate))}`;
+                } else if (selectedAccountingDate) {
+                    fileNameDatePart = `بتاريخ ${getFormattedDate(new Date(selectedAccountingDate))}`;
+                } else {
+                    fileNameDatePart = `لجميع التواريخ`;
+                }
+
+                let fileNameDelivererPart = '';
+                if (currentFilterDelivererOption === 'specific' && selectedDelivererForAccounting) {
+                    fileNameDelivererPart = `للمندوب ${selectedDelivererForAccounting}`;
+                } else if (currentFilterDelivererOption === 'all') {
+                    fileNameDelivererPart = 'لكل المناديب';
+                }
+
+                const reportTitle = `كشف حساب ${fileNameDelivererPart} ${fileNameDatePart}`;
+                await generateCurrentViewPdf(doc, currentAccountingOrders, reportTitle);
+                const fileName = `التقرير الحالي ${fileNameDelivererPart} ${fileNameDatePart}.pdf`;
                 doc.save(fileName);
             });
 
@@ -2627,7 +2957,7 @@
                 const ordersByDeliverer = allOrdersForDateRange.reduce((acc, order) => {
                     if (order.delivererName) {
                         if (!acc[order.delivererName]) acc[order.delivererName] = [];
-                        if (order.orderType === 'فاتورة عادية' || order.orderType === 'اشتراك') acc[order.delivererName].push(order);
+                        if (order.orderType === 'فاتورة عادية' || order.orderType === 'اشتراك' || order.orderType === 'فاتورة شحن') acc[order.delivererName].push(order); // Included shipping
                     }
                     return acc;
                 }, {});
@@ -2642,10 +2972,10 @@
                 }
 
                 if (firstPage) {
-                    showMessageModal('لا توجد فواتير عادية أو اشتراكات لإنشاء تقارير المناديب لهذا التاريخ.');
+                    showMessageModal('لا توجد فواتير عادية أو اشتراكات أو شحن لإنشاء تقارير المناديب لهذا التاريخ.');
                     return;
                 }
-                const fileName = `كشف حساب المناديب (فواتير عادية) بتاريخ ${selectedAccountingDate || currentFilterFromDate || getCurrentDateString()}.pdf`;
+                const fileName = `كشف حساب المناديب (فواتير عادية واشتراكات وشحن) بتاريخ ${selectedAccountingDate || currentFilterFromDate || getCurrentDateString()}.pdf`;
                 doc.save(fileName);
             });
 
