@@ -2159,7 +2159,7 @@
                         }
 
                         return [
-                            order.notes || '', order.delivererHandoverSignature || '', order.signatureImage || '',
+                            order.notes || '',   freeWorksDisplay, order.delivererHandoverSignature || '', order.signatureImage || '',
                             order.delivererName || '', order.employeeName || '', order.paymentMethod || '',
                             delivererHandoverAmount.toFixed(2).toLocaleString('en-US'), 
                             deliveryVal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}), 
