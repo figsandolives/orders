@@ -236,7 +236,6 @@
                                     <th>اسم الموظف</th>
                                     <th>اسم المندوب</th>
                                     <th>توقيع المندوب باستلام الطلب</th>
-                                    <th>الاعمال المجانية</th>
                                     <th>التاريخ</th>
                                     <th>ملاحظات</th>
                                     <th>إجراءات</th>
@@ -257,9 +256,9 @@
                     </div>
                 </div>
 
-                <!-- Normal Invoices - Link (Paid) -->
-                <div id="normalLinkInvoicesSection">
-                    <h4 class="text-xl font-semibold text-gray-700 mb-2">الفواتير العادية - رابط</h4>
+                <!-- Link/Subscription/Shipping Invoices -->
+                <div id="normalLinkAndSubscriptionAndShippingInvoicesSection">
+                    <h4 class="text-xl font-semibold text-gray-700 mb-2">الفواتير العادية - رابط / اشتراك / شحن</h4>
                     <div class="overflow-x-auto mb-6">
                         <table class="min-w-full bg-white rounded-lg overflow-hidden" id="accountingNormalLinkInvoicesTable">
                             <thead>
@@ -277,7 +276,6 @@
                                     <th>اسم الموظف</th>
                                     <th>اسم المندوب</th>
                                     <th>توقيع المندوب باستلام الطلب</th>
-                                    <th>الاعمال المجانية</th>
                                     <th>التاريخ</th>
                                     <th>ملاحظات</th>
                                     <th>إجراءات</th>
@@ -310,7 +308,6 @@
                                     <th>اسم الموظف</th>
                                     <th>اسم المندوب</th>
                                     <th>توقيع المندوب باستلام الطلب</th>
-                                    <th>الاعمال المجانية</th>
                                     <th>التاريخ</th>
                                     <th>ملاحظات</th>
                                     <th>إجراءات</th>
@@ -328,6 +325,38 @@
                         <button id="collectAllHandoverBtn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-xl shadow-md transition duration-300 ease-in-out transform hover:scale-105 hidden">
                             تسليم كامل المبلغ للمندوب
                         </button>
+                    </div>
+                </div>
+
+                <!-- Branch Pickup Invoices -->
+                <div id="branchPickupInvoicesSection">
+                    <h4 class="text-xl font-semibold text-gray-700 mb-2">فواتير استلام من فرع</h4>
+                    <div class="overflow-x-auto mb-6">
+                        <table class="min-w-full bg-white rounded-lg overflow-hidden" id="accountingBranchPickupInvoicesTable">
+                            <thead>
+                                <tr>
+                                    <th>نوع الفاتورة</th>
+                                    <th>رقم الفاتورة</th>
+                                    <th>اسم العميل</th>
+                                    <th>رقم الهاتف</th>
+                                    <th>الفرع</th>
+                                    <th>قيمة الفاتورة</th>
+                                    <th>قيمة التوصيل</th>
+                                    <th>المبلغ المستحق للمندوب</th>
+                                    <th>توقيع المندوب باستلام المبلغ المستحق</th>
+                                    <th>طريقة الدفع</th>
+                                    <th>اسم الموظف</th>
+                                    <th>اسم المندوب</th>
+                                    <th>توقيع المندوب باستلام الطلب</th>
+                                    <th>التاريخ</th>
+                                    <th>ملاحظات</th>
+                                    <th>إجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody id="accountingBranchPickupInvoicesTableBody">
+                                <!-- Branch pickup invoices will be loaded here -->
+                            </tbody>
+                        </table>
                     </div>
                 </div>
 
@@ -493,6 +522,10 @@
                     <label class="inline-flex items-center">
                         <input type="radio" class="form-radio" name="filterInvoiceType" value="paidOnly">
                         <span class="mr-2">الفواتير المدفوعة فقط</span>
+                    </label>
+                    <label class="inline-flex items-center">
+                        <input type="radio" class="form-radio" name="filterInvoiceType" value="branchPickupOnly">
+                        <span class="mr-2">فواتير استلام من فرع</span>
                     </label>
                 </div>
             </div>
@@ -695,12 +728,12 @@
 
         let secretariatTableBody, newOrderBtn, newOrderModal, orderFormContent, submitOrderBtn, addAnotherOrderBtn, signatureModal, signatureCanvas, clearSignatureBtn, saveSignatureBtn, secretariatLogoutBtn, searchOrderSecretariatBtn;
         let accountingLogin, accountingContent, accountingPasswordInput, accountingLoginBtn, accountingLogoutBtn, accountingDateInput, delivererSelectAccounting, accountingReportTitle;
-        let accountingNormalCashInvoicesTableBody, accountingNormalLinkInvoicesTableBody, accountingWebsiteInvoicesTableBody, freeWorksList;
+        let accountingNormalCashInvoicesTableBody, accountingNormalLinkInvoicesTableBody, accountingWebsiteInvoicesTableBody, accountingBranchPickupInvoicesTableBody, freeWorksList;
         let downloadCurrentPdfBtn, downloadAllDeliverersPdfBtn, downloadWebsiteOrdersPdfBtn, backToMainFromAccountingLogin;
         let totalCashDueSummary, collectAllCashBtn, totalHandoverDueSummary, collectAllHandoverBtn;
         let filterOrdersBtn, filterFromDateInput, filterToDateInput, applyFilterBtn, clearFilterBtn, filterDelivererSelect;
         let searchOrderModal, searchQueryInput, executeSearchBtn, searchResultsDiv, searchResultsTableBody, searchTableActionsHeader;
-        let normalCashInvoicesSection, normalLinkInvoicesSection, websiteInvoicesSection, signatureModalTitle, newOrderModalTitle;
+        let normalCashInvoicesSection, normalLinkAndSubscriptionAndShippingInvoicesSection, websiteInvoicesSection, branchPickupInvoicesSection, signatureModalTitle, newOrderModalTitle;
 
         const employees = ['فاطمة', 'محمود', 'يوسف', 'صفوت', 'موده', 'رانيا فنون', 'احمد حلمي', 'سند', 'نجلاء', 'سلطان', 'رانيا دنديس', 'عاصم'];
         const deliverers = ['خيري', 'ابو خالد', 'رامو الهندي', 'حسين', 'محمد جمال', 'ياسر جمال', 'خالد السيد', 'عبيدة', 'محمود السيسي', 'خالد سعد', 'عثمان', 'رضا', 'ابو سالم', 'السيد فرج', 'هيثم', 'رفيق الهندي', 'عبد العزيز', 'رفيق المصري', 'شركة الجوهرة للشحن'];
@@ -716,20 +749,22 @@
     'صباح الاحمد': 6,
     'الوفرة': 8
             },
-            'editable': ['السعودية', 'قطر', 'عمان', 'الامارات', 'البحرين']
+            'editable': ['السعودية', 'قطر', 'عمان', 'الامارات', 'البحرين'],
+            'branches': ['الفرع الرئيسي', 'فرع اليرموك', 'فرع ابو الحصانية'] /* New branch options */
         };
 
         const allAreas = [
             ...Object.keys(deliveryZones.fixed),
-            ...deliveryZones.editable
+            ...deliveryZones.editable,
+            ...deliveryZones.branches /* Include branches in general areas for datalist */
         ].sort((a, b) => a.localeCompare(b, 'ar')); 
 
         const orderFormQuestions = [
-            { id: 'orderType', label: 'نوع الطلب', type: 'select', options: ['فاتورة عادية', 'فاتورة موقع', 'اشتراك', 'فاتورة شحن'], required: true }, 
+            { id: 'orderType', label: 'نوع الطلب', type: 'select', options: ['فاتورة عادية', 'فاتورة موقع', 'اشتراك', 'فاتورة شحن', 'فاتورة استلام من فرع'], required: true }, 
             { id: 'invoiceNumber', label: 'رقم الفاتورة', type: 'dynamicText', placeholder: 'رقم الفاتورة', required: true },
             { id: 'clientName', label: 'اسم العميل', type: 'text', required: true },
             { id: 'phoneNumber', label: 'رقم الهاتف', type: 'text', required: true },
-            { id: 'area', label: 'المنطقة', type: 'datalist', options: allAreas, required: true }, 
+            { id: 'area', label: 'المنطقة', type: 'datalist', options: allAreas, required: true, originalLabel: 'المنطقة', branchLabel: 'استلام من أي فرع؟' }, /* Added originalLabel and branchLabel */
             { id: 'deliveryValue', label: 'قيمة التوصيل', type: 'text', required: true }, 
             { id: 'invoiceValue', label: 'قيمة الفاتورة الاجمالية (شاملة التوصيل)', type: 'text', required: true }, 
             { id: 'paymentMethod', label: 'طريقة الدفع', type: 'select', options: ['رابط', 'كاش'], required: true },
@@ -764,7 +799,19 @@
                 const label = document.createElement('label');
                 label.htmlFor = question.id;
                 label.className = 'block text-gray-700 text-lg font-bold mb-2';
-                label.innerHTML = `${question.label}${question.required ? '<span class="text-red-500">*</span>' : ''}`;
+                
+                // Dynamic label for 'area'
+                if (question.id === 'area') {
+                    const orderType = document.getElementById('orderType')?.value;
+                    if (orderType === 'فاتورة استلام من فرع') {
+                        label.innerHTML = `${question.branchLabel || question.label}<span class="text-red-500">*</span>`;
+                    } else {
+                        label.innerHTML = `${question.originalLabel || question.label}<span class="text-red-500">*</span>`;
+                    }
+                } else {
+                    label.innerHTML = `${question.label}${question.required ? '<span class="text-red-500">*</span>' : ''}`;
+                }
+
                 div.appendChild(label);
 
                 if (question.type === 'select') {
@@ -865,8 +912,7 @@
                 orderFormContent.appendChild(div);
             });
 
-            handleAreaChange(); 
-            handleOrderTypeChange(); 
+            handleOrderTypeChange(); // Call after rendering to apply dynamic changes
         }
 
         function addDynamicTextInput(containerElement, placeholder, value = '') { 
@@ -936,29 +982,35 @@
 
             let baseDeliveryPrice = 0;
             let isFixedPriceArea = false;
+            let isBranchPickup = false;
 
             if (deliveryZones.fixed[selectedArea] !== undefined) {
                 baseDeliveryPrice = deliveryZones.fixed[selectedArea];
                 isFixedPriceArea = true;
             } else if (deliveryZones.editable.includes(selectedArea)) {
                 isFixedPriceArea = false; 
+            } else if (deliveryZones.branches.includes(selectedArea)) {
+                isBranchPickup = true;
             } else {
+                // Area not found in any defined lists, enable delivery input
                 deliveryValueInput.value = '';
                 deliveryValueInput.disabled = false;
                 return;
             }
 
-            if (selectedOrderType === 'فاتورة موقع') {
-                deliveryValueInput.value = (baseDeliveryPrice >= 2) ? 2 : baseDeliveryPrice;
-                deliveryValueInput.disabled = true;
-            } else if (selectedOrderType === 'اشتراك') {
+            if (selectedOrderType === 'فاتورة استلام من فرع' || isBranchPickup) {
                 deliveryValueInput.value = 0;
                 deliveryValueInput.disabled = true;
-            } else {
+            } else if (selectedOrderType === 'فاتورة موقع') {
+                deliveryValueInput.value = (baseDeliveryPrice >= 2) ? 2 : baseDeliveryPrice;
+                deliveryValueInput.disabled = true;
+            } else { // 'فاتورة عادية', 'اشتراك', 'فاتورة شحن'
                 if (isFixedPriceArea) {
                     deliveryValueInput.value = baseDeliveryPrice;
                     deliveryValueInput.disabled = true;
                 } else { 
+                    // For editable areas or unknown areas, keep the input enabled for manual entry
+                    // Retain the current value if it exists, otherwise empty
                     deliveryValueInput.value = currentOrderData.deliveryValue || ''; 
                     deliveryValueInput.disabled = false;
                 }
@@ -967,20 +1019,59 @@
 
 
         function handleOrderTypeChange() {
-            const orderType = document.getElementById('orderType').value;
+            const orderType = document.getElementById('orderType')?.value;
             const deliveryValueElem = document.getElementById('deliveryValue');
             const invoiceValueElem = document.getElementById('invoiceValue');
             const paymentMethodElem = document.getElementById('paymentMethod');
             const areaInput = document.getElementById('area');
+            const areaLabel = document.querySelector('label[for="area"]');
+            const areaQuestion = orderFormQuestions.find(q => q.id === 'area');
 
-            if (!deliveryValueElem || !invoiceValueElem || !paymentMethodElem || !areaInput) return;
 
-            if (orderType === 'اشتراك') {
-                invoiceValueElem.value = 0;
-                paymentMethodElem.value = 'رابط';
-            } else if (orderType === 'فاتورة موقع') {
-                paymentMethodElem.value = 'رابط';
+            if (!deliveryValueElem || !invoiceValueElem || !paymentMethodElem || !areaInput || !areaLabel) return;
+
+            // Update area label and options based on order type
+            if (orderType === 'فاتورة استلام من فرع') {
+                areaLabel.innerHTML = `${areaQuestion.branchLabel}<span class="text-red-500">*</span>`;
+                // Populate datalist with branches
+                const datalist = document.getElementById('areaOptions');
+                if (datalist) {
+                    datalist.innerHTML = '';
+                    deliveryZones.branches.forEach(branch => {
+                        const optionElem = document.createElement('option');
+                        optionElem.value = branch;
+                        datalist.appendChild(optionElem);
+                    });
+                }
+                areaInput.placeholder = areaQuestion.branchLabel;
+                deliveryValueElem.value = 0; // Always 0 for branch pickup
+                deliveryValueElem.disabled = true;
+                paymentMethodElem.value = 'كاش'; // Default to cash for branch pickup, can be changed manually
+            } else {
+                areaLabel.innerHTML = `${areaQuestion.originalLabel}<span class="text-red-500">*</span>`;
+                // Repopulate datalist with all areas
+                const datalist = document.getElementById('areaOptions');
+                if (datalist) {
+                    datalist.innerHTML = '';
+                    allAreas.forEach(area => {
+                        const optionElem = document.createElement('option');
+                        optionElem.value = area;
+                        datalist.appendChild(optionElem);
+                    });
+                }
+                areaInput.placeholder = areaQuestion.originalLabel;
             }
+
+            // Specific logic for invoice/payment values based on order type
+            if (orderType === 'اشتراك') {
+                // For subscription, delivery value is based on area, not 0
+                // invoiceValueElem.value = 0; // Removed based on clarification, subscription can have value
+                paymentMethodElem.value = 'رابط'; // Default to link for subscription
+            } else if (orderType === 'فاتورة موقع') {
+                paymentMethodElem.value = 'رابط'; // Default to link for website orders
+            }
+            
+            // Re-evaluate delivery value based on the (potentially changed) area and order type
             handleAreaChange(); 
         }
 
@@ -1102,6 +1193,7 @@
             closeModal('newOrderModal');
             showModal('signatureModal');
             initSignaturePad();
+            // Load existing signature if editing and title is for deliverer receipt
             if (currentOrderKeyForEdit && title === 'توقيع المندوب باستلام الطلب' && currentOrderData.signatureImage) {
                 signaturePad.fromDataURL(currentOrderData.signatureImage);
             }
@@ -1196,11 +1288,21 @@
 
                 const datalist = document.createElement('datalist');
                 datalist.id = 'areaDatalistOptionsInline';
-                allAreas.forEach(option => {
-                    const optionElem = document.createElement('option');
-                    optionElem.value = option;
-                    datalist.appendChild(optionElem);
-                });
+                // Adjust datalist options based on order type for inline edit
+                if (orderData.orderType === 'فاتورة استلام من فرع') {
+                    deliveryZones.branches.forEach(option => {
+                        const optionElem = document.createElement('option');
+                        optionElem.value = option;
+                        datalist.appendChild(optionElem);
+                    });
+                } else {
+                    allAreas.forEach(option => {
+                        const optionElem = document.createElement('option');
+                        optionElem.value = option;
+                        datalist.appendChild(optionElem);
+                    });
+                }
+
                 cellElement.innerHTML = ''; 
                 cellElement.appendChild(inputElement);
                 cellElement.appendChild(datalist);
@@ -1216,6 +1318,8 @@
                             baseDeliveryPrice = deliveryZones.fixed[selectedArea];
                         } else if (deliveryZones.editable.includes(selectedArea)) {
                             baseDeliveryPrice = 0; 
+                        } else if (deliveryZones.branches.includes(selectedArea)) {
+                            baseDeliveryPrice = 0; // For branch pickup
                         } else {
                             deliveryValueCell.innerHTML = orderData.deliveryValue || ''; 
                             deliveryValueCell.style.backgroundColor = ''; 
@@ -1225,18 +1329,22 @@
                         let newDeliveryValue = null;
                         let isDisabled = false;
 
-                        if (orderType === 'فاتورة موقع') {
-                            newDeliveryValue = (baseDeliveryPrice >= 2) ? 2 : baseDeliveryPrice;
-                            isDisabled = true;
-                        } else if (orderType === 'اشتراك') {
+                        if (orderType === 'فاتورة استلام من فرع' || deliveryZones.branches.includes(selectedArea)) {
                             newDeliveryValue = 0;
                             isDisabled = true;
-                        } else if (deliveryZones.fixed[selectedArea] !== undefined) { 
-                            newDeliveryValue = baseDeliveryPrice;
+                        } else if (orderType === 'فاتورة موقع') {
+                            newDeliveryValue = (baseDeliveryPrice >= 2) ? 2 : baseDeliveryPrice;
                             isDisabled = true;
-                        } else if (deliveryZones.editable.includes(selectedArea)) { 
-                            newDeliveryValue = orderData.deliveryValue; 
-                            isDisabled = false;
+                        } else { // 'فاتورة عادية', 'اشتراك', 'فاتورة شحن'
+                            if (isFixedPriceArea) {
+                                newDeliveryValue = baseDeliveryPrice;
+                                isDisabled = true;
+                            } else if (deliveryZones.editable.includes(selectedArea)) { 
+                                newDeliveryValue = orderData.deliveryValue; 
+                                isDisabled = false;
+                            } else {
+                                newDeliveryValue = null; // Area not found in any fixed/editable lists
+                            }
                         }
 
                         if (newDeliveryValue !== null) {
@@ -1263,7 +1371,7 @@
                     baseDeliveryPriceForArea = deliveryZones.fixed[currentArea];
                 }
 
-                if (currentOrderType === 'فاتورة موقع' || currentOrderType === 'اشتراك' || deliveryZones.fixed[currentArea] !== undefined) {
+                if (currentOrderType === 'فاتورة استلام من فرع' || currentOrderType === 'فاتورة موقع' || deliveryZones.fixed[currentArea] !== undefined) {
                     shouldBeDisabled = true;
                 }
                 
@@ -1396,18 +1504,23 @@
                         baseDeliveryPrice = deliveryZones.fixed[selectedArea];
                     } else if (deliveryZones.editable.includes(selectedArea)) {
                         baseDeliveryPrice = 0; 
+                    } else if (deliveryZones.branches.includes(selectedArea)) { // New branch area check
+                        baseDeliveryPrice = 0; // Fixed delivery for branch pickup
                     }
 
-                    if (selectedOrderType === 'فاتورة موقع') {
-                        newDeliveryValue = (baseDeliveryPrice >= 2) ? 2 : baseDeliveryPrice;
-                    } else if (selectedOrderType === 'اشتراك') {
+
+                    if (selectedOrderType === 'فاتورة استلام من فرع' || deliveryZones.branches.includes(selectedArea)) {
                         newDeliveryValue = 0;
-                    } else if (deliveryZones.fixed[selectedArea] !== undefined) {
-                        newDeliveryValue = baseDeliveryPrice;
-                    } else if (deliveryZones.editable.includes(selectedArea)) {
-                        newDeliveryValue = updatedOrderData.deliveryValue; 
-                    } else {
-                        newDeliveryValue = null; 
+                    } else if (selectedOrderType === 'فاتورة موقع') {
+                        newDeliveryValue = (baseDeliveryPrice >= 2) ? 2 : baseDeliveryPrice;
+                    } else { // 'فاتورة عادية', 'اشتراك', 'فاتورة شحن'
+                        if (deliveryZones.fixed[selectedArea] !== undefined) {
+                            newDeliveryValue = baseDeliveryPrice;
+                        } else if (deliveryZones.editable.includes(selectedArea)) {
+                            newDeliveryValue = updatedOrderData.deliveryValue;
+                        } else {
+                            newDeliveryValue = null; 
+                        }
                     }
 
                     if (newDeliveryValue !== null && newDeliveryValue !== (orderData.deliveryValue || '')) {
@@ -1623,11 +1736,12 @@
         function updateAccountingReport() {
             if (!isAuthReady || !currentUser) return setTimeout(updateAccountingReport, 100);
 
-            if (!selectedDelivererForAccounting && currentFilterDelivererOption === 'specific') {
+            if (currentFilterDelivererOption === 'specific' && !selectedDelivererForAccounting) {
                 accountingReportTitle.textContent = 'الرجاء اختيار المندوب لعرض التقرير.';
                 normalCashInvoicesSection.classList.add('hidden');
-                normalLinkInvoicesSection.classList.add('hidden');
+                normalLinkAndSubscriptionAndShippingInvoicesSection.classList.add('hidden');
                 websiteInvoicesSection.classList.add('hidden');
+                branchPickupInvoicesSection.classList.add('hidden'); // Hide new section
                 freeWorksList.innerHTML = '';
                 totalCashDueSummary.innerHTML = '';
                 collectAllCashBtn.classList.add('hidden');
@@ -1693,15 +1807,27 @@
 
                         if (dateMatches && delivererMatches) {
                             if (currentFilterInvoiceType === 'cashOnly' && order.paymentMethod !== 'كاش') {
+                                return; // Skip if not cash and filter is cashOnly
                             } else if (currentFilterInvoiceType === 'paidOnly' && order.paymentMethod !== 'رابط') {
-                            } else {
-                                allOrders.push({ key: childSnapshot.key, ...order });
+                                return; // Skip if not link and filter is paidOnly
+                            } else if (currentFilterInvoiceType === 'branchPickupOnly' && order.orderType !== 'فاتورة استلام من فرع') {
+                                return; // Skip if not branch pickup and filter is branchPickupOnly
+                            } else if (currentFilterInvoiceType !== 'all' && order.orderType === 'فاتورة استلام من فرع' && currentFilterInvoiceType !== 'branchPickupOnly') {
+                                return; // Ensure branch pickup only shows if specifically filtered
+                            } else if (currentFilterInvoiceType !== 'all' && order.paymentMethod === 'كاش' && currentFilterInvoiceType !== 'cashOnly') {
+                                return; // Ensure cash only shows if specifically filtered
+                            } else if (currentFilterInvoiceType !== 'all' && order.paymentMethod === 'رابط' && order.orderType !== 'فاتورة موقع' && currentFilterInvoiceType !== 'paidOnly' && order.orderType !== 'اشتراك' && order.orderType !== 'فاتورة شحن') {
+                                return; // Ensure link/sub/shipping only shows if specifically filtered
+                            } else if (currentFilterInvoiceType !== 'all' && order.orderType === 'فاتورة موقع' && currentFilterInvoiceType !== 'paidOnly') {
+                                return; // Ensure website only shows if specifically filtered for paid
                             }
+                            allOrders.push({ key: childSnapshot.key, ...order });
                         }
                     });
                 }
 
                 allOrders.sort((a, b) => {
+                    // Sort cash orders first, then others by timestamp
                     if (a.paymentMethod === 'كاش' && b.paymentMethod !== 'كاش') return -1;
                     if (a.paymentMethod !== 'كاش' && b.paymentMethod === 'كاش') return 1;
                     return b.timestamp - a.timestamp;
@@ -1719,19 +1845,25 @@
         }
 
         function renderAccountingTables(orders) {
-            if (!accountingNormalCashInvoicesTableBody || !accountingNormalLinkInvoicesTableBody || !accountingWebsiteInvoicesTableBody) return;
+            if (!accountingNormalCashInvoicesTableBody || !accountingNormalLinkInvoicesTableBody || !accountingWebsiteInvoicesTableBody || !accountingBranchPickupInvoicesTableBody) return;
 
             accountingNormalCashInvoicesTableBody.innerHTML = '';
             accountingNormalLinkInvoicesTableBody.innerHTML = '';
             accountingWebsiteInvoicesTableBody.innerHTML = '';
+            accountingBranchPickupInvoicesTableBody.innerHTML = '';
 
             const cashInvoices = orders.filter(order => order.paymentMethod === 'كاش');
-            const linkInvoices = orders.filter(order => order.paymentMethod === 'رابط' && order.orderType !== 'فاتورة موقع');
-            const subscriptionInvoices = orders.filter(order => order.orderType === 'اشتراك');
+            const linkAndSubscriptionAndShippingInvoices = orders.filter(order => 
+                (order.paymentMethod === 'رابط' && order.orderType !== 'فاتورة موقع') || 
+                order.orderType === 'اشتراك' || 
+                order.orderType === 'فاتورة شحن'
+            );
             const websiteInvoices = orders.filter(order => order.orderType === 'فاتورة موقع'); 
+            const branchPickupInvoices = orders.filter(order => order.orderType === 'فاتورة استلام من فرع'); // New filter
 
+            // Render Cash Invoices
             if (cashInvoices.length === 0) {
-                accountingNormalCashInvoicesTableBody.innerHTML = `<tr><td colspan="17" class="text-center py-4 text-gray-500">لا توجد فواتير كاش لهذا المندوب في هذا التاريخ/التصفية.</td></tr>`;
+                accountingNormalCashInvoicesTableBody.innerHTML = `<tr><td colspan="16" class="text-center py-4 text-gray-500">لا توجد فواتير كاش لهذا المندوب في هذا التاريخ/التصفية.</td></tr>`;
                 normalCashInvoicesSection.classList.add('hidden');
             } else {
                 cashInvoices.forEach(order => {
@@ -1743,7 +1875,6 @@
                     const cashButtonDisabled = (order.cashCollected === 0) ? 'disabled' : '';
                     const invoiceNumberDisplay = Array.isArray(order.invoiceNumber) ? order.invoiceNumber.join(', ') : (order.invoiceNumber || '');
                     const phoneNumberDisplay = order.phoneNumber || '';
-                    const freeWorksDisplay = Array.isArray(order.freeWorksDetails) && order.freeWorksDetails.length > 0 ? order.freeWorksDetails.join('<br>') : 'لا يوجد';
                     const cashierSignatureDisplay = order.cashierSignature ? `<img src="${order.cashierSignature}" alt="Cashier Signature" class="w-10 h-5 object-contain mx-auto">` : '';
 
                     const row = document.createElement('tr');
@@ -1765,7 +1896,6 @@
                         <td>
                             ${order.signatureImage ? `<img src="${order.signatureImage}" alt="Signature" class="w-10 h-5 object-contain mx-auto">` : 'لا يوجد'}
                         </td>
-                        <td class="editable-cell stacked-content" data-key="${order.key}" data-field="freeWorks">${freeWorksDisplay}</td>
                         <td>${order.date || ''}</td>
                         <td class="editable-cell" data-key="${order.key}" data-field="notes">${order.notes || ''}</td>
                         <td>
@@ -1777,18 +1907,19 @@
                 normalCashInvoicesSection.classList.remove('hidden');
             }
 
-            if (linkInvoices.length === 0 && subscriptionInvoices.length === 0) {
-                accountingNormalLinkInvoicesTableBody.innerHTML = `<tr><td colspan="17" class="text-center py-4 text-gray-500">لا توجد فواتير رابط/اشتراكات لهذا المندوب في هذا التاريخ/التصفية.</td></tr>`;
-                normalLinkInvoicesSection.classList.add('hidden');
+            // Render Link/Subscription/Shipping Invoices
+            if (linkAndSubscriptionAndShippingInvoices.length === 0) {
+                accountingNormalLinkInvoicesTableBody.innerHTML = `<tr><td colspan="16" class="text-center py-4 text-gray-500">لا توجد فواتير رابط/اشتراكات/شحن لهذا المندوب في هذا التاريخ/التصفية.</td></tr>`;
+                normalLinkAndSubscriptionAndShippingInvoicesSection.classList.add('hidden');
             } else {
-                [...linkInvoices, ...subscriptionInvoices].forEach(order => {
+                linkAndSubscriptionAndShippingInvoices.forEach(order => {
                     let delivererHandoverAmountDisplay = 0;
                     const deliveryVal = Number(order.deliveryValue) || 0; 
                     if (order.orderType === 'اشتراك') {
-                        delivererHandoverAmountDisplay = (deliveryVal <= 1) ? 0.5 : 1;
-                    } else if (order.orderType === 'فاتورة عادية' && order.paymentMethod === 'رابط') {
-                        delivererHandoverAmountDisplay = deliveryVal;
-                    } else if (order.orderType === 'فاتورة شحن' && order.paymentMethod === 'رابط') { 
+                        // For subscriptions, the handover amount is fixed if delivery is <=1, otherwise 1. This is not the deliveryValue.
+                        delivererHandoverAmountDisplay = (deliveryVal <= 1) ? 0.5 : 1; 
+                    } else if (order.orderType === 'فاتورة عادية' || order.orderType === 'فاتورة شحن') {
+                        // For normal/shipping link payments, deliverer gets the delivery value
                         delivererHandoverAmountDisplay = deliveryVal;
                     }
                     const handoverButtonText = (order.delivererHandoverCollected === 0) ? 'تم التسليم' : 'تسليم';
@@ -1796,7 +1927,6 @@
                     const handoverButtonDisabled = (order.delivererHandoverCollected === 0) ? 'disabled' : '';
                     const invoiceNumberDisplay = Array.isArray(order.invoiceNumber) ? order.invoiceNumber.join(', ') : (order.invoiceNumber || '');
                     const phoneNumberDisplay = order.phoneNumber || '';
-                    const freeWorksDisplay = Array.isArray(order.freeWorksDetails) && order.freeWorksDetails.length > 0 ? order.freeWorksDetails.join('<br>') : 'لا يوجد';
                     const delivererHandoverSignatureDisplay = order.delivererHandoverSignature ? `<img src="${order.delivererHandoverSignature}" alt="Handover Signature" class="w-10 h-5 object-contain mx-auto">` : '';
 
                     const row = document.createElement('tr');
@@ -1818,7 +1948,6 @@
                         <td>
                             ${order.signatureImage ? `<img src="${order.signatureImage}" alt="Signature" class="w-10 h-5 object-contain mx-auto">` : 'لا يوجد'}
                         </td>
-                        <td class="editable-cell stacked-content" data-key="${order.key}" data-field="freeWorks">${freeWorksDisplay}</td>
                         <td>${order.date || ''}</td>
                         <td class="editable-cell" data-key="${order.key}" data-field="notes">${order.notes || ''}</td>
                         <td>
@@ -1827,17 +1956,19 @@
                     `;
                     accountingNormalLinkInvoicesTableBody.appendChild(row);
                 });
-                normalLinkInvoicesSection.classList.remove('hidden');
+                normalLinkAndSubscriptionAndShippingInvoicesSection.classList.remove('hidden');
             }
 
+            // Render Website Invoices
             if (websiteInvoices.length === 0) {
-                accountingWebsiteInvoicesTableBody.innerHTML = `<tr><td colspan="17" class="text-center py-4 text-gray-500">لا توجد فواتير موقع - بيدو لهذا المندوب في هذا التاريخ/التصفية.</td></tr>`;
+                accountingWebsiteInvoicesTableBody.innerHTML = `<tr><td colspan="16" class="text-center py-4 text-gray-500">لا توجد فواتير موقع - بيدو لهذا المندوب في هذا التاريخ/التصفية.</td></tr>`;
                 websiteInvoicesSection.classList.add('hidden');
             } else {
                 websiteInvoices.forEach(order => {
                     let delivererHandoverAmountDisplay = 0;
                     const deliveryVal = Number(order.deliveryValue) || 0; 
                     if (order.orderType === 'فاتورة موقع') {
+                        // For website orders, the handover is 2 or the delivery value if less
                         delivererHandoverAmountDisplay = (deliveryVal <= 2) ? deliveryVal : 2; 
                     }
                     const handoverButtonText = (order.delivererHandoverCollected === 0) ? 'تم التسليم' : 'تسليم';
@@ -1845,7 +1976,6 @@
                     const handoverButtonDisabled = (order.delivererHandoverCollected === 0) ? 'disabled' : '';
                     const invoiceNumberDisplay = Array.isArray(order.invoiceNumber) ? order.invoiceNumber.join(', ') : (order.invoiceNumber || '');
                     const phoneNumberDisplay = order.phoneNumber || '';
-                    const freeWorksDisplay = Array.isArray(order.freeWorksDetails) && order.freeWorksDetails.length > 0 ? order.freeWorksDetails.join('<br>') : 'لا يوجد';
                     const delivererHandoverSignatureDisplay = order.delivererHandoverSignature ? `<img src="${order.delivererHandoverSignature}" alt="Handover Signature" class="w-10 h-5 object-contain mx-auto">` : '';
 
                     const row = document.createElement('tr');
@@ -1867,7 +1997,6 @@
                         <td>
                             ${order.signatureImage ? `<img src="${order.signatureImage}" alt="Signature" class="w-10 h-5 object-contain mx-auto">` : 'لا يوجد'}
                         </td>
-                        <td class="editable-cell stacked-content" data-key="${order.key}" data-field="freeWorks">${freeWorksDisplay}</td>
                         <td>${order.date || ''}</td>
                         <td class="editable-cell" data-key="${order.key}" data-field="notes">${order.notes || ''}</td>
                         <td>
@@ -1879,6 +2008,52 @@
                 websiteInvoicesSection.classList.remove('hidden');
             }
 
+            // Render Branch Pickup Invoices (New Section)
+            if (branchPickupInvoices.length === 0) {
+                accountingBranchPickupInvoicesTableBody.innerHTML = `<tr><td colspan="16" class="text-center py-4 text-gray-500">لا توجد فواتير استلام من فرع لهذا المندوب في هذا التاريخ/التصفية.</td></tr>`;
+                branchPickupInvoicesSection.classList.add('hidden');
+            } else {
+                branchPickupInvoices.forEach(order => {
+                    // For branch pickup, delivery value is always 0, so handover is also 0
+                    let delivererHandoverAmountDisplay = 0; 
+                    const handoverButtonText = (order.delivererHandoverCollected === 0) ? 'تم التسليم' : 'تسليم';
+                    const handoverButtonClass = (order.delivererHandoverCollected === 0) ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700';
+                    const handoverButtonDisabled = (order.delivererHandoverCollected === 0) ? 'disabled' : '';
+                    const invoiceNumberDisplay = Array.isArray(order.invoiceNumber) ? order.invoiceNumber.join(', ') : (order.invoiceNumber || '');
+                    const phoneNumberDisplay = order.phoneNumber || '';
+                    const delivererHandoverSignatureDisplay = order.delivererHandoverSignature ? `<img src="${order.delivererHandoverSignature}" alt="Handover Signature" class="w-10 h-5 object-contain mx-auto">` : '';
+
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td class="editable-cell" data-key="${order.key}" data-field="orderType">${order.orderType || ''}</td>
+                        <td class="editable-cell" data-key="${order.key}" data-field="invoiceNumber">${invoiceNumberDisplay}</td>
+                        <td class="editable-cell" data-key="${order.key}" data-field="clientName">${order.clientName || ''}</td>
+                        <td class="editable-cell" data-key="${order.key}" data-field="phoneNumber">${phoneNumberDisplay}</td>
+                        <td class="editable-cell" data-key="${order.key}" data-field="area">${order.area || ''}</td> <!-- Area is now Branch for this type -->
+                        <td class="editable-cell" data-key="${order.key}" data-field="invoiceValue">${Number(order.invoiceValue) || 0}</td>
+                        <td class="editable-cell" data-key="${order.key}" data-field="deliveryValue">${Number(order.deliveryValue) || 0}</td>
+                        <td>${delivererHandoverAmountDisplay.toFixed(2)}</td>
+                        <td>
+                            ${(order.delivererHandoverCollected === 0 || order.delivererHandoverSignature) ? delivererHandoverSignatureDisplay + ' <span class="text-green-700 text-sm">(تم التسليم)</span>' : `<button class="${handoverButtonClass} text-white font-bold py-1 px-3 rounded-xl collect-handover-btn" data-key="${order.key}" ${handoverButtonDisabled}>${handoverButtonText}</button>`}
+                        </td>
+                        <td class="editable-cell" data-key="${order.key}" data-field="paymentMethod">${order.paymentMethod || ''}</td>
+                        <td class="editable-cell" data-key="${order.key}" data-field="employeeName">${order.employeeName || ''}</td>
+                        <td class="editable-cell" data-key="${order.key}" data-field="delivererName">${order.delivererName || ''}</td>
+                        <td>
+                            ${order.signatureImage ? `<img src="${order.signatureImage}" alt="Signature" class="w-10 h-5 object-contain mx-auto">` : 'لا يوجد'}
+                        </td>
+                        <td>${order.date || ''}</td>
+                        <td class="editable-cell" data-key="${order.key}" data-field="notes">${order.notes || ''}</td>
+                        <td>
+                            <button class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded-xl delete-order-btn-accounting" data-key="${order.key}">حذف</button>
+                        </td>
+                    `;
+                    accountingBranchPickupInvoicesTableBody.appendChild(row);
+                });
+                branchPickupInvoicesSection.classList.remove('hidden');
+            }
+
+
             document.querySelectorAll('#accountingNormalCashInvoicesTable .collect-cash-btn').forEach(button => {
                 button.addEventListener('click', (e) => {
                     const orderKey = e.target.dataset.key;
@@ -1888,7 +2063,7 @@
                 });
             });
 
-            document.querySelectorAll('#accountingNormalLinkInvoicesTable .collect-handover-btn, #accountingWebsiteInvoicesTable .collect-handover-btn').forEach(button => {
+            document.querySelectorAll('#accountingNormalLinkInvoicesTable .collect-handover-btn, #accountingWebsiteInvoicesTable .collect-handover-btn, #accountingBranchPickupInvoicesTable .collect-handover-btn').forEach(button => {
                 button.addEventListener('click', (e) => {
                     const orderKey = e.target.dataset.key;
                     showSignatureModal('توقيع المندوب باستلام المبلغ المستحق', async (signature) => {
@@ -1897,7 +2072,7 @@
                 });
             });
 
-            document.querySelectorAll('#accountingNormalCashInvoicesTable .editable-cell, #accountingNormalLinkInvoicesTable .editable-cell, #accountingWebsiteInvoicesTable .editable-cell').forEach(cell => {
+            document.querySelectorAll('#accountingNormalCashInvoicesTable .editable-cell, #accountingNormalLinkInvoicesTable .editable-cell, #accountingWebsiteInvoicesTable .editable-cell, #accountingBranchPickupInvoicesTable .editable-cell').forEach(cell => {
                 cell.addEventListener('dblclick', async (e) => {
                     if (e.currentTarget.querySelector('input, select, textarea')) return;
                     const orderKey = e.currentTarget.dataset.key;
@@ -1985,6 +2160,7 @@
                 } else if ((order.orderType === 'فاتورة عادية' || order.orderType === 'فاتورة شحن') && order.paymentMethod === 'رابط') { 
                     handoverAmount = deliveryVal;
                 }
+                // For 'فاتورة استلام من فرع', handoverAmount is always 0, so no specific logic needed here.
 
                 if (handoverAmount > 0 && (order.delivererHandoverCollected === undefined || order.delivererHandoverCollected !== 0)) {
                     totalHandoverDue += handoverAmount;
@@ -2029,8 +2205,9 @@
             const pageWidth = doc.internal.pageSize.getWidth();
             const pageHeight = doc.internal.pageSize.getHeight();
 
+            // Set font for Arabic text
             doc.setFont('gess', 'bold'); 
-            doc.setFontSize(9); 
+            doc.setFontSize(12); // Increased font size for main title (9 + 3 = 12)
 
             if (includeTitle) {
                 const title = `كشف حساب المندوب "${delivererName}" بتاريخ "${getFormattedDate(new Date(date))}"`;
@@ -2038,11 +2215,13 @@
                 y += 15;
             }
 
-            const cashInvoices = orders.filter(order => order.paymentMethod === 'كاش' && order.orderType !== 'اشتراك' && order.orderType !== 'فاتورة شحن');
-            const linkInvoices = orders.filter(order => order.paymentMethod === 'رابط' && order.orderType !== 'فاتورة موقع');
-            const subscriptionInvoices = orders.filter(order => order.orderType === 'اشتراك');
-            const shippingInvoices = orders.filter(order => order.orderType === 'فاتورة شحن'); 
-            const linkAndSubscriptionAndShippingInvoices = [...linkInvoices, ...subscriptionInvoices, ...shippingInvoices]; 
+            const cashInvoices = orders.filter(order => order.paymentMethod === 'كاش');
+            const linkAndSubscriptionAndShippingInvoices = orders.filter(order => (order.paymentMethod === 'رابط' && order.orderType !== 'فاتورة موقع') || order.orderType === 'اشتراك' || order.orderType === 'فاتورة شحن');
+            const websiteInvoices = orders.filter(order => order.orderType === 'فاتورة موقع');
+            const branchPickupInvoices = orders.filter(order => order.orderType === 'فاتورة استلام من فرع'); // New: Branch pickup invoices
+
+            let totalCashDeliveryValue = 0;
+            let totalPaidDelivererHandover = 0;
 
             if (cashInvoices.length > 0) {
                 doc.setFontSize(8); 
@@ -2051,7 +2230,7 @@
                 y += 10;
 
                 const cashTableHeaders = [
-                    'ملاحظات', 'الاعمال المجانية', 'توقيع المحاسب باستلام الكاش', 'توقيع المندوب باستلام الطلب', 'اسم المندوب', 'اسم الموظف',
+                    'ملاحظات', 'توقيع المحاسب باستلام الكاش', 'توقيع المندوب باستلام الطلب', 'اسم المندوب', 'اسم الموظف',
                     'طريقة الدفع', 'مطلوب استلام الكاش', 'قيمة التوصيل', 'قيمة الفاتورة', 'المنطقة', 'رقم الهاتف',
                     'اسم العميل', 'رقم الفاتورة', 'نوع الفاتورة'
                 ];
@@ -2064,14 +2243,15 @@
                             ? order.invoiceNumber.map(num => convertArabicToEnglishNumerals(String(num))).join(', ') 
                             : (convertArabicToEnglishNumerals(String(order.invoiceNumber || '')));
                         const phoneNumberDisplay = convertArabicToEnglishNumerals(String(order.phoneNumber || ''));
-                        const freeWorksDisplay = Array.isArray(order.freeWorksDetails) && order.freeWorksDetails.length > 0 ? order.freeWorksDetails.join('\n') : 'لا يوجد';
                         
                         const invoiceVal = Number(order.invoiceValue) || 0;
                         const deliveryVal = Number(order.deliveryValue) || 0;
                         const cashDue = (invoiceVal - deliveryVal).toFixed(2); 
 
+                        totalCashDeliveryValue += deliveryVal; // Sum for cash delivery total
+
                         return [
-                            order.notes || '',  freeWorksDisplay, order.cashierSignature || '', order.signatureImage || '',
+                            order.notes || '',  order.cashierSignature || '', order.signatureImage || '',
                             order.delivererName || '', order.employeeName || '', order.paymentMethod || '',
                             cashDue.toLocaleString('en-US'), 
                             deliveryVal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}), 
@@ -2084,23 +2264,27 @@
                     styles: { font: 'gess', fontStyle: 'normal', halign: 'right', cellPadding: 1, fontSize: 9 }, 
                     headStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], halign: 'right', font: 'gess', fontStyle: 'bold', fontSize: 8 }, 
                     columnStyles: {
-                        7: { font: 'AkhandSoft-Regular', halign: 'center' }, // مطلوب استلام الكاش
-                        8: { font: 'AkhandSoft-Regular', halign: 'center' }, // قيمة التوصيل
-                        9: { font: 'AkhandSoft-Regular', halign: 'center' }, // قيمة الفاتورة
-                        11: { font: 'AkhandSoft-Regular', halign: 'center' }, // رقم الهاتف
-                        13: { font: 'AkhandSoft-Regular', halign: 'center' }, // رقم الفاتورة
-                        2: { cellWidth: 15, cellHeight: 10, halign: 'center', valign: 'middle' },
-                        3: { cellWidth: 15, cellHeight: 10, halign: 'center', valign: 'middle' }
+                        // Shrink: قيمة الفاتورة (8), قيمة التوصيل (7), مطلوب استلام الكاش (6)
+                        6: { font: 'AkhandSoft-Regular', halign: 'center', cellWidth: 15 },
+                        7: { font: 'AkhandSoft-Regular', halign: 'center', cellWidth: 15 },
+                        8: { font: 'AkhandSoft-Regular', halign: 'center', cellWidth: 15 },
+                        // Expand: المنطقة (9), ملاحظات (0)
+                        0: { cellWidth: 25 }, // Notes
+                        9: { cellWidth: 20 }, // Area
+                        10: { font: 'AkhandSoft-Regular', halign: 'center' }, // رقم الهاتف
+                        12: { font: 'AkhandSoft-Regular', halign: 'center' }, // رقم الفاتورة
+                        1: { cellWidth: 15, cellHeight: 10, halign: 'center', valign: 'middle' },
+                        2: { cellWidth: 15, cellHeight: 10, halign: 'center', valign: 'middle' }
                     },
                     didParseCell: function (data) {
-                        const signatureCols = [2, 3];
+                        const signatureCols = [1, 2]; // Adjusted for removed column
                         if (signatureCols.includes(data.column.index) && data.cell.section === 'body') {
                             if (data.cell.raw && data.cell.raw !== '') data.cell.text = [];
                             else data.cell.text = ['لا يوجد'];
                         }
                     },
                     didDrawCell: function (data) {
-                        const signatureCols = [2, 3];
+                        const signatureCols = [1, 2]; // Adjusted for removed column
                         if (signatureCols.includes(data.column.index) && data.cell.section === 'body') {
                             const signatureData = data.cell.raw;
                             if (signatureData && signatureData !== '') {
@@ -2132,7 +2316,7 @@
                 y += 10;
 
                 const linkTableHeaders = [
-                    'ملاحظات', 'الاعمال المجانية',  'توقيع المندوب باستلام المبلغ المستحق', 'توقيع المندوب باستلام الطلب', 'اسم المندوب', 'اسم الموظف',
+                    'ملاحظات', 'توقيع المندوب باستلام المبلغ المستحق', 'توقيع المندوب باستلام الطلب', 'اسم المندوب', 'اسم الموظف',
                     'طريقة الدفع', 'المبلغ المستحق للمندوب', 'قيمة التوصيل', 'قيمة الفاتورة', 'المنطقة', 'رقم الهاتف',
                     'اسم العميل', 'رقم الفاتورة', 'نوع الفاتورة'
                 ];
@@ -2145,21 +2329,18 @@
                             ? order.invoiceNumber.map(num => convertArabicToEnglishNumerals(String(num))).join(', ') 
                             : (convertArabicToEnglishNumerals(String(order.invoiceNumber || '')));
                         const phoneNumberDisplay = convertArabicToEnglishNumerals(String(order.phoneNumber || ''));
-                        const freeWorksDisplay = Array.isArray(order.freeWorksDetails) && order.freeWorksDetails.length > 0 ? order.freeWorksDetails.join('\n') : 'لا يوجد';
                         
                         let delivererHandoverAmount = 0;
                         const deliveryVal = Number(order.deliveryValue) || 0; 
                         if (order.orderType === 'اشتراك') {
-                            delivererHandoverAmount = (deliveryVal <= 1) ? 0.5 : 1;
-                        } else if (order.orderType === 'فاتورة موقع') {
-                            const areaPrice = deliveryZones.fixed[order.area] !== undefined ? deliveryZones.fixed[order.area] : (order.deliveryValue || 0);
-                            delivererHandoverAmount = (areaPrice >= 2) ? 2 : areaPrice; 
-                        } else if ((order.orderType === 'فاتورة عادية' || order.orderType === 'فاتورة شحن') && order.paymentMethod === 'رابط') {
+                            delivererHandoverAmount = (deliveryVal <= 1) ? 0.5 : 1; 
+                        } else if (order.orderType === 'فاتورة عادية' || order.orderType === 'فاتورة شحن') {
                             delivererHandoverAmount = deliveryVal;
                         }
+                        totalPaidDelivererHandover += delivererHandoverAmount; // Sum for paid handover total
 
                         return [
-                            order.notes || '',   freeWorksDisplay, order.delivererHandoverSignature || '', order.signatureImage || '',
+                            order.notes || '',   order.delivererHandoverSignature || '', order.signatureImage || '',
                             order.delivererName || '', order.employeeName || '', order.paymentMethod || '',
                             delivererHandoverAmount.toFixed(2).toLocaleString('en-US'), 
                             deliveryVal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}), 
@@ -2171,23 +2352,27 @@
                     styles: { font: 'gess', fontStyle: 'normal', halign: 'right', cellPadding: 1, fontSize: 9 }, 
                     headStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], halign: 'right', font: 'gess', fontStyle: 'bold', fontSize: 8 }, 
                     columnStyles: {
-                        7: { font: 'AkhandSoft-Regular', halign: 'center' }, // المبلغ المستحق للمندوب
-                        8: { font: 'AkhandSoft-Regular', halign: 'center' }, // قيمة التوصيل
-                        9: { font: 'AkhandSoft-Regular', halign: 'center' }, // قيمة الفاتورة
-                        11: { font: 'AkhandSoft-Regular', halign: 'center' }, // رقم الهاتف
-                        13: { font: 'AkhandSoft-Regular', halign: 'center' }, // رقم الفاتورة
-                        2: { cellWidth: 15, cellHeight: 10, halign: 'center', valign: 'middle' },
-                        3: { cellWidth: 15, cellHeight: 10, halign: 'center', valign: 'middle' }
+                        // Shrink: قيمة الفاتورة (8), قيمة التوصيل (7), المبلغ المستحق للمندوب (6)
+                        6: { font: 'AkhandSoft-Regular', halign: 'center', cellWidth: 15 },
+                        7: { font: 'AkhandSoft-Regular', halign: 'center', cellWidth: 15 },
+                        8: { font: 'AkhandSoft-Regular', halign: 'center', cellWidth: 15 },
+                        // Expand: المنطقة (9), ملاحظات (0)
+                        0: { cellWidth: 25 }, // Notes
+                        9: { cellWidth: 20 }, // Area
+                        10: { font: 'AkhandSoft-Regular', halign: 'center' }, // رقم الهاتف
+                        12: { font: 'AkhandSoft-Regular', halign: 'center' }, // رقم الفاتورة
+                        1: { cellWidth: 15, cellHeight: 10, halign: 'center', valign: 'middle' },
+                        2: { cellWidth: 15, cellHeight: 10, halign: 'center', valign: 'middle' }
                     },
                     didParseCell: function (data) {
-                        const signatureCols = [2, 3];
+                        const signatureCols = [1, 2]; // Adjusted for removed column
                         if (signatureCols.includes(data.column.index) && data.cell.section === 'body') {
                             if (data.cell.raw && data.cell.raw !== '') data.cell.text = [];
                             else data.cell.text = ['لا يوجد'];
                         }
                     },
                     didDrawCell: function (data) {
-                        const signatureCols = [2, 3];
+                        const signatureCols = [1, 2]; // Adjusted for removed column
                         if (signatureCols.includes(data.column.index) && data.cell.section === 'body') {
                             const signatureData = data.cell.raw;
                             if (signatureData && signatureData !== '') {
@@ -2212,6 +2397,189 @@
                 y = doc.autoTable.previous.finalY + 10;
             }
 
+            if (websiteInvoices.length > 0) {
+                doc.setFontSize(8); 
+                doc.setFont('gess', 'bold'); 
+                doc.text('فواتير الموقع - بيدو', pageWidth - margin, y, { align: 'right' });
+                y += 10;
+
+                const websiteTableHeaders = [
+                    'ملاحظات', 'توقيع المندوب باستلام المبلغ المستحق', 'توقيع المندوب باستلام الطلب', 'اسم المندوب', 'اسم الموظف',
+                    'طريقة الدفع', 'المبلغ المستحق للمندوب', 'قيمة التوصيل', 'قيمة الفاتورة', 'المنطقة', 'رقم الهاتف',
+                    'اسم العميل', 'رقم الفاتورة', 'نوع الفاتورة'
+                ];
+
+                doc.autoTable({
+                    startY: y,
+                    head: [websiteTableHeaders],
+                    body: websiteInvoices.map(order => {
+                        const invoiceNumberDisplay = Array.isArray(order.invoiceNumber) 
+                            ? order.invoiceNumber.map(num => convertArabicToEnglishNumerals(String(num))).join(', ') 
+                            : (convertArabicToEnglishNumerals(String(order.invoiceNumber || '')));
+                        const phoneNumberDisplay = convertArabicToEnglishNumerals(String(order.phoneNumber || ''));
+
+                        let delivererHandoverAmount = 0;
+                        const deliveryVal = Number(order.deliveryValue) || 0; 
+                        if (order.orderType === 'فاتورة موقع') {
+                            const areaPrice = deliveryZones.fixed[order.area] !== undefined ? deliveryZones.fixed[order.area] : (order.deliveryValue || 0);
+                            delivererHandoverAmount = (areaPrice >= 2) ? 2 : areaPrice; 
+                        }
+                        totalPaidDelivererHandover += delivererHandoverAmount; // Sum for paid handover total
+
+                        return [
+                            order.notes || '', 
+                            order.delivererHandoverSignature || '', order.signatureImage || '',
+                            order.delivererName || '', order.employeeName || '', order.paymentMethod || '',
+                            delivererHandoverAmount.toFixed(2).toLocaleString('en-US'), 
+                            deliveryVal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}), 
+                            (Number(order.invoiceValue) || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}), 
+                            order.area || '', phoneNumberDisplay, order.clientName || '', invoiceNumberDisplay, order.orderType || ''
+                        ];
+                    }),
+                    theme: 'grid',
+                    styles: { font: 'gess', fontStyle: 'normal', halign: 'right', cellPadding: 1, fontSize: 9 }, 
+                    headStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], halign: 'right', font: 'gess', fontStyle: 'bold', fontSize: 8 }, 
+                    columnStyles: {
+                        // Shrink: قيمة الفاتورة (8), قيمة التوصيل (7), المبلغ المستحق للمندوب (6)
+                        6: { font: 'AkhandSoft-Regular', halign: 'center', cellWidth: 15 },
+                        7: { font: 'AkhandSoft-Regular', halign: 'center', cellWidth: 15 },
+                        8: { font: 'AkhandSoft-Regular', halign: 'center', cellWidth: 15 },
+                        // Expand: المنطقة (9), ملاحظات (0)
+                        0: { cellWidth: 25 }, // Notes
+                        9: { cellWidth: 20 }, // Area
+                        10: { font: 'AkhandSoft-Regular', halign: 'center' }, // رقم الهاتف
+                        12: { font: 'AkhandSoft-Regular', halign: 'center' }, // رقم الفاتورة
+                        1: { cellWidth: 15, cellHeight: 10, halign: 'center', valign: 'middle' }, 
+                        2: { cellWidth: 15, cellHeight: 10, halign: 'center', valign: 'middle' } 
+                    },
+                    didParseCell: function (data) {
+                        const signatureCols = [1, 2]; 
+                        if (signatureCols.includes(data.column.index) && data.cell.section === 'body') {
+                            if (data.cell.raw && data.cell.raw !== '') data.cell.text = [];
+                            else data.cell.text = ['لا يوجد'];
+                        }
+                    },
+                    didDrawCell: function (data) {
+                        const signatureCols = [1, 2]; 
+                        if (signatureCols.includes(data.column.index) && data.cell.section === 'body') {
+                            const signatureData = data.cell.raw;
+                            if (signatureData && signatureData !== '') {
+                                try {
+                                    const imgWidth = 10; const imgHeight = 5;
+                                    const x = data.cell.x + (data.cell.width - imgWidth) / 2;
+                                    const y = data.cell.y + (data.cell.height - imgHeight) / 2;
+                                    data.doc.addImage(signatureData, 'JPEG', x, y, imgWidth, imgHeight);
+                                } catch (e) {
+                                    console.error("Error drawing signature in didDrawCell:", e);
+                                    data.doc.setFontSize(6);
+                                    data.doc.text('خطأ', data.cell.x + data.cell.width / 2, data.cell.y + data.cell.height / 2, { align: 'center' });
+                                }
+                            }
+                        }
+                    },
+                    didDrawPage: (data) => {
+                        doc.setFontSize(8);
+                        doc.text(`صفحة ${data.pageNumber}`, pageWidth / 2, pageHeight - margin, { align: 'center' });
+                    }
+                });
+                y = doc.autoTable.previous.finalY + 10;
+            }
+
+            if (branchPickupInvoices.length > 0) { // New: Branch pickup invoices table
+                doc.setFontSize(8); 
+                doc.setFont('gess', 'bold'); 
+                doc.text('فواتير استلام من فرع', pageWidth - margin, y, { align: 'right' });
+                y += 10;
+
+                const branchPickupTableHeaders = [
+                    'ملاحظات', 'توقيع المندوب باستلام المبلغ المستحق', 'توقيع المندوب باستلام الطلب', 'اسم المندوب', 'اسم الموظف',
+                    'طريقة الدفع', 'المبلغ المستحق للمندوب', 'قيمة التوصيل', 'قيمة الفاتورة', 'الفرع', 'رقم الهاتف',
+                    'اسم العميل', 'رقم الفاتورة', 'نوع الفاتورة'
+                ];
+
+                doc.autoTable({
+                    startY: y,
+                    head: [branchPickupTableHeaders],
+                    body: branchPickupInvoices.map(order => {
+                        const invoiceNumberDisplay = Array.isArray(order.invoiceNumber) 
+                            ? order.invoiceNumber.map(num => convertArabicToEnglishNumerals(String(num))).join(', ') 
+                            : (convertArabicToEnglishNumerals(String(order.invoiceNumber || '')));
+                        const phoneNumberDisplay = convertArabicToEnglishNumerals(String(order.phoneNumber || ''));
+                        
+                        let delivererHandoverAmount = 0; // Always 0 for branch pickup handover
+                        totalPaidDelivererHandover += delivererHandoverAmount; // Still sum this in case of changes
+
+                        return [
+                            order.notes || '',  order.delivererHandoverSignature || '', order.signatureImage || '',
+                            order.delivererName || '', order.employeeName || '', order.paymentMethod || '',
+                            delivererHandoverAmount.toFixed(2).toLocaleString('en-US'), 
+                            (Number(order.deliveryValue) || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}), 
+                            (Number(order.invoiceValue) || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}), 
+                            order.area || '', phoneNumberDisplay, order.clientName || '', 
+                            invoiceNumberDisplay, order.orderType || ''
+                        ];
+                    }),
+                    theme: 'grid',
+                    styles: { font: 'gess', fontStyle: 'normal', halign: 'right', cellPadding: 1, fontSize: 9 }, 
+                    headStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], halign: 'right', font: 'gess', fontStyle: 'bold', fontSize: 8 }, 
+                    columnStyles: {
+                        // Shrink: قيمة الفاتورة (8), قيمة التوصيل (7), المبلغ المستحق للمندوب (6)
+                        6: { font: 'AkhandSoft-Regular', halign: 'center', cellWidth: 15 },
+                        7: { font: 'AkhandSoft-Regular', halign: 'center', cellWidth: 15 },
+                        8: { font: 'AkhandSoft-Regular', halign: 'center', cellWidth: 15 },
+                        // Expand: المنطقة (9), ملاحظات (0)
+                        0: { cellWidth: 25 }, // Notes
+                        9: { cellWidth: 20 }, // Branch (Area)
+                        10: { font: 'AkhandSoft-Regular', halign: 'center' }, // رقم الهاتف
+                        12: { font: 'AkhandSoft-Regular', halign: 'center' }, // رقم الفاتورة
+                        1: { cellWidth: 15, cellHeight: 10, halign: 'center', valign: 'middle' },
+                        2: { cellWidth: 15, cellHeight: 10, halign: 'center', valign: 'middle' }
+                    },
+                    didParseCell: function (data) {
+                        const signatureCols = [1, 2];
+                        if (signatureCols.includes(data.column.index) && data.cell.section === 'body') {
+                            if (data.cell.raw && data.cell.raw !== '') data.cell.text = [];
+                            else data.cell.text = ['لا يوجد'];
+                        }
+                    },
+                    didDrawCell: function (data) {
+                        const signatureCols = [1, 2];
+                        if (signatureCols.includes(data.column.index) && data.cell.section === 'body') {
+                            const signatureData = data.cell.raw;
+                            if (signatureData && signatureData !== '') {
+                                try {
+                                    const imgWidth = 10; const imgHeight = 5;
+                                    const x = data.cell.x + (data.cell.width - imgWidth) / 2;
+                                    const y = data.cell.y + (data.cell.height - imgHeight) / 2;
+                                    data.doc.addImage(signatureData, 'JPEG', x, y, imgWidth, imgHeight);
+                                } catch (e) {
+                                    console.error("Error drawing signature in didDrawCell:", e);
+                                    data.doc.setFontSize(6);
+                                    data.doc.text('خطأ', data.cell.x + data.cell.width / 2, data.cell.y + data.cell.height / 2, { align: 'center' });
+                                }
+                            }
+                        }
+                    },
+                    didDrawPage: (data) => {
+                        doc.setFontSize(8);
+                        doc.text(`صفحة ${data.pageNumber}`, pageWidth / 2, pageHeight - margin, { align: 'center' });
+                    }
+                });
+                y = doc.autoTable.previous.finalY + 10;
+            }
+
+            // Totals section 
+            doc.setFontSize(10); 
+            doc.setFont('gess', 'bold');
+            // Aligned to left side of the page
+            doc.text(`اجمالي توصيل فواتير الكاش: ${totalCashDeliveryValue.toFixed(2)}`, margin, y);
+            y += 7;
+            doc.text(`اجمالي توصيل الفواتير المدفوعة: ${totalPaidDelivererHandover.toFixed(2)}`, margin, y);
+            y += 7;
+            const totalDelivererDailyDelivery = (totalCashDeliveryValue + totalPaidDelivererHandover).toFixed(2);
+            doc.text(`اجمالي توصيل المندوب اليوم: ${totalDelivererDailyDelivery}`, margin, y);
+            y += 10;
+
             doc.setFontSize(10); 
             doc.setFont('gess', 'bold'); 
             doc.text('الاعمال المجانية للمندوب', pageWidth - margin, y, { align: 'right' });
@@ -2220,19 +2588,21 @@
             doc.setFont('gess', 'normal'); 
             doc.setFontSize(10); 
             const allFreeWorks = new Set();
-            orders.forEach(order => {
+            // Iterate over all orders for the current deliverer to collect all free works
+            orders.forEach(order => { // 'orders' here would include website orders if they were filtered into this view
                 if (Array.isArray(order.freeWorksDetails)) {
                     order.freeWorksDetails.forEach(work => allFreeWorks.add(work));
                 }
             });
+
             if (allFreeWorks.size === 0) {
-                doc.text(`لا يوجد اعمال مجانية لـ "${delivererName}" لهذا اليوم.`, pageWidth - margin, y, { align: 'right' });
+                doc.text(`لا يوجد اعمال مجانية لـ "${delivererName}" لهذا اليوم/التصفية.`, pageWidth - margin, y, { align: 'right' });
                 y += 10;
             } else {
-                Array.from(allFreeWorks).forEach((work) => {
-                    doc.text(`${work}`, pageWidth - margin, y, { align: 'right' });
-                    y += 7;
-                });
+                // Join all free works with a slash
+                const freeWorksText = Array.from(allFreeWorks).join(' / ');
+                doc.text(freeWorksText, pageWidth - margin, y, { align: 'right' });
+                y += 7; // Adjust line height if needed for wrapped text
             }
             return y;
         }
@@ -2244,7 +2614,7 @@
             const pageHeight = doc.internal.pageSize.getHeight();
 
             doc.setFont('gess', 'bold'); 
-            doc.setFontSize(9); 
+            doc.setFontSize(12); // Increased font size for main title (9 + 3 = 12)
 
             const title = `فواتير موقع بيدو بتاريخ ${getFormattedDate(new Date(date))}`;
             doc.text(title, pageWidth / 2, y, { align: 'center' });
@@ -2300,9 +2670,13 @@
                 styles: { font: 'gess', fontStyle: 'normal', halign: 'right', cellPadding: 1, fontSize: 9 }, 
                 headStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], halign: 'right', font: 'gess', fontStyle: 'bold', fontSize: 8 }, 
                 columnStyles: {
-                    6: { font: 'AkhandSoft-Regular', halign: 'center' }, // المبلغ المستحق للمندوب
-                    7: { font: 'AkhandSoft-Regular', halign: 'center' }, // قيمة التوصيل
-                    8: { font: 'AkhandSoft-Regular', halign: 'center' }, // قيمة الفاتورة
+                    // Shrink: قيمة الفاتورة (8), قيمة التوصيل (7), المبلغ المستحق للمندوب (6)
+                    6: { font: 'AkhandSoft-Regular', halign: 'center', cellWidth: 15 },
+                    7: { font: 'AkhandSoft-Regular', halign: 'center', cellWidth: 15 },
+                    8: { font: 'AkhandSoft-Regular', halign: 'center', cellWidth: 15 },
+                    // Expand: المنطقة (9), ملاحظات (0)
+                    0: { cellWidth: 25 }, // Notes
+                    9: { cellWidth: 20 }, // Area
                     10: { font: 'AkhandSoft-Regular', halign: 'center' }, // رقم الهاتف
                     12: { font: 'AkhandSoft-Regular', halign: 'center' }, // رقم الفاتورة
                     1: { cellWidth: 15, cellHeight: 10, halign: 'center', valign: 'middle' }, 
@@ -2350,15 +2724,16 @@
             const pageHeight = doc.internal.pageSize.getHeight();
 
             doc.setFont('gess', 'bold'); 
-            doc.setFontSize(9); 
+            doc.setFontSize(12); // Increased font size for main title (9 + 3 = 12)
             doc.text(reportTitle, pageWidth / 2, y, { align: 'center' });
             y += 15;
 
             const cashInvoices = orders.filter(order => order.paymentMethod === 'كاش');
-            const linkAndSubscriptionInvoices = orders.filter(order => (order.paymentMethod === 'رابط' && order.orderType !== 'فاتورة موقع') || order.orderType === 'اشتراك' || order.orderType === 'فاتورة شحن');
+            const linkAndSubscriptionAndShippingInvoices = orders.filter(order => (order.paymentMethod === 'رابط' && order.orderType !== 'فاتورة موقع') || order.orderType === 'اشتراك' || order.orderType === 'فاتورة شحن');
             const websiteInvoices = orders.filter(order => order.orderType === 'فاتورة موقع');
+            const branchPickupInvoices = orders.filter(order => order.orderType === 'فاتورة استلام من فرع');
 
-            const drawTable = (title, tableOrders, headers, startY, includeHandoverSignature = false) => {
+            const drawTable = (title, tableOrders, headers, startY, includeHandoverSignature = false, isBranchPickupTable = false) => {
                 if (tableOrders.length === 0) {
                     doc.setFontSize(8); 
                     doc.setFont('gess', 'normal'); 
@@ -2379,10 +2754,9 @@
                             ? order.invoiceNumber.map(num => convertArabicToEnglishNumerals(String(num))).join(', ') 
                             : (convertArabicToEnglishNumerals(String(order.invoiceNumber || '')));
                         const phoneNumberDisplay = convertArabicToEnglishNumerals(String(order.phoneNumber || ''));
-                        const freeWorksDisplay = Array.isArray(order.freeWorksDetails) && order.freeWorksDetails.length > 0 ? order.freeWorksDetails.join('\n') : 'لا يوجد';
 
                         let calculatedAmount = 0;
-                        if (includeHandoverSignature) {
+                        if (includeHandoverSignature) { // This covers link, subscription, shipping, and website
                             const deliveryVal = Number(order.deliveryValue) || 0;
                             if (order.orderType === 'اشتراك') {
                                 calculatedAmount = (deliveryVal <= 1) ? 0.5 : 1;
@@ -2391,13 +2765,15 @@
                                 calculatedAmount = (areaPrice >= 2) ? 2 : areaPrice;
                             } else if ((order.orderType === 'فاتورة عادية' || order.orderType === 'فاتورة شحن') && order.paymentMethod === 'رابط') {
                                 calculatedAmount = deliveryVal;
+                            } else if (order.orderType === 'فاتورة استلام من فرع') { // New branch pickup
+                                calculatedAmount = 0;
                             }
-                        } else {
+                        } else { // This covers cash
                             calculatedAmount = (Number(order.invoiceValue) || 0) - (Number(order.deliveryValue) || 0);
                         }
 
                         let rowData = [
-                            order.notes || '',  freeWorksDisplay, order.signatureImage || '', 
+                            order.notes || '',  order.signatureImage || '', 
                             order.delivererName || '', order.employeeName || '', order.paymentMethod || '',
                             (Number(order.deliveryValue) || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}), 
                             (Number(order.invoiceValue) || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}), 
@@ -2406,35 +2782,45 @@
                         ];
 
                         if (includeHandoverSignature) {
-                            rowData.splice(2, 0, order.delivererHandoverSignature || ''); 
-                            rowData.splice(7, 0, calculatedAmount.toFixed(2).toLocaleString('en-US')); 
+                            rowData.splice(1, 0, order.delivererHandoverSignature || ''); 
+                            rowData.splice(6, 0, calculatedAmount.toFixed(2).toLocaleString('en-US')); 
                         } else {
-                            rowData.splice(2, 0, order.cashierSignature || ''); 
-                            rowData.splice(7, 0, calculatedAmount.toFixed(2).toLocaleString('en-US'));
+                            rowData.splice(1, 0, order.cashierSignature || ''); 
+                            rowData.splice(6, 0, calculatedAmount.toFixed(2).toLocaleString('en-US'));
                         }
+
+                        // Adjust area/branch column for branch pickup table
+                        if (isBranchPickupTable) {
+                            rowData[9] = order.area || ''; // Assuming 'area' holds the branch name
+                        }
+
                         return rowData;
                     }),
                     theme: 'grid',
                     styles: { font: 'gess', fontStyle: 'normal', halign: 'right', cellPadding: 1, fontSize: 9 }, 
                     headStyles: { fillColor: [240, 240, 240], textColor: [0, 0, 0], halign: 'right', font: 'gess', fontStyle: 'bold', fontSize: 8 }, 
                     columnStyles: {
-                        7: { font: 'AkhandSoft-Regular', halign: 'center' }, // Calculated Amount
-                        8: { font: 'AkhandSoft-Regular', halign: 'center' }, // قيمة التوصيل
-                        9: { font: 'AkhandSoft-Regular', halign: 'center' }, // قيمة الفاتورة
-                        11: { font: 'AkhandSoft-Regular', halign: 'center' }, // رقم الهاتف
-                        13: { font: 'AkhandSoft-Regular', halign: 'center' }, // رقم الفاتورة
-                        2: { cellWidth: 15, cellHeight: 10, halign: 'center', valign: 'middle' },
-                        3: { cellWidth: 15, cellHeight: 10, halign: 'center', valign: 'middle' }
+                        // Shrink: Calculated Amount (6), قيمة التوصيل (7), قيمة الفاتورة (8)
+                        6: { font: 'AkhandSoft-Regular', halign: 'center', cellWidth: 15 },
+                        7: { font: 'AkhandSoft-Regular', halign: 'center', cellWidth: 15 },
+                        8: { font: 'AkhandSoft-Regular', halign: 'center', cellWidth: 15 },
+                        // Expand: المنطقة (9) / الفرع (9), ملاحظات (0)
+                        0: { cellWidth: 25 }, // Notes
+                        9: { cellWidth: 20 }, // Area / Branch
+                        10: { font: 'AkhandSoft-Regular', halign: 'center' }, // رقم الهاتف
+                        12: { font: 'AkhandSoft-Regular', halign: 'center' }, // رقم الفاتورة
+                        1: { cellWidth: 15, cellHeight: 10, halign: 'center', valign: 'middle' },
+                        2: { cellWidth: 15, cellHeight: 10, halign: 'center', valign: 'middle' }
                     },
                     didParseCell: function (data) {
-                        const signatureCols = [2, 3];
+                        const signatureCols = [1, 2];
                         if (signatureCols.includes(data.column.index) && data.cell.section === 'body') {
                             if (data.cell.raw && data.cell.raw !== '') data.cell.text = [];
                             else data.cell.text = ['لا يوجد'];
                         }
                     },
                     didDrawCell: function (data) {
-                        const signatureCols = [2, 3];
+                        const signatureCols = [1, 2];
                         if (signatureCols.includes(data.column.index) && data.cell.section === 'body') {
                             const signatureData = data.cell.raw;
                             if (signatureData && signatureData !== '') {
@@ -2460,22 +2846,29 @@
             };
 
             y = drawTable('الفواتير العادية - كاش', cashInvoices, [
-                'ملاحظات', 'الاعمال المجانية', 'توقيع المحاسب باستلام الكاش', 'توقيع المندوب باستلام الطلب', 'اسم المندوب', 'اسم الموظف',
+                'ملاحظات', 'توقيع المحاسب باستلام الكاش', 'توقيع المندوب باستلام الطلب', 'اسم المندوب', 'اسم الموظف',
                 'طريقة الدفع', 'مطلوب استلام الكاش', 'قيمة التوصيل', 'قيمة الفاتورة', 'المنطقة', 'رقم الهاتف',
                 'اسم العميل', 'رقم الفاتورة', 'نوع الفاتورة'
             ], y, false);
 
-            y = drawTable('الفواتير العادية - رابط / اشتراك / شحن', linkAndSubscriptionInvoices, [
-                'ملاحظات', 'الاعمال المجانية', 'توقيع المندوب باستلام المبلغ المستحق', 'توقيع المندوب باستلام الطلب', 'اسم المندوب', 'اسم الموظف',
+            y = drawTable('الفواتير العادية - رابط / اشتراك / شحن', linkAndSubscriptionAndShippingInvoices, [
+                'ملاحظات', 'توقيع المندوب باستلام المبلغ المستحق', 'توقيع المندوب باستلام الطلب', 'اسم المندوب', 'اسم الموظف',
                 'طريقة الدفع', 'المبلغ المستحق للمندوب', 'قيمة التوصيل', 'قيمة الفاتورة', 'المنطقة', 'رقم الهاتف',
                 'اسم العميل', 'رقم الفاتورة', 'نوع الفاتورة'
             ], y, true);
 
             y = drawTable('فواتير الموقع - بيدو', websiteInvoices, [
-                'ملاحظات', 'الاعمال المجانية', 'توقيع المندوب باستلام المبلغ المستحق', 'توقيع المندوب باستلام الطلب', 'اسم المندوب', 'اسم الموظف',
+                'ملاحظات', 'توقيع المندوب باستلام المبلغ المستحق', 'توقيع المندوب باستلام الطلب', 'اسم المندوب', 'اسم الموظف',
                 'طريقة الدفع', 'المبلغ المستحق للمندوب', 'قيمة التوصيل', 'قيمة الفاتورة', 'المنطقة', 'رقم الهاتف',
                 'اسم العميل', 'رقم الفاتورة', 'نوع الفاتورة'
             ], y, true);
+
+            y = drawTable('فواتير استلام من فرع', branchPickupInvoices, [ // New Branch pickup table
+                'ملاحظات', 'توقيع المندوب باستلام المبلغ المستحق', 'توقيع المندوب باستلام الطلب', 'اسم المندوب', 'اسم الموظف',
+                'طريقة الدفع', 'المبلغ المستحق للمندوب', 'قيمة التوصيل', 'قيمة الفاتورة', 'الفرع', 'رقم الهاتف',
+                'اسم العميل', 'رقم الفاتورة', 'نوع الفاتورة'
+            ], y, true, true);
+
 
             const allFreeWorks = new Set();
             const uniqueDeliverersInView = new Set(orders.map(order => order.delivererName)).size;
@@ -2502,27 +2895,32 @@
                     doc.text(`لا يوجد اعمال مجانية لـ "${selectedDelivererForAccounting}" في هذا التصفية.`, pageWidth - margin, y, { align: 'right' });
                     y += 10;
                 } else {
-                    Array.from(allFreeWorks).forEach((work) => {
-                        doc.text(`${work}`, pageWidth - margin, y, { align: 'right' });
-                        y += 7;
-                    });
+                    const freeWorksText = Array.from(allFreeWorks).join(' / '); // Join with slash
+                    doc.text(freeWorksText, pageWidth - margin, y, { align: 'right' });
+                    y += 7;
                 }
             }
             return y;
         }
 
-        function renderSearchResults(orders) {
+        async function renderSearchResults(orders, context) {
             if (!searchResultsTableBody) return;
             searchResultsTableBody.innerHTML = '';
+            searchTableActionsHeader.classList.add('hidden'); // Hide by default
+
             if (orders.length === 0) {
                 searchResultsTableBody.innerHTML = `<tr><td colspan="15" class="text-center py-4 text-gray-500">لا توجد نتائج بحث.</td></tr>`;
                 searchResultsDiv.classList.remove('hidden');
                 return;
             }
 
+            if (context === 'secretariat') {
+                searchTableActionsHeader.classList.remove('hidden');
+            }
+
             orders.forEach(order => {
                 const row = document.createElement('tr');
-                const actionsColumnHtml = currentSearchContext === 'secretariat' ?
+                const actionsColumnHtml = context === 'secretariat' ?
                     `<td><button class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-1 px-3 rounded-xl edit-search-result-btn" data-key="${order.key}">تعديل</button></td>` :
                     '';
                 const invoiceNumberDisplay = Array.isArray(order.invoiceNumber) ? order.invoiceNumber.join(', ') : (order.invoiceNumber || '');
@@ -2553,7 +2951,7 @@
 
             searchResultsDiv.classList.remove('hidden');
 
-            if (currentSearchContext === 'secretariat') {
+            if (context === 'secretariat') {
                 document.querySelectorAll('.edit-search-result-btn').forEach(button => {
                     button.addEventListener('click', async (e) => {
                         const orderKey = e.target.dataset.key;
@@ -2563,6 +2961,7 @@
                 });
             }
         }
+
 
         async function openFullOrderEditModal(orderKey) {
             batchOrders = []; 
@@ -2674,6 +3073,7 @@
             accountingNormalCashInvoicesTableBody = document.getElementById('accountingNormalCashInvoicesTableBody');
             accountingNormalLinkInvoicesTableBody = document.getElementById('accountingNormalLinkInvoicesTableBody');
             accountingWebsiteInvoicesTableBody = document.getElementById('accountingWebsiteInvoicesTableBody');
+            accountingBranchPickupInvoicesTableBody = document.getElementById('accountingBranchPickupInvoicesTableBody'); // New table body
             freeWorksList = document.getElementById('freeWorksList');
             downloadCurrentPdfBtn = document.getElementById('downloadCurrentPdfBtn');
             downloadAllDeliverersPdfBtn = document.getElementById('downloadAllDeliverersPdfBtn');
@@ -2700,8 +3100,9 @@
             searchTableActionsHeader = document.getElementById('searchTableActionsHeader');
             
             normalCashInvoicesSection = document.getElementById('normalCashInvoicesSection');
-            normalLinkInvoicesSection = document.getElementById('normalLinkInvoicesSection');
+            normalLinkAndSubscriptionAndShippingInvoicesSection = document.getElementById('normalLinkAndSubscriptionAndShippingInvoicesSection');
             websiteInvoicesSection = document.getElementById('websiteInvoicesSection');
+            branchPickupInvoicesSection = document.getElementById('branchPickupInvoicesSection'); // New section
 
 
             document.getElementById('secretariatBtn').addEventListener('click', showSecretariatSection);
@@ -2802,6 +3203,8 @@
                                     orderToSave.delivererHandoverCollected = (areaPrice >= 2) ? 2 : areaPrice; 
                                 } else if ((orderToSave.orderType === 'فاتورة عادية' || orderToSave.orderType === 'فاتورة شحن') && orderToSave.paymentMethod === 'رابط' && orderToSave.delivererHandoverCollected === undefined) {
                                     orderToSave.delivererHandoverCollected = Number(orderToSave.deliveryValue) || 0;
+                                } else if (orderToSave.orderType === 'فاتورة استلام من فرع' && orderToSave.delivererHandoverCollected === undefined) { // New: Branch pickup handover
+                                    orderToSave.delivererHandoverCollected = 0; // Always 0 for branch pickup handover
                                 } else if (orderToSave.delivererHandoverCollected === undefined) {
                                     orderToSave.delivererHandoverCollected = 0;
                                 }
@@ -2855,6 +3258,8 @@
                             currentOrderData.delivererHandoverCollected = (areaPrice >= 2) ? 2 : areaPrice;
                         } else if ((currentOrderData.orderType === 'فاتورة عادية' || currentOrderData.orderType === 'فاتورة شحن') && currentOrderData.paymentMethod === 'رابط' && currentOrderData.delivererHandoverCollected === undefined) {
                             currentOrderData.delivererHandoverCollected = Number(currentOrderData.deliveryValue) || 0;
+                        } else if (currentOrderData.orderType === 'فاتورة استلام من فرع' && currentOrderData.delivererHandoverCollected === undefined) { // New: Branch pickup handover
+                            currentOrderData.delivererHandoverCollected = 0; // Always 0 for branch pickup handover
                         } else if (currentOrderData.delivererHandoverCollected === undefined) {
                             currentOrderData.delivererHandoverCollected = 0;
                         }
@@ -2885,7 +3290,7 @@
                 currentSearchContext = 'secretariat';
                 searchQueryInput.value = '';
                 searchResultsDiv.classList.add('hidden');
-                searchTableActionsHeader.classList.remove('hidden');
+                searchTableActionsHeader.classList.remove('hidden'); // Ensure it's not hidden if context is secretariat
                 showModal('searchOrderModal');
             });
 
@@ -3019,6 +3424,54 @@
                 populateDelivererDropdown(selectedAccountingDate).then(updateAccountingReport);
             });
 
+            // New: Search button event listener for Accounting section
+            document.getElementById('searchOrderAccountingBtn').addEventListener('click', () => {
+                currentSearchContext = 'accounting';
+                searchQueryInput.value = '';
+                searchResultsDiv.classList.add('hidden');
+                searchTableActionsHeader.classList.add('hidden'); // Hide actions for accounting search
+                showModal('searchOrderModal');
+            });
+
+// Search execution (common for both secretariat and accounting)
+executeSearchBtn?.addEventListener('click', async () => {
+    const searchType = document.querySelector('input[name="searchType"]:checked')?.value;
+    const queryValue = convertArabicToEnglishNumerals(searchQueryInput?.value.trim());
+
+    if (!queryValue) {
+        showMessageModal('الرجاء إدخال قيمة للبحث.');
+        return;
+    }
+
+    try {
+        const ordersRef = ref(db, `artifacts/${appId}/public/data/orders`);
+        const snapshot = await get(ordersRef);
+        const allOrders = [];
+        snapshot.forEach(childSnapshot => {
+            allOrders.push({ key: childSnapshot.key, ...childSnapshot.val() });
+        });
+
+        let filteredOrders = [];
+        if (searchType === 'invoice') {
+            filteredOrders = allOrders.filter(order => {
+                const invoiceNumbers = Array.isArray(order.invoiceNumber) ? order.invoiceNumber.map(String) : [String(order.invoiceNumber || '')];
+                return invoiceNumbers.some(num => num.includes(queryValue));
+            });
+        } else if (searchType === 'phone') {
+            filteredOrders = allOrders.filter(order => {
+                const phoneNumber = convertArabicToEnglishNumerals(String(order.phoneNumber || ''));
+                return phoneNumber.includes(queryValue);
+            });
+        }
+        renderSearchResults(filteredOrders, currentSearchContext);
+    } catch (error) {
+        console.error("Error during search:", error);
+        showMessageModal("حدث خطأ أثناء البحث: " + error.message);
+    }
+});
+
+
+
             downloadCurrentPdfBtn.addEventListener('click', async () => {
                 if (currentAccountingOrders.length === 0) {
                     showMessageModal('لا توجد طلبات في العرض الحالي لإنشاء تقرير PDF.');
@@ -3050,62 +3503,6 @@
             });
 
             downloadAllDeliverersPdfBtn.addEventListener('click', async () => {
-                if (!selectedAccountingDate && !currentFilterFromDate) {
-                    showMessageModal('الرجاء اختيار تاريخ أو نطاق تاريخ.');
-                    return;
-                }
-                const { jsPDF } = window.jspdf;
-                const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-                const ordersRef = ref(db, `artifacts/${appId}/public/data/orders`);
-                const ordersSnapshot = await get(ordersRef);
-                const allOrdersForDateRange = [];
-                if (ordersSnapshot) {
-                    ordersSnapshot.forEach(childSnapshot => {
-                        const order = childSnapshot.val();
-                        const orderDateString = order.date;
-                        let dateMatches = false;
-                        if (currentFilterFromDate && currentFilterToDate) {
-                            const orderDate = new Date(orderDateString);
-                            const fromDate = new Date(currentFilterFromDate);
-                            const toDate = new Date(currentFilterToDate);
-                            toDate.setHours(23, 59, 59, 999);
-                            if (orderDate >= fromDate && orderDate <= toDate) dateMatches = true;
-                        } else if (selectedAccountingDate) {
-                            if (orderDateString === selectedAccountingDate) dateMatches = true;
-                        } else {
-                            dateMatches = true;
-                        }
-                        if (dateMatches) allOrdersForDateRange.push({ key: childSnapshot.key, ...order });
-                    });
-                }
-
-                const ordersByDeliverer = allOrdersForDateRange.filter(order => order.orderType !== 'فاتورة موقع').reduce((acc, order) => {
-                    if (order.delivererName) {
-                        if (!acc[order.delivererName]) acc[order.delivererName] = [];
-                        acc[order.delivererName].push(order); 
-                    }
-                    return acc;
-                }, {});
-
-                let firstPage = true;
-                for (const delivererName in ordersByDeliverer) {
-                    if (ordersByDeliverer[delivererName].length > 0) {
-                        if (!firstPage) doc.addPage();
-                        const sortedDelivererOrders = ordersByDeliverer[delivererName].sort((a, b) => b.timestamp - a.timestamp);
-                        await generatePdfForDeliverer(doc, delivererName, selectedAccountingDate || currentFilterFromDate || getCurrentDateString(), sortedDelivererOrders, true);
-                        firstPage = false;
-                    }
-                }
-
-                if (firstPage) {
-                    showMessageModal('لا توجد فواتير عادية أو اشتراكات أو شحن لإنشاء تقارير المناديب لهذا التاريخ.');
-                    return;
-                }
-                const fileName = `كشف حساب المناديب (فواتير عادية واشتراكات وشحن) بتاريخ ${selectedAccountingDate || currentFilterFromDate || getCurrentDateString()}.pdf`;
-                doc.save(fileName);
-            });
-
-            downloadWebsiteOrdersPdfBtn.addEventListener('click', async () => {
                 if (!selectedAccountingDate && !currentFilterFromDate) {
                     showMessageModal('الرجاء اختيار تاريخ أو نطاق تاريخ.');
                     return;
