@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>نظام إدارة الفواتير</title>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tailwind CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
     <!-- Inter font from Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- Font Awesome for icons -->
@@ -14,8 +14,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <!-- jsPDF-AutoTable plugin for PDF table generation - MUST be loaded after jspdf.umd.min.js -->
     <script src="https://unpkg.com/jspdf-autotable@3.5.14/dist/jspdf.plugin.autotable.js"></script>
-    <!-- jsPDF Arabic Plugin for proper Arabic text shaping and RTL support -->
-    <script src="https://unpkg.com/jspdf-arabic@1.0.0/dist/jspdf.plugin.arabic.js"></script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -537,7 +535,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getDatabase, ref, push, set, onValue, update, remove, query, orderByChild, equalTo, get } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
+        import { getDatabase, ref, push, set, onValue, update, remove, get } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
 
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         
@@ -556,6 +554,17 @@
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app); 
         const db = getDatabase(app);
+        const cashierFirebaseConfig = {
+            apiKey: "AIzaSyAxjBBtAnpThJoliccuoq0NNIABGPv1dJg",
+            authDomain: "fawatir-b6119.firebaseapp.com",
+            databaseURL: "https://fawatir-b6119-default-rtdb.firebaseio.com",
+            projectId: "fawatir-b6119",
+            storageBucket: "fawatir-b6119.firebasestorage.app",
+            messagingSenderId: "575777677956",
+            appId: "1:575777677956:web:74794fdd3525f2693d18d1"
+        };
+        const cashierApp = initializeApp(cashierFirebaseConfig, 'cashierSite');
+        const cashierDb = getDatabase(cashierApp);
 
         const getFormattedDate = (date) => date.toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
         const getFormattedTime = (date) => date.toLocaleTimeString('ar-EG', { hour: 'numeric', minute: 'numeric', hour12: true });
@@ -577,6 +586,11 @@
         let currentFilterInvoiceType = 'all';
         let currentFilterDelivererOption = 'all';
         let signatureCallback = null;
+        let cashierInvoiceOrders = [];
+        let cashierInvoicesLoaded = false;
+        let cashierInvoicesLoadingPromise = null;
+        let cashierInvoiceSearchTerm = '';
+        const MAX_RECENT_CASHIER_INVOICES = 20;
 
         class SignaturePad {
             constructor(canvas, options = {}) {
@@ -783,6 +797,224 @@
             return str.replace(/[٠-٩]/g, d => englishNumerals[arabicNumerals.indexOf(d)]).replace(/،/g, ','); 
         };
 
+        const shouldUseCashierInvoiceSelector = (orderType) => !!orderType && orderType !== 'فاتورة موقع';
+
+        const getCurrentOrderTypeValue = () => document.getElementById('orderType')?.value || currentOrderData.orderType || '';
+
+        const getCashierInvoiceDisplay = (order) => convertArabicToEnglishNumerals(String(order?.invoiceNumber || '').trim());
+
+        const extractAreaFromCashierOrder = (order) => {
+            const address = (order?.address || '').toString().trim();
+            if (address) return address.split('-')[0].trim();
+            return (order?.branch || '').toString().trim();
+        };
+
+        const mapCashierOrderPaymentMethod = (paymentMethod) => {
+            if (paymentMethod === 'cash' || paymentMethod === 'كاش') return 'كاش';
+            return 'رابط';
+        };
+
+        const getPhoneWithoutKuwaitCode = (phoneNumber) => {
+            const normalized = convertArabicToEnglishNumerals(phoneNumber || '');
+            let digits = normalized.replace(/\D/g, '');
+            if (digits.startsWith('00965')) digits = digits.slice(5);
+            else if (digits.startsWith('965')) digits = digits.slice(3);
+            return digits;
+        };
+
+        async function loadCashierInvoiceOrders() {
+            if (cashierInvoicesLoaded) return cashierInvoiceOrders;
+            if (cashierInvoicesLoadingPromise) return cashierInvoicesLoadingPromise;
+
+            cashierInvoicesLoadingPromise = (async () => {
+                try {
+                    const ordersSnapshot = await get(ref(cashierDb, 'orders'));
+                    const orders = [];
+                    if (ordersSnapshot.exists()) {
+                        ordersSnapshot.forEach(childSnapshot => {
+                            const order = childSnapshot.val();
+                            const invoiceNumber = getCashierInvoiceDisplay(order);
+                            if (invoiceNumber) {
+                                orders.push({ key: childSnapshot.key, ...order });
+                            }
+                        });
+                    }
+                    orders.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+                    cashierInvoiceOrders = orders;
+                    cashierInvoicesLoaded = true;
+                    return cashierInvoiceOrders;
+                } catch (error) {
+                    console.error('Error loading cashier invoices:', error);
+                    showMessageModal('تعذر جلب فواتير موقع الكاشير حالياً.');
+                    return [];
+                } finally {
+                    cashierInvoicesLoadingPromise = null;
+                }
+            })();
+
+            return cashierInvoicesLoadingPromise;
+        }
+
+        function renderInvoiceNumberField(question) {
+            if (!question) return;
+            const container = document.getElementById(`${question.id}Inputs`);
+            if (!container) return;
+
+            const orderType = getCurrentOrderTypeValue();
+            if (shouldUseCashierInvoiceSelector(orderType)) {
+                renderCashierInvoiceSelectorField(container);
+            } else {
+                renderManualInvoiceNumberField(container, question);
+            }
+        }
+
+        function renderManualInvoiceNumberField(container, question) {
+            container.innerHTML = '';
+            const valuesToRender = (Array.isArray(currentOrderData[question.id]) && currentOrderData[question.id].length > 0)
+                ? currentOrderData[question.id]
+                : [''];
+
+            valuesToRender.forEach(val => addDynamicTextInput(container, question.placeholder, val));
+
+            const addButton = document.createElement('button');
+            addButton.type = 'button';
+            addButton.className = 'bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-xl mt-2';
+            addButton.textContent = `اضافة ${question.label} جديد`;
+            addButton.addEventListener('click', () => addDynamicTextInput(container, question.placeholder));
+            container.appendChild(addButton);
+            updateDynamicTextInputRemoveButtons(container);
+        }
+
+        function renderCashierInvoiceSelectorField(container) {
+            const selectedInvoice = Array.isArray(currentOrderData.invoiceNumber) && currentOrderData.invoiceNumber.length > 0
+                ? convertArabicToEnglishNumerals(String(currentOrderData.invoiceNumber[0]))
+                : '';
+
+            container.innerHTML = `
+                <div class="space-y-3">
+                    <input type="text" id="selectedCashierInvoiceInput" value="${selectedInvoice}" readonly placeholder="اختر رقم الفاتورة من القائمة" class="p-3 border border-gray-300 rounded-xl w-full bg-gray-100">
+                    <input type="text" id="cashierInvoiceSearchInput" value="${cashierInvoiceSearchTerm}" oninput="updateCashierInvoiceSearch(this.value)" placeholder="بحث عن رقم فاتورة..." class="p-3 border border-gray-300 rounded-xl w-full">
+                    <div id="cashierInvoiceList" class="max-h-48 overflow-y-auto border border-gray-200 rounded-xl p-2 bg-gray-50 text-sm">
+                        جاري تحميل الفواتير...
+                    </div>
+                </div>
+            `;
+
+            loadCashierInvoiceOrders().then(() => refreshCashierInvoiceList());
+        }
+
+        function updateCashierInvoiceSearch(value) {
+            cashierInvoiceSearchTerm = convertArabicToEnglishNumerals(value || '');
+            refreshCashierInvoiceList();
+        }
+
+        function refreshCashierInvoiceList() {
+            const listContainer = document.getElementById('cashierInvoiceList');
+            if (!listContainer) return;
+            if (!cashierInvoicesLoaded) {
+                listContainer.innerHTML = 'جاري تحميل الفواتير...';
+                return;
+            }
+
+            const searchTerm = cashierInvoiceSearchTerm.trim();
+            const filtered = searchTerm
+                ? cashierInvoiceOrders.filter(order => {
+                    const invoice = getCashierInvoiceDisplay(order);
+                    return invoice.includes(searchTerm);
+                })
+                : cashierInvoiceOrders.slice(0, MAX_RECENT_CASHIER_INVOICES);
+
+            if (filtered.length === 0) {
+                listContainer.innerHTML = '<div class="p-2 text-gray-500">لا توجد نتائج.</div>';
+                return;
+            }
+
+            listContainer.innerHTML = filtered.map(order => `
+                <button type="button" onclick="showCashierInvoicePreviewModal('${order.key}')" class="w-full text-right p-2 rounded-lg hover:bg-blue-100 transition border-b last:border-b-0">
+                    <div class="font-bold">#${getCashierInvoiceDisplay(order)}</div>
+                    <div class="text-xs text-gray-500">${order.customerName || 'بدون اسم'} - ${order.timestamp ? new Date(order.timestamp).toLocaleString('ar-EG') : ''}</div>
+                </button>
+            `).join('');
+        }
+
+        function showCashierInvoicePreviewModal(orderKey) {
+            const order = cashierInvoiceOrders.find(item => item.key === orderKey);
+            if (!order) {
+                showMessageModal('رقم الفاتورة غير موجود.');
+                return;
+            }
+
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.style.display = 'flex';
+            modal.innerHTML = `
+                <div class="modal-content max-w-2xl w-full">
+                    <h3 class="text-2xl font-bold mb-4 text-gray-800">بيانات الفاتورة #${getCashierInvoiceDisplay(order)}</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6 text-sm">
+                        <div class="p-3 bg-gray-50 rounded-lg"><span class="font-bold">اسم العميل:</span> ${order.customerName || '-'}</div>
+                        <div class="p-3 bg-gray-50 rounded-lg"><span class="font-bold">رقم الهاتف:</span> ${convertArabicToEnglishNumerals(order.phoneNumber || '-')}</div>
+                        <div class="p-3 bg-gray-50 rounded-lg"><span class="font-bold">المنطقة/الفرع:</span> ${extractAreaFromCashierOrder(order) || '-'}</div>
+                        <div class="p-3 bg-gray-50 rounded-lg"><span class="font-bold">طريقة الدفع:</span> ${mapCashierOrderPaymentMethod(order.paymentMethod)}</div>
+                        <div class="p-3 bg-gray-50 rounded-lg"><span class="font-bold">قيمة التوصيل:</span> ${(Number(order.deliveryPrice) || 0).toFixed(3)}</div>
+                        <div class="p-3 bg-gray-50 rounded-lg"><span class="font-bold">قيمة الفاتورة:</span> ${(Number(order.total) || 0).toFixed(3)}</div>
+                    </div>
+                    <div class="flex gap-3">
+                        <button type="button" onclick="confirmCashierInvoiceSelection('${order.key}')" class="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-xl">تأكيد</button>
+                        <button type="button" onclick="this.closest('.modal').remove()" class="flex-1 bg-gray-400 hover:bg-gray-500 text-white font-bold py-3 px-4 rounded-xl">إلغاء</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        function confirmCashierInvoiceSelection(orderKey) {
+            const order = cashierInvoiceOrders.find(item => item.key === orderKey);
+            if (!order) {
+                showMessageModal('رقم الفاتورة غير موجود.');
+                return;
+            }
+
+            currentOrderData.linkedCashierOrderId = order.key;
+            currentOrderData.invoiceNumber = [getCashierInvoiceDisplay(order)];
+            currentOrderData.clientName = order.customerName || '';
+            currentOrderData.phoneNumber = getPhoneWithoutKuwaitCode(order.phoneNumber || '');
+            currentOrderData.area = extractAreaFromCashierOrder(order);
+            currentOrderData.deliveryValue = Number(order.deliveryPrice) || 0;
+            currentOrderData.invoiceValue = Number(order.total) || 0;
+            currentOrderData.paymentMethod = mapCashierOrderPaymentMethod(order.paymentMethod);
+
+            const selectedInvoiceInput = document.getElementById('selectedCashierInvoiceInput');
+            if (selectedInvoiceInput) selectedInvoiceInput.value = currentOrderData.invoiceNumber[0];
+
+            const clientNameInput = document.getElementById('clientName');
+            if (clientNameInput) clientNameInput.value = currentOrderData.clientName;
+
+            const phoneInput = document.getElementById('phoneNumber');
+            if (phoneInput) phoneInput.value = currentOrderData.phoneNumber;
+
+            const areaInput = document.getElementById('area');
+            if (areaInput) areaInput.value = currentOrderData.area;
+
+            const deliveryInput = document.getElementById('deliveryValue');
+            if (deliveryInput) deliveryInput.value = currentOrderData.deliveryValue;
+
+            const invoiceValueInput = document.getElementById('invoiceValue');
+            if (invoiceValueInput) invoiceValueInput.value = currentOrderData.invoiceValue;
+
+            const paymentMethodInput = document.getElementById('paymentMethod');
+            if (paymentMethodInput) paymentMethodInput.value = currentOrderData.paymentMethod;
+
+            handleAreaChange();
+            if (deliveryInput) deliveryInput.value = currentOrderData.deliveryValue;
+
+            const openPreview = Array.from(document.querySelectorAll('.modal')).find(modal => modal.querySelector('h3')?.textContent?.includes('بيانات الفاتورة'));
+            if (openPreview) openPreview.remove();
+        }
+
+        window.updateCashierInvoiceSearch = updateCashierInvoiceSearch;
+        window.showCashierInvoicePreviewModal = showCashierInvoicePreviewModal;
+        window.confirmCashierInvoiceSelection = confirmCashierInvoiceSelection;
+
         function showSecretariatSection() {
             document.getElementById('secretariatSection').classList.remove('hidden');
             document.getElementById('mainScreen').classList.add('hidden');
@@ -821,7 +1053,12 @@
                     select.className = 'p-3 border border-gray-300 rounded-xl w-full';
                     select.innerHTML = `<option value="" disabled selected>-- اختر --</option>` +
                         question.options.map(opt => `<option value="${opt}" ${currentOrderData[question.id] === opt ? 'selected' : ''}>${opt}</option>`).join('');
-                    if (question.id === 'orderType') select.addEventListener('change', handleOrderTypeChange);
+                    if (question.id === 'orderType') {
+                        select.addEventListener('change', (e) => {
+                            currentOrderData.orderType = e.target.value;
+                            handleOrderTypeChange();
+                        });
+                    }
                     div.appendChild(select);
                 } else if (question.type === 'datalist') { 
                     const input = document.createElement('input');
@@ -849,20 +1086,24 @@
                     container.id = `${question.id}Inputs`;
                     div.appendChild(container);
 
-                    const valuesToRender = (Array.isArray(currentOrderData[question.id]) && currentOrderData[question.id].length > 0)
-                        ? currentOrderData[question.id]
-                        : ['']; 
+                    if (question.id === 'invoiceNumber') {
+                        renderInvoiceNumberField(question);
+                    } else {
+                        const valuesToRender = (Array.isArray(currentOrderData[question.id]) && currentOrderData[question.id].length > 0)
+                            ? currentOrderData[question.id]
+                            : ['']; 
 
-                    valuesToRender.forEach(val => addDynamicTextInput(container, question.placeholder, val)); 
+                        valuesToRender.forEach(val => addDynamicTextInput(container, question.placeholder, val)); 
 
-                    const addButton = document.createElement('button');
-                    addButton.type = 'button';
-                    addButton.className = 'bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-xl mt-2';
-                    addButton.textContent = `اضافة ${question.label} جديد`;
-                    addButton.addEventListener('click', () => addDynamicTextInput(container, question.placeholder)); 
-                    div.appendChild(addButton);
-                    
-                    updateDynamicTextInputRemoveButtons(container);
+                        const addButton = document.createElement('button');
+                        addButton.type = 'button';
+                        addButton.className = 'bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-xl mt-2';
+                        addButton.textContent = `اضافة ${question.label} جديد`;
+                        addButton.addEventListener('click', () => addDynamicTextInput(container, question.placeholder)); 
+                        div.appendChild(addButton);
+                        
+                        updateDynamicTextInputRemoveButtons(container);
+                    }
 
                 } else if (question.type === 'radio') {
                     const radioContainer = document.createElement('div');
@@ -1027,9 +1268,17 @@
             const areaInput = document.getElementById('area');
             const areaLabel = document.querySelector('label[for="area"]');
             const areaQuestion = orderFormQuestions.find(q => q.id === 'area');
+            const invoiceQuestion = orderFormQuestions.find(q => q.id === 'invoiceNumber');
 
 
             if (!deliveryValueElem || !invoiceValueElem || !paymentMethodElem || !areaInput || !areaLabel) return;
+            currentOrderData.orderType = orderType || '';
+
+            if (!shouldUseCashierInvoiceSelector(orderType)) {
+                currentOrderData.linkedCashierOrderId = null;
+                cashierInvoiceSearchTerm = '';
+            }
+            renderInvoiceNumberField(invoiceQuestion);
 
             // Update area label and options based on order type
             if (orderType === 'فاتورة استلام من فرع') {
@@ -1126,9 +1375,16 @@
                 if (question.type === 'dynamicText') {
                     const container = document.getElementById(`${question.id}Inputs`);
                     if (container) {
-                        const values = Array.from(container.querySelectorAll('input'))
-                            .map(input => convertArabicToEnglishNumerals(input.value.trim()))
-                            .filter(Boolean);
+                        let values = [];
+                        if (question.id === 'invoiceNumber' && shouldUseCashierInvoiceSelector(getCurrentOrderTypeValue())) {
+                            const selectedInvoiceInput = document.getElementById('selectedCashierInvoiceInput');
+                            const selectedValue = convertArabicToEnglishNumerals(selectedInvoiceInput?.value?.trim() || '');
+                            values = selectedValue ? [selectedValue] : [];
+                        } else {
+                            values = Array.from(container.querySelectorAll('input'))
+                                .map(input => convertArabicToEnglishNumerals(input.value.trim()))
+                                .filter(Boolean);
+                        }
                         if (question.required && values.length === 0) {
                             showMessageModal(`الرجاء إدخال ${question.label} واحد على الأقل.`);
                             isValid = false;
@@ -1176,6 +1432,10 @@
             }
             
             if (!isValid) return null;
+
+            if (currentOrderData.linkedCashierOrderId) {
+                formData.linkedCashierOrderId = currentOrderData.linkedCashierOrderId;
+            }
 
             return formData;
         }
