@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نظام إدارة الفواتير</title> 
+    <title>نظام إدارة الفواتير</title>
     <!-- Tailwind CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
     <!-- Inter font from Google Fonts -->
@@ -798,8 +798,37 @@
         };
 
         const shouldUseCashierInvoiceSelector = (orderType) => !!orderType && orderType !== 'فاتورة موقع';
+        const MANUAL_INVOICE_MODE = 'manual';
+        const CASHIER_INVOICE_MODE = 'cashier';
 
         const getCurrentOrderTypeValue = () => document.getElementById('orderType')?.value || currentOrderData.orderType || '';
+
+        const getCurrentInvoiceInputMode = (orderType = getCurrentOrderTypeValue()) => {
+            if (!shouldUseCashierInvoiceSelector(orderType)) return MANUAL_INVOICE_MODE;
+            if (currentOrderData.invoiceInputMode === MANUAL_INVOICE_MODE || currentOrderData.invoiceInputMode === CASHIER_INVOICE_MODE) {
+                return currentOrderData.invoiceInputMode;
+            }
+            if (currentOrderData.linkedCashierOrderId) return CASHIER_INVOICE_MODE;
+            return MANUAL_INVOICE_MODE;
+        };
+
+        const setInvoiceInputMode = (mode) => {
+            const orderType = getCurrentOrderTypeValue();
+            if (!shouldUseCashierInvoiceSelector(orderType)) return;
+
+            const normalizedMode = mode === CASHIER_INVOICE_MODE ? CASHIER_INVOICE_MODE : MANUAL_INVOICE_MODE;
+            currentOrderData.invoiceInputMode = normalizedMode;
+
+            if (normalizedMode === MANUAL_INVOICE_MODE) {
+                currentOrderData.linkedCashierOrderId = null;
+                cashierInvoiceSearchTerm = '';
+            } else if (!currentOrderData.linkedCashierOrderId) {
+                currentOrderData.invoiceNumber = [];
+            }
+
+            const invoiceQuestion = orderFormQuestions.find(q => q.id === 'invoiceNumber');
+            renderInvoiceNumberField(invoiceQuestion);
+        };
 
         const getCashierInvoiceDisplay = (order) => convertArabicToEnglishNumerals(String(order?.invoiceNumber || '').trim());
 
@@ -862,8 +891,34 @@
 
             const orderType = getCurrentOrderTypeValue();
             if (shouldUseCashierInvoiceSelector(orderType)) {
-                renderCashierInvoiceSelectorField(container);
+                const mode = getCurrentInvoiceInputMode(orderType);
+                currentOrderData.invoiceInputMode = mode;
+                container.innerHTML = `
+                    <div class="mb-3 p-3 bg-gray-50 border border-gray-200 rounded-xl">
+                        <div class="text-sm font-bold text-gray-700 mb-2">طريقة تعبئة البيانات</div>
+                        <div class="flex flex-wrap gap-4">
+                            <label class="inline-flex items-center">
+                                <input type="radio" name="invoiceInputMode" value="${MANUAL_INVOICE_MODE}" ${mode === MANUAL_INVOICE_MODE ? 'checked' : ''} onchange="setInvoiceInputMode('${MANUAL_INVOICE_MODE}')">
+                                <span class="mr-2">كتابة البيانات يدوياً</span>
+                            </label>
+                            <label class="inline-flex items-center">
+                                <input type="radio" name="invoiceInputMode" value="${CASHIER_INVOICE_MODE}" ${mode === CASHIER_INVOICE_MODE ? 'checked' : ''} onchange="setInvoiceInputMode('${CASHIER_INVOICE_MODE}')">
+                                <span class="mr-2">اختيار فاتورة</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div id="invoiceNumberModeContainer"></div>
+                `;
+                const modeContainer = document.getElementById('invoiceNumberModeContainer');
+                if (!modeContainer) return;
+
+                if (mode === CASHIER_INVOICE_MODE) {
+                    renderCashierInvoiceSelectorField(modeContainer);
+                } else {
+                    renderManualInvoiceNumberField(modeContainer, question);
+                }
             } else {
+                currentOrderData.invoiceInputMode = MANUAL_INVOICE_MODE;
                 renderManualInvoiceNumberField(container, question);
             }
         }
@@ -974,6 +1029,7 @@
                 return;
             }
 
+            currentOrderData.invoiceInputMode = CASHIER_INVOICE_MODE;
             currentOrderData.linkedCashierOrderId = order.key;
             currentOrderData.invoiceNumber = [getCashierInvoiceDisplay(order)];
             currentOrderData.clientName = order.customerName || '';
@@ -1014,6 +1070,7 @@
         window.updateCashierInvoiceSearch = updateCashierInvoiceSearch;
         window.showCashierInvoicePreviewModal = showCashierInvoicePreviewModal;
         window.confirmCashierInvoiceSelection = confirmCashierInvoiceSelection;
+        window.setInvoiceInputMode = setInvoiceInputMode;
 
         function showSecretariatSection() {
             document.getElementById('secretariatSection').classList.remove('hidden');
@@ -1276,7 +1333,10 @@
 
             if (!shouldUseCashierInvoiceSelector(orderType)) {
                 currentOrderData.linkedCashierOrderId = null;
+                currentOrderData.invoiceInputMode = MANUAL_INVOICE_MODE;
                 cashierInvoiceSearchTerm = '';
+            } else {
+                currentOrderData.invoiceInputMode = getCurrentInvoiceInputMode(orderType);
             }
             renderInvoiceNumberField(invoiceQuestion);
 
@@ -1376,18 +1436,40 @@
                     const container = document.getElementById(`${question.id}Inputs`);
                     if (container) {
                         let values = [];
-                        if (question.id === 'invoiceNumber' && shouldUseCashierInvoiceSelector(getCurrentOrderTypeValue())) {
-                            const selectedInvoiceInput = document.getElementById('selectedCashierInvoiceInput');
-                            const selectedValue = convertArabicToEnglishNumerals(selectedInvoiceInput?.value?.trim() || '');
-                            values = selectedValue ? [selectedValue] : [];
+                        if (question.id === 'invoiceNumber') {
+                            const currentOrderType = getCurrentOrderTypeValue();
+                            const isCashierSelectorAvailable = shouldUseCashierInvoiceSelector(currentOrderType);
+                            const invoiceInputMode = isCashierSelectorAvailable ? getCurrentInvoiceInputMode(currentOrderType) : MANUAL_INVOICE_MODE;
+
+                            if (isCashierSelectorAvailable && invoiceInputMode === CASHIER_INVOICE_MODE) {
+                                const selectedInvoiceInput = document.getElementById('selectedCashierInvoiceInput');
+                                const selectedValue = convertArabicToEnglishNumerals(selectedInvoiceInput?.value?.trim() || '');
+                                values = selectedValue ? [selectedValue] : [];
+                                if (question.required && values.length === 0) {
+                                    showMessageModal('الرجاء اختيار فاتورة من القائمة أو التحويل إلى كتابة البيانات يدوياً.');
+                                    isValid = false;
+                                } else if (!currentOrderData.linkedCashierOrderId) {
+                                    showMessageModal('الرجاء اختيار الفاتورة من القائمة ثم الضغط على تأكيد داخل معاينة الفاتورة.');
+                                    isValid = false;
+                                }
+                            } else {
+                                const valuesContainer = document.getElementById('invoiceNumberModeContainer') || container;
+                                values = Array.from(valuesContainer.querySelectorAll('input[type="text"]'))
+                                    .map(input => convertArabicToEnglishNumerals(input.value.trim()))
+                                    .filter(Boolean);
+                                if (question.required && values.length === 0) {
+                                    showMessageModal(`الرجاء إدخال ${question.label} واحد على الأقل.`);
+                                    isValid = false;
+                                }
+                            }
                         } else {
                             values = Array.from(container.querySelectorAll('input'))
                                 .map(input => convertArabicToEnglishNumerals(input.value.trim()))
                                 .filter(Boolean);
-                        }
-                        if (question.required && values.length === 0) {
-                            showMessageModal(`الرجاء إدخال ${question.label} واحد على الأقل.`);
-                            isValid = false;
+                            if (question.required && values.length === 0) {
+                                showMessageModal(`الرجاء إدخال ${question.label} واحد على الأقل.`);
+                                isValid = false;
+                            }
                         }
                         formData[question.id] = values;
                     }
@@ -1433,8 +1515,16 @@
             
             if (!isValid) return null;
 
-            if (currentOrderData.linkedCashierOrderId) {
-                formData.linkedCashierOrderId = currentOrderData.linkedCashierOrderId;
+            const finalOrderType = formData.orderType || getCurrentOrderTypeValue();
+            const finalInvoiceMode = shouldUseCashierInvoiceSelector(finalOrderType)
+                ? getCurrentInvoiceInputMode(finalOrderType)
+                : MANUAL_INVOICE_MODE;
+            formData.invoiceInputMode = finalInvoiceMode;
+
+            if (finalInvoiceMode === CASHIER_INVOICE_MODE) {
+                formData.linkedCashierOrderId = currentOrderData.linkedCashierOrderId || null;
+            } else {
+                formData.linkedCashierOrderId = null;
             }
 
             return formData;
@@ -3823,7 +3913,6 @@
     </script>
 </body>
 </html>
-
 
 
 
