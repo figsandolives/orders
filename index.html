@@ -367,16 +367,16 @@
                     <button id="downloadCurrentPdfBtn" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-xl shadow-md transition duration-300 ease-in-out transform hover:scale-105">
                         تحميل الصفحة الحالية PDF
                     </button>
-                    <button id="downloadAllDeliverersPdfBtn" class="bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 px-6 rounded-xl shadow-md transition duration-300 ease-in-out transform hover:scale-105">
+                    <button id="downloadAllDeliverersPdfBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-xl shadow-md transition duration-300 ease-in-out transform hover:scale-105">
                         تحميل صفحات كل المناديب PDF
                     </button>
                     <button id="downloadWebsiteOrdersPdfBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl shadow-md transition duration-300 ease-in-out transform hover:scale-105">
                         تحميل صفحة طلبات الموقع - بيدو
                     </button>
-                    <button id="downloadBackupJsonBtn" class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-6 rounded-xl shadow-md transition duration-300 ease-in-out transform hover:scale-105">
+                    <button id="downloadBackupJsonBtn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-xl shadow-md transition duration-300 ease-in-out transform hover:scale-105">
                         تحميل نسخة احتياطية JSON
                     </button>
-                    <button id="importBackupJsonBtn" class="bg-amber-600 hover:bg-amber-700 text-white font-bold py-3 px-6 rounded-xl shadow-md transition duration-300 ease-in-out transform hover:scale-105">
+                    <button id="importBackupJsonBtn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-xl shadow-md transition duration-300 ease-in-out transform hover:scale-105">
                         استيراد نسخة احتياطية JSON
                     </button>
                 </div>
@@ -542,7 +542,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getDatabase, ref, push, set, onValue, update, remove, get } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
+        import { getDatabase, ref, push, set, onValue, update, remove, get, query, orderByChild, equalTo, startAt, endAt } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
 
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         
@@ -587,6 +587,8 @@
         let selectedAccountingDate = getCurrentDateString(); 
         let selectedDelivererForAccounting = null;
         let currentAccountingOrders = [];
+        let secretariatOrdersUnsubscribe = null;
+        let accountingOrdersUnsubscribe = null;
         let currentSearchContext = '';
         let currentFilterFromDate = '';
         let currentFilterToDate = '';
@@ -737,12 +739,78 @@
         const getSession = (key) => sessionStorage.getItem(key);
         const clearSession = () => sessionStorage.clear();
         const getOrdersRef = () => ref(db, `artifacts/${appId}/public/data/orders`);
+        const buildOrdersQueryByDate = (fromDate = '', toDate = '', exactDate = '') => {
+            const ordersRef = getOrdersRef();
+            if (fromDate && toDate) return query(ordersRef, orderByChild('date'), startAt(fromDate), endAt(toDate));
+            if (exactDate) return query(ordersRef, orderByChild('date'), equalTo(exactDate));
+            return ordersRef;
+        };
+        const getCurrentAccountingOrdersQuery = () => buildOrdersQueryByDate(currentFilterFromDate, currentFilterToDate, selectedAccountingDate);
 
         const getBackupTimestamp = () => {
             const now = new Date();
             const pad = (value) => String(value).padStart(2, '0');
             return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}_${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
         };
+
+        function mapSnapshotToOrders(snapshot) {
+            const orders = [];
+            if (!snapshot) return orders;
+            snapshot.forEach((childSnapshot) => {
+                orders.push({ key: childSnapshot.key, ...childSnapshot.val() });
+            });
+            return orders;
+        }
+
+        function unsubscribeSecretariatOrdersListener() {
+            if (secretariatOrdersUnsubscribe) {
+                secretariatOrdersUnsubscribe();
+                secretariatOrdersUnsubscribe = null;
+            }
+        }
+
+        function unsubscribeAccountingOrdersListener() {
+            if (accountingOrdersUnsubscribe) {
+                accountingOrdersUnsubscribe();
+                accountingOrdersUnsubscribe = null;
+            }
+        }
+
+        function matchesAccountingFilters(order) {
+            if (currentFilterDelivererOption === 'specific') {
+                if (!selectedDelivererForAccounting) return false;
+                if (order.delivererName !== selectedDelivererForAccounting) return false;
+            }
+
+            if (currentFilterInvoiceType === 'cashOnly') return order.paymentMethod === 'كاش';
+            if (currentFilterInvoiceType === 'paidOnly') return order.paymentMethod === 'رابط';
+            if (currentFilterInvoiceType === 'branchPickupOnly') return order.orderType === 'فاتورة استلام من فرع';
+
+            return true;
+        }
+
+        function sortAccountingOrders(orders) {
+            return [...orders].sort((a, b) => {
+                if (a.paymentMethod === 'كاش' && b.paymentMethod !== 'كاش') return -1;
+                if (a.paymentMethod !== 'كاش' && b.paymentMethod === 'كاش') return 1;
+                return (b.timestamp || 0) - (a.timestamp || 0);
+            });
+        }
+
+        function applyAccountingOrdersSnapshot(snapshot) {
+            const filteredOrders = sortAccountingOrders(
+                mapSnapshotToOrders(snapshot).filter(matchesAccountingFilters)
+            );
+
+            currentAccountingOrders = filteredOrders;
+            const uniqueDeliverersInView = new Set(currentAccountingOrders.map(order => order.delivererName)).size;
+            const shouldHideTotalsAndButtons = uniqueDeliverersInView > 1 || currentFilterDelivererOption === 'all';
+
+            renderAccountingTables(filteredOrders);
+            renderFreeWorks(filteredOrders, shouldHideTotalsAndButtons);
+            updateCashSummary(filteredOrders, shouldHideTotalsAndButtons);
+            updateHandoverSummary(filteredOrders, shouldHideTotalsAndButtons);
+        }
 
         function looksLikeOrdersMap(candidate) {
             if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)) return false;
@@ -885,6 +953,8 @@
             document.getElementById('mainScreen').classList.remove('hidden');
             document.getElementById('secretariatSection').classList.add('hidden');
             document.getElementById('accountingSection').classList.add('hidden');
+            unsubscribeSecretariatOrdersListener();
+            unsubscribeAccountingOrdersListener();
             setSession('currentScreen', 'main');
         };
 
@@ -1224,6 +1294,7 @@
             document.getElementById('secretariatSection').classList.remove('hidden');
             document.getElementById('mainScreen').classList.add('hidden');
             document.getElementById('accountingSection').classList.add('hidden');
+            unsubscribeAccountingOrdersListener();
             setSession('currentScreen', 'secretariat');
             document.getElementById('currentDateSecretariat').textContent = `اليوم والتاريخ: ${getFormattedDate(new Date())}`;
             listenForOrders();
@@ -1700,16 +1771,10 @@
 
         function listenForOrders() {
             if (!isAuthReady || !currentUser) return setTimeout(listenForOrders, 100);
-            const ordersRef = ref(db, `artifacts/${appId}/public/data/orders`);
-            onValue(ordersRef, (snapshot) => {
-                const orders = [];
-                snapshot.forEach((childSnapshot) => {
-                    const order = childSnapshot.val();
-                    if (order.date === getCurrentDateString()) {
-                        orders.push({ key: childSnapshot.key, ...order });
-                    }
-                });
-                orders.sort((a, b) => b.timestamp - a.timestamp);
+            if (secretariatOrdersUnsubscribe) return;
+
+            secretariatOrdersUnsubscribe = onValue(buildOrdersQueryByDate('', '', getCurrentDateString()), (snapshot) => {
+                const orders = mapSnapshotToOrders(snapshot).sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
                 renderSecretariatTable(orders);
             });
         }
@@ -2141,34 +2206,15 @@
 
         async function fetchDeliverersForDate(date) {
             if (!isAuthReady || !currentUser) return new Promise(resolve => setTimeout(() => resolve(fetchDeliverersForDate(date)), 100));
-            const ordersRef = ref(db, `artifacts/${appId}/public/data/orders`);
-            const ordersSnapshot = await get(ordersRef);
+            const ordersSnapshot = await get(buildOrdersQueryByDate(currentFilterFromDate, currentFilterToDate, date));
             const deliverersWithOrders = new Set();
             if (ordersSnapshot) {
                 ordersSnapshot.forEach(childSnapshot => {
                     const order = childSnapshot.val();
-                    const orderDateString = order.date;
-                    let dateMatches = false;
-
-                    if (currentFilterFromDate && currentFilterToDate) {
-                        const orderDate = new Date(orderDateString);
-                        const fromDate = new Date(currentFilterFromDate);
-                        const toDate = new Date(currentFilterToDate);
-                        toDate.setHours(23, 59, 59, 999);
-
-                        if (orderDate >= fromDate && orderDate <= toDate) dateMatches = true;
-                    } else if (selectedAccountingDate) {
-                        if (orderDateString === selectedAccountingDate) dateMatches = true;
-                    } else {
-                        dateMatches = true;
-                    }
-
-                    if (dateMatches && order.delivererName) {
-                        deliverersWithOrders.add(order.delivererName);
-                    }
+                    if (order.delivererName) deliverersWithOrders.add(order.delivererName);
                 });
             }
-            return Array.from(deliverersWithOrders);
+            return Array.from(deliverersWithOrders).sort((a, b) => a.localeCompare(b, 'ar'));
         }
 
         async function populateDelivererDropdown(date) {
@@ -2214,6 +2260,8 @@
             document.getElementById('accountingSection').classList.remove('hidden');
             accountingLogin.classList.remove('hidden');
             accountingContent.classList.add('hidden');
+            unsubscribeSecretariatOrdersListener();
+            unsubscribeAccountingOrdersListener();
             setSession('currentScreen', 'accounting');
             setSession('accountingLoggedIn', 'false');
         }
@@ -2224,6 +2272,7 @@
             document.getElementById('accountingSection').classList.remove('hidden');
             accountingLogin.classList.add('hidden');
             accountingContent.classList.remove('hidden');
+            unsubscribeSecretariatOrdersListener();
             setSession('currentScreen', 'accounting');
             setSession('accountingLoggedIn', 'true');
             accountingDateInput.value = selectedAccountingDate;
@@ -2236,6 +2285,8 @@
             if (!isAuthReady || !currentUser) return setTimeout(updateAccountingReport, 100);
 
             if (currentFilterDelivererOption === 'specific' && !selectedDelivererForAccounting) {
+                unsubscribeAccountingOrdersListener();
+                currentAccountingOrders = [];
                 accountingReportTitle.textContent = 'الرجاء اختيار المندوب لعرض التقرير.';
                 normalCashInvoicesSection.classList.add('hidden');
                 normalLinkAndSubscriptionAndShippingInvoicesSection.classList.add('hidden');
@@ -2275,72 +2326,8 @@
                 clearFilterBtn.classList.add('hidden');
             }
 
-            const ordersRef = ref(db, `artifacts/${appId}/public/data/orders`);
-            onValue(ordersRef, (snapshot) => {
-                let allOrders = [];
-                if (snapshot) {
-                    snapshot.forEach((childSnapshot) => {
-                        const order = childSnapshot.val();
-                        const orderDateString = order.date;
-                        let dateMatches = false;
-
-                        if (currentFilterFromDate && currentFilterToDate) {
-                            const orderDate = new Date(orderDateString);
-                            const fromDate = new Date(currentFilterFromDate);
-                            const toDate = new Date(currentFilterToDate);
-                            toDate.setHours(23, 59, 59, 999);
-
-                            if (orderDate >= fromDate && orderDate <= toDate) dateMatches = true;
-                        } else if (selectedAccountingDate) {
-                            if (orderDateString === selectedAccountingDate) dateMatches = true;
-                        } else {
-                            dateMatches = true;
-                        }
-
-                        let delivererMatches = true;
-                        if (currentFilterDelivererOption === 'specific' && selectedDelivererForAccounting) {
-                            delivererMatches = (order.delivererName === selectedDelivererForAccounting);
-                        } else if (currentFilterDelivererOption === 'specific' && !selectedDelivererForAccounting) {
-                            delivererMatches = false;
-                        }
-
-                        if (dateMatches && delivererMatches) {
-                            if (currentFilterInvoiceType === 'cashOnly' && order.paymentMethod !== 'كاش') {
-                                return; // Skip if not cash and filter is cashOnly
-                            } else if (currentFilterInvoiceType === 'paidOnly' && order.paymentMethod !== 'رابط') {
-                                return; // Skip if not link and filter is paidOnly
-                            } else if (currentFilterInvoiceType === 'branchPickupOnly' && order.orderType !== 'فاتورة استلام من فرع') {
-                                return; // Skip if not branch pickup and filter is branchPickupOnly
-                            } else if (currentFilterInvoiceType !== 'all' && order.orderType === 'فاتورة استلام من فرع' && currentFilterInvoiceType !== 'branchPickupOnly') {
-                                return; // Ensure branch pickup only shows if specifically filtered
-                            } else if (currentFilterInvoiceType !== 'all' && order.paymentMethod === 'كاش' && currentFilterInvoiceType !== 'cashOnly') {
-                                return; // Ensure cash only shows if specifically filtered
-                            } else if (currentFilterInvoiceType !== 'all' && order.paymentMethod === 'رابط' && order.orderType !== 'فاتورة موقع' && currentFilterInvoiceType !== 'paidOnly' && order.orderType !== 'اشتراك' && order.orderType !== 'فاتورة شحن') {
-                                return; // Ensure link/sub/shipping only shows if specifically filtered
-                            } else if (currentFilterInvoiceType !== 'all' && order.orderType === 'فاتورة موقع' && currentFilterInvoiceType !== 'paidOnly') {
-                                return; // Ensure website only shows if specifically filtered for paid
-                            }
-                            allOrders.push({ key: childSnapshot.key, ...order });
-                        }
-                    });
-                }
-
-                allOrders.sort((a, b) => {
-                    // Sort cash orders first, then others by timestamp
-                    if (a.paymentMethod === 'كاش' && b.paymentMethod !== 'كاش') return -1;
-                    if (a.paymentMethod !== 'كاش' && b.paymentMethod === 'كاش') return 1;
-                    return b.timestamp - a.timestamp;
-                });
-
-                currentAccountingOrders = allOrders; 
-                const uniqueDeliverersInView = new Set(currentAccountingOrders.map(order => order.delivererName)).size;
-                const shouldHideTotalsAndButtons = uniqueDeliverersInView > 1 || currentFilterDelivererOption === 'all';
-
-                renderAccountingTables(allOrders);
-                renderFreeWorks(allOrders, shouldHideTotalsAndButtons);
-                updateCashSummary(allOrders, shouldHideTotalsAndButtons);
-                updateHandoverSummary(allOrders, shouldHideTotalsAndButtons);
-            });
+            unsubscribeAccountingOrdersListener();
+            accountingOrdersUnsubscribe = onValue(getCurrentAccountingOrdersQuery(), applyAccountingOrdersSnapshot);
         }
 
         function renderAccountingTables(orders) {
@@ -3903,28 +3890,8 @@
                 }
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-                const ordersRef = ref(db, `artifacts/${appId}/public/data/orders`);
-                const ordersSnapshot = await get(ordersRef);
-                const allOrdersForDateRange = [];
-                if (ordersSnapshot) {
-                    ordersSnapshot.forEach(childSnapshot => {
-                        const order = childSnapshot.val();
-                        const orderDateString = order.date;
-                        let dateMatches = false;
-                        if (currentFilterFromDate && currentFilterToDate) {
-                            const orderDate = new Date(orderDateString);
-                            const fromDate = new Date(currentFilterFromDate);
-                            const toDate = new Date(currentFilterToDate);
-                            toDate.setHours(23, 59, 59, 999);
-                            if (orderDate >= fromDate && orderDate <= toDate) dateMatches = true;
-                        } else if (selectedAccountingDate) {
-                            if (orderDateString === selectedAccountingDate) dateMatches = true;
-                        } else {
-                            dateMatches = true;
-                        }
-                        if (dateMatches) allOrdersForDateRange.push({ key: childSnapshot.key, ...order });
-                    });
-                }
+                const ordersSnapshot = await get(buildOrdersQueryByDate(currentFilterFromDate, currentFilterToDate, selectedAccountingDate));
+                const allOrdersForDateRange = mapSnapshotToOrders(ordersSnapshot);
 
                 const ordersByDeliverer = allOrdersForDateRange.filter(order => order.orderType !== 'فاتورة موقع').reduce((acc, order) => {
                     if (order.delivererName) {
@@ -3959,28 +3926,8 @@
                 }
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-                const ordersRef = ref(db, `artifacts/${appId}/public/data/orders`);
-                const ordersSnapshot = await get(ordersRef);
-                const allOrdersForDateRange = [];
-                if (ordersSnapshot) {
-                    ordersSnapshot.forEach(childSnapshot => {
-                        const order = childSnapshot.val();
-                        const orderDateString = order.date;
-                        let dateMatches = false;
-                        if (currentFilterFromDate && currentFilterToDate) {
-                            const orderDate = new Date(orderDateString);
-                            const fromDate = new Date(currentFilterFromDate);
-                            const toDate = new Date(currentFilterToDate);
-                            toDate.setHours(23, 59, 59, 999);
-                            if (orderDate >= fromDate && orderDate <= toDate) dateMatches = true;
-                        } else if (selectedAccountingDate) {
-                            if (orderDateString === selectedAccountingDate) dateMatches = true;
-                        } else {
-                            dateMatches = true;
-                        }
-                        if (dateMatches) allOrdersForDateRange.push({ key: childSnapshot.key, ...order });
-                    });
-                }
+                const ordersSnapshot = await get(buildOrdersQueryByDate(currentFilterFromDate, currentFilterToDate, selectedAccountingDate));
+                const allOrdersForDateRange = mapSnapshotToOrders(ordersSnapshot);
 
                 const websiteOrders = allOrdersForDateRange.filter(order => order.orderType === 'فاتورة موقع');
 
