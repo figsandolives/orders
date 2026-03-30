@@ -363,7 +363,7 @@
                     <!-- Free works will be listed here -->
                 </ul>
 
-                <div class="flex justify-center gap-4 mt-6">
+                <div class="flex flex-wrap justify-center gap-4 mt-6">
                     <button id="downloadCurrentPdfBtn" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-xl shadow-md transition duration-300 ease-in-out transform hover:scale-105">
                         تحميل الصفحة الحالية PDF
                     </button>
@@ -373,7 +373,14 @@
                     <button id="downloadWebsiteOrdersPdfBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl shadow-md transition duration-300 ease-in-out transform hover:scale-105">
                         تحميل صفحة طلبات الموقع - بيدو
                     </button>
+                    <button id="downloadBackupJsonBtn" class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-6 rounded-xl shadow-md transition duration-300 ease-in-out transform hover:scale-105">
+                        تحميل نسخة احتياطية JSON
+                    </button>
+                    <button id="importBackupJsonBtn" class="bg-amber-600 hover:bg-amber-700 text-white font-bold py-3 px-6 rounded-xl shadow-md transition duration-300 ease-in-out transform hover:scale-105">
+                        استيراد نسخة احتياطية JSON
+                    </button>
                 </div>
+                <input id="importBackupJsonInput" type="file" accept=".json,application/json" class="hidden">
             </div>
         </div>
     </div>
@@ -720,9 +727,150 @@
             document.getElementById('messageOkBtn').onclick = () => closeModal('messageModal');
         }
 
+        function requestConfirmation(message) {
+            return new Promise((resolve) => {
+                showConfirmationModal(message, resolve);
+            });
+        }
+
         const setSession = (key, value) => sessionStorage.setItem(key, value);
         const getSession = (key) => sessionStorage.getItem(key);
         const clearSession = () => sessionStorage.clear();
+        const getOrdersRef = () => ref(db, `artifacts/${appId}/public/data/orders`);
+
+        const getBackupTimestamp = () => {
+            const now = new Date();
+            const pad = (value) => String(value).padStart(2, '0');
+            return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}_${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
+        };
+
+        function looksLikeOrdersMap(candidate) {
+            if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)) return false;
+            const values = Object.values(candidate);
+            if (values.length === 0) return true;
+            return values.every((value) => value && typeof value === 'object' && !Array.isArray(value));
+        }
+
+        function extractOrdersFromBackupPayload(payload) {
+            if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return null;
+
+            if (looksLikeOrdersMap(payload.orders)) return payload.orders;
+            if (looksLikeOrdersMap(payload.data?.orders)) return payload.data.orders;
+
+            if (payload.artifacts && typeof payload.artifacts === 'object') {
+                for (const artifact of Object.values(payload.artifacts)) {
+                    const artifactOrders = artifact?.public?.data?.orders;
+                    if (looksLikeOrdersMap(artifactOrders)) return artifactOrders;
+                }
+            }
+
+            if (looksLikeOrdersMap(payload)) {
+                const sampleOrder = Object.values(payload)[0];
+                if (!sampleOrder || typeof sampleOrder !== 'object' || Array.isArray(sampleOrder)) return payload;
+                if ('orderType' in sampleOrder || 'invoiceNumber' in sampleOrder || 'clientName' in sampleOrder || 'delivererName' in sampleOrder) {
+                    return payload;
+                }
+            }
+
+            return null;
+        }
+
+        async function exportOrdersBackup() {
+            if (!isAuthReady || !currentUser) {
+                showMessageModal('الرجاء الانتظار حتى يكتمل الاتصال بقاعدة البيانات ثم إعادة المحاولة.');
+                return;
+            }
+
+            try {
+                const snapshot = await get(getOrdersRef());
+                const orders = snapshot.exists() ? snapshot.val() : {};
+                const orderEntries = Object.entries(orders);
+                const orderDates = orderEntries
+                    .map(([, order]) => order?.date)
+                    .filter((dateValue) => typeof dateValue === 'string' && dateValue.trim() !== '')
+                    .sort();
+
+                const backupPayload = {
+                    backupType: 'orders-system-backup',
+                    version: 1,
+                    exportedAt: new Date().toISOString(),
+                    source: {
+                        appId,
+                        projectId: firebaseConfig.projectId || null,
+                        databaseURL: firebaseConfig.databaseURL || null,
+                        path: `artifacts/${appId}/public/data/orders`
+                    },
+                    totals: {
+                        orderCount: orderEntries.length,
+                        firstOrderDate: orderDates[0] || null,
+                        lastOrderDate: orderDates[orderDates.length - 1] || null
+                    },
+                    orders
+                };
+
+                const blob = new Blob([JSON.stringify(backupPayload, null, 2)], { type: 'application/json;charset=utf-8' });
+                const downloadUrl = URL.createObjectURL(blob);
+                const downloadLink = document.createElement('a');
+                downloadLink.href = downloadUrl;
+                downloadLink.download = `orders-backup-${getBackupTimestamp()}.json`;
+                document.body.appendChild(downloadLink);
+                downloadLink.click();
+                document.body.removeChild(downloadLink);
+                URL.revokeObjectURL(downloadUrl);
+
+                showMessageModal(`تم إنشاء نسخة احتياطية تحتوي على ${orderEntries.length} طلب.`);
+            } catch (error) {
+                console.error('Error exporting backup:', error);
+                showMessageModal('حدث خطأ أثناء إنشاء النسخة الاحتياطية: ' + error.message);
+            }
+        }
+
+        async function importOrdersBackupFromFile(file) {
+            if (!file) return;
+            if (!isAuthReady || !currentUser) {
+                showMessageModal('الرجاء الانتظار حتى يكتمل الاتصال بقاعدة البيانات ثم إعادة المحاولة.');
+                return;
+            }
+
+            try {
+                const fileContent = await file.text();
+                const parsedPayload = JSON.parse(fileContent);
+                const ordersToImport = extractOrdersFromBackupPayload(parsedPayload);
+
+                if (!ordersToImport) {
+                    showMessageModal('الملف لا يحتوي على نسخة احتياطية صالحة للطلبات.');
+                    return;
+                }
+
+                const importKeys = Object.keys(ordersToImport);
+                if (importKeys.length === 0) {
+                    showMessageModal('الملف لا يحتوي على أي طلبات للاستيراد.');
+                    return;
+                }
+
+                const existingSnapshot = await get(getOrdersRef());
+                const existingOrders = existingSnapshot.exists() ? existingSnapshot.val() : {};
+                const existingCount = Object.keys(existingOrders).length;
+                const duplicateCount = importKeys.filter((key) => Object.prototype.hasOwnProperty.call(existingOrders, key)).length;
+
+                let confirmationMessage = `سيتم استيراد ${importKeys.length} طلب من الملف المحدد. هل تريد المتابعة؟`;
+                if (existingCount > 0) {
+                    confirmationMessage = `القاعدة الحالية تحتوي على ${existingCount} طلب. سيتم دمج ${importKeys.length} طلب من الملف، وعدد ${duplicateCount} منها سيُحدَّث إذا كانت المفاتيح متطابقة. هل تريد المتابعة؟`;
+                }
+
+                const confirmed = await requestConfirmation(confirmationMessage);
+                if (!confirmed) return;
+
+                await update(getOrdersRef(), ordersToImport);
+                await populateDelivererDropdown(selectedAccountingDate || currentFilterFromDate || getCurrentDateString());
+                updateAccountingReport();
+
+                showMessageModal(`تم استيراد ${importKeys.length} طلب بنجاح.`);
+            } catch (error) {
+                console.error('Error importing backup:', error);
+                showMessageModal('حدث خطأ أثناء استيراد النسخة الاحتياطية: ' + error.message);
+            }
+        }
 
         function checkSessionAndDisplayScreen() {
             if (!isAuthReady) return setTimeout(checkSessionAndDisplayScreen, 100);
@@ -743,7 +891,7 @@
         let secretariatTableBody, newOrderBtn, newOrderModal, orderFormContent, submitOrderBtn, addAnotherOrderBtn, signatureModal, signatureCanvas, clearSignatureBtn, saveSignatureBtn, secretariatLogoutBtn, searchOrderSecretariatBtn;
         let accountingLogin, accountingContent, accountingPasswordInput, accountingLoginBtn, accountingLogoutBtn, accountingDateInput, delivererSelectAccounting, accountingReportTitle;
         let accountingNormalCashInvoicesTableBody, accountingNormalLinkInvoicesTableBody, accountingWebsiteInvoicesTableBody, accountingBranchPickupInvoicesTableBody, freeWorksList;
-        let downloadCurrentPdfBtn, downloadAllDeliverersPdfBtn, downloadWebsiteOrdersPdfBtn, backToMainFromAccountingLogin;
+        let downloadCurrentPdfBtn, downloadAllDeliverersPdfBtn, downloadWebsiteOrdersPdfBtn, downloadBackupJsonBtn, importBackupJsonBtn, importBackupJsonInput, backToMainFromAccountingLogin;
         let totalCashDueSummary, collectAllCashBtn, totalHandoverDueSummary, collectAllHandoverBtn;
         let filterOrdersBtn, filterFromDateInput, filterToDateInput, applyFilterBtn, clearFilterBtn, filterDelivererSelect;
         let searchOrderModal, searchQueryInput, executeSearchBtn, searchResultsDiv, searchResultsTableBody, searchTableActionsHeader;
@@ -3322,6 +3470,9 @@
             downloadCurrentPdfBtn = document.getElementById('downloadCurrentPdfBtn');
             downloadAllDeliverersPdfBtn = document.getElementById('downloadAllDeliverersPdfBtn');
             downloadWebsiteOrdersPdfBtn = document.getElementById('downloadWebsiteOrdersPdfBtn');
+            downloadBackupJsonBtn = document.getElementById('downloadBackupJsonBtn');
+            importBackupJsonBtn = document.getElementById('importBackupJsonBtn');
+            importBackupJsonInput = document.getElementById('importBackupJsonInput');
             backToMainFromAccountingLogin = document.getElementById('backToMainFromAccountingLogin');
             totalCashDueSummary = document.getElementById('totalCashDueSummary');
             collectAllCashBtn = document.getElementById('collectAllCashBtn');
@@ -3841,6 +3992,18 @@
                 await generateConsolidatedWebsiteOrdersPdf(doc, selectedAccountingDate || currentFilterFromDate || getCurrentDateString(), sortedWebsiteOrders);
                 const fileName = `فواتير موقع بيدو بتاريخ ${selectedAccountingDate || currentFilterFromDate || getCurrentDateString()}.pdf`;
                 doc.save(fileName);
+            });
+
+            downloadBackupJsonBtn.addEventListener('click', exportOrdersBackup);
+            importBackupJsonBtn.addEventListener('click', () => {
+                importBackupJsonInput.value = '';
+                importBackupJsonInput.click();
+            });
+            importBackupJsonInput.addEventListener('change', async (event) => {
+                const selectedFile = event.target.files?.[0];
+                if (!selectedFile) return;
+                await importOrdersBackupFromFile(selectedFile);
+                importBackupJsonInput.value = '';
             });
         }
         
