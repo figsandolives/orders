@@ -739,13 +739,13 @@
         const getSession = (key) => sessionStorage.getItem(key);
         const clearSession = () => sessionStorage.clear();
         const getOrdersRef = () => ref(db, `artifacts/${appId}/public/data/orders`);
+        const hasDateFilter = (fromDate = '', toDate = '', exactDate = '') => Boolean((fromDate && toDate) || exactDate);
         const buildOrdersQueryByDate = (fromDate = '', toDate = '', exactDate = '') => {
             const ordersRef = getOrdersRef();
             if (fromDate && toDate) return query(ordersRef, orderByChild('date'), startAt(fromDate), endAt(toDate));
             if (exactDate) return query(ordersRef, orderByChild('date'), equalTo(exactDate));
             return ordersRef;
         };
-        const getCurrentAccountingOrdersQuery = () => buildOrdersQueryByDate(currentFilterFromDate, currentFilterToDate, selectedAccountingDate);
 
         const getBackupTimestamp = () => {
             const now = new Date();
@@ -760,6 +760,74 @@
                 orders.push({ key: childSnapshot.key, ...childSnapshot.val() });
             });
             return orders;
+        }
+
+        function filterOrdersByDate(orders, fromDate = '', toDate = '', exactDate = '') {
+            return orders.filter((order) => {
+                const orderDate = order?.date || '';
+                if (fromDate && toDate) return orderDate >= fromDate && orderDate <= toDate;
+                if (exactDate) return orderDate === exactDate;
+                return true;
+            });
+        }
+
+        function isMissingDateIndexError(error) {
+            const message = String(error?.message || '');
+            return message.includes('Index not defined') && message.includes('"date"');
+        }
+
+        async function getOrdersForDateRange(fromDate = '', toDate = '', exactDate = '') {
+            if (hasDateFilter(fromDate, toDate, exactDate)) {
+                try {
+                    const snapshot = await get(buildOrdersQueryByDate(fromDate, toDate, exactDate));
+                    return filterOrdersByDate(mapSnapshotToOrders(snapshot), fromDate, toDate, exactDate);
+                } catch (error) {
+                    if (!isMissingDateIndexError(error)) throw error;
+                    console.warn('Firebase date index is missing. Falling back to client-side date filtering.', error);
+                }
+            }
+
+            const fallbackSnapshot = await get(getOrdersRef());
+            return filterOrdersByDate(mapSnapshotToOrders(fallbackSnapshot), fromDate, toDate, exactDate);
+        }
+
+        function subscribeToOrdersForDateRange(fromDate = '', toDate = '', exactDate = '', onOrders) {
+            let activeUnsubscribe = null;
+
+            const attachListener = (useFallback) => {
+                const targetRef = useFallback ? getOrdersRef() : buildOrdersQueryByDate(fromDate, toDate, exactDate);
+                activeUnsubscribe = onValue(
+                    targetRef,
+                    (snapshot) => {
+                        const orders = filterOrdersByDate(mapSnapshotToOrders(snapshot), fromDate, toDate, exactDate);
+                        onOrders(orders);
+                    },
+                    (error) => {
+                        if (!useFallback && hasDateFilter(fromDate, toDate, exactDate) && isMissingDateIndexError(error)) {
+                            console.warn('Firebase date index is missing. Falling back to client-side date filtering.', error);
+                            if (activeUnsubscribe) {
+                                activeUnsubscribe();
+                                activeUnsubscribe = null;
+                            }
+                            attachListener(true);
+                            return;
+                        }
+
+                        console.error('Error subscribing to orders:', error);
+                        onOrders([]);
+                        showMessageModal('حدث خطأ أثناء جلب الطلبات: ' + error.message);
+                    }
+                );
+            };
+
+            attachListener(false);
+
+            return () => {
+                if (activeUnsubscribe) {
+                    activeUnsubscribe();
+                    activeUnsubscribe = null;
+                }
+            };
         }
 
         function unsubscribeSecretariatOrdersListener() {
@@ -797,9 +865,9 @@
             });
         }
 
-        function applyAccountingOrdersSnapshot(snapshot) {
+        function applyAccountingOrdersSnapshot(orders) {
             const filteredOrders = sortAccountingOrders(
-                mapSnapshotToOrders(snapshot).filter(matchesAccountingFilters)
+                orders.filter(matchesAccountingFilters)
             );
 
             currentAccountingOrders = filteredOrders;
@@ -1773,9 +1841,9 @@
             if (!isAuthReady || !currentUser) return setTimeout(listenForOrders, 100);
             if (secretariatOrdersUnsubscribe) return;
 
-            secretariatOrdersUnsubscribe = onValue(buildOrdersQueryByDate('', '', getCurrentDateString()), (snapshot) => {
-                const orders = mapSnapshotToOrders(snapshot).sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-                renderSecretariatTable(orders);
+            secretariatOrdersUnsubscribe = subscribeToOrdersForDateRange('', '', getCurrentDateString(), (orders) => {
+                const sortedOrders = [...orders].sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+                renderSecretariatTable(sortedOrders);
             });
         }
 
@@ -2206,14 +2274,11 @@
 
         async function fetchDeliverersForDate(date) {
             if (!isAuthReady || !currentUser) return new Promise(resolve => setTimeout(() => resolve(fetchDeliverersForDate(date)), 100));
-            const ordersSnapshot = await get(buildOrdersQueryByDate(currentFilterFromDate, currentFilterToDate, date));
+            const orders = await getOrdersForDateRange(currentFilterFromDate, currentFilterToDate, date);
             const deliverersWithOrders = new Set();
-            if (ordersSnapshot) {
-                ordersSnapshot.forEach(childSnapshot => {
-                    const order = childSnapshot.val();
-                    if (order.delivererName) deliverersWithOrders.add(order.delivererName);
-                });
-            }
+            orders.forEach((order) => {
+                if (order.delivererName) deliverersWithOrders.add(order.delivererName);
+            });
             return Array.from(deliverersWithOrders).sort((a, b) => a.localeCompare(b, 'ar'));
         }
 
@@ -2327,7 +2392,12 @@
             }
 
             unsubscribeAccountingOrdersListener();
-            accountingOrdersUnsubscribe = onValue(getCurrentAccountingOrdersQuery(), applyAccountingOrdersSnapshot);
+            accountingOrdersUnsubscribe = subscribeToOrdersForDateRange(
+                currentFilterFromDate,
+                currentFilterToDate,
+                selectedAccountingDate,
+                applyAccountingOrdersSnapshot
+            );
         }
 
         function renderAccountingTables(orders) {
@@ -3890,8 +3960,7 @@
                 }
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-                const ordersSnapshot = await get(buildOrdersQueryByDate(currentFilterFromDate, currentFilterToDate, selectedAccountingDate));
-                const allOrdersForDateRange = mapSnapshotToOrders(ordersSnapshot);
+                const allOrdersForDateRange = await getOrdersForDateRange(currentFilterFromDate, currentFilterToDate, selectedAccountingDate);
 
                 const ordersByDeliverer = allOrdersForDateRange.filter(order => order.orderType !== 'فاتورة موقع').reduce((acc, order) => {
                     if (order.delivererName) {
@@ -3926,8 +3995,7 @@
                 }
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-                const ordersSnapshot = await get(buildOrdersQueryByDate(currentFilterFromDate, currentFilterToDate, selectedAccountingDate));
-                const allOrdersForDateRange = mapSnapshotToOrders(ordersSnapshot);
+                const allOrdersForDateRange = await getOrdersForDateRange(currentFilterFromDate, currentFilterToDate, selectedAccountingDate);
 
                 const websiteOrders = allOrdersForDateRange.filter(order => order.orderType === 'فاتورة موقع');
 
