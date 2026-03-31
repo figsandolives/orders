@@ -368,10 +368,7 @@
                         تحميل الصفحة الحالية PDF
                     </button>
                     <button id="downloadAllDeliverersPdfBtn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-xl shadow-md transition duration-300 ease-in-out transform hover:scale-105">
-                        تحميل صفحات كل المناديب PDF
-                    </button>
-                    <button id="downloadWebsiteOrdersPdfBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-xl shadow-md transition duration-300 ease-in-out transform hover:scale-105">
-                        تحميل صفحة طلبات الموقع - بيدو
+                        تحميل كشف المناديب لليوم
                     </button>
                 </div>
             </div>
@@ -883,7 +880,7 @@
         let secretariatTableBody, newOrderBtn, newOrderModal, orderFormContent, submitOrderBtn, addAnotherOrderBtn, signatureModal, signatureCanvas, clearSignatureBtn, saveSignatureBtn, secretariatLogoutBtn, searchOrderSecretariatBtn;
         let accountingLogin, accountingContent, accountingPasswordInput, accountingLoginBtn, accountingLogoutBtn, accountingDateInput, delivererSelectAccounting, accountingReportTitle;
         let accountingNormalCashInvoicesTableBody, accountingNormalLinkInvoicesTableBody, accountingWebsiteInvoicesTableBody, accountingBranchPickupInvoicesTableBody, freeWorksList;
-        let downloadCurrentPdfBtn, downloadAllDeliverersPdfBtn, downloadWebsiteOrdersPdfBtn, backToMainFromAccountingLogin;
+        let downloadCurrentPdfBtn, downloadAllDeliverersPdfBtn, backToMainFromAccountingLogin;
         let totalCashDueSummary, collectAllCashBtn, totalHandoverDueSummary, collectAllHandoverBtn;
         let filterOrdersBtn, filterFromDateInput, filterToDateInput, applyFilterBtn, clearFilterBtn, filterDelivererSelect;
         let searchOrderModal, searchQueryInput, executeSearchBtn, searchResultsDiv, searchResultsTableBody, searchTableActionsHeader;
@@ -2609,7 +2606,21 @@
             }
         }
 
-        async function generatePdfForDeliverer(doc, delivererName, date, orders, includeTitle = true) {
+        function getAccountingPdfDateMeta() {
+            if (currentFilterFromDate && currentFilterToDate) {
+                return {
+                    titleLabel: `من ${getFormattedDate(new Date(currentFilterFromDate))} إلى ${getFormattedDate(new Date(currentFilterToDate))}`,
+                    fileLabel: `من ${currentFilterFromDate} إلى ${currentFilterToDate}`
+                };
+            }
+
+            return {
+                titleLabel: `بتاريخ ${getFormattedDate(new Date(selectedAccountingDate || getCurrentDateString()))}`,
+                fileLabel: `بتاريخ ${selectedAccountingDate || getCurrentDateString()}`
+            };
+        }
+
+        async function generatePdfForDeliverer(doc, delivererName, dateLabel, orders, includeTitle = true) {
             const margin = 10;
             let y = margin;
             const pageWidth = doc.internal.pageSize.getWidth();
@@ -2620,7 +2631,7 @@
             doc.setFontSize(12); // Increased font size for main title (9 + 3 = 12)
 
             if (includeTitle) {
-                const title = `كشف حساب المندوب "${delivererName}" بتاريخ "${getFormattedDate(new Date(date))}"`;
+                const title = `كشف حساب المندوب "${delivererName}" ${dateLabel}`;
                 doc.text(title, pageWidth / 2, y, { align: 'center' });
                 y += 15;
             }
@@ -2917,7 +2928,7 @@
             return y;
         }
 
-        async function generateConsolidatedWebsiteOrdersPdf(doc, date, allOrders) {
+        async function generateConsolidatedWebsiteOrdersPdf(doc, dateLabel, allOrders) {
             const margin = 10;
             let y = margin;
             const pageWidth = doc.internal.pageSize.getWidth();
@@ -2926,7 +2937,7 @@
             doc.setFont('gess', 'bold'); 
             doc.setFontSize(12); // Increased font size for main title (9 + 3 = 12)
 
-            const title = `فواتير موقع بيدو بتاريخ ${getFormattedDate(new Date(date))}`;
+            const title = `فواتير موقع بيدو ${dateLabel}`;
             doc.text(title, pageWidth / 2, y, { align: 'center' });
             y += 15;
 
@@ -3380,7 +3391,6 @@
             freeWorksList = document.getElementById('freeWorksList');
             downloadCurrentPdfBtn = document.getElementById('downloadCurrentPdfBtn');
             downloadAllDeliverersPdfBtn = document.getElementById('downloadAllDeliverersPdfBtn');
-            downloadWebsiteOrdersPdfBtn = document.getElementById('downloadWebsiteOrdersPdfBtn');
             backToMainFromAccountingLogin = document.getElementById('backToMainFromAccountingLogin');
             totalCashDueSummary = document.getElementById('totalCashDueSummary');
             collectAllCashBtn = document.getElementById('collectAllCashBtn');
@@ -3812,6 +3822,10 @@
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
                 const allOrdersForDateRange = await getOrdersForDateRange(currentFilterFromDate, currentFilterToDate, selectedAccountingDate);
+                const dateMeta = getAccountingPdfDateMeta();
+                const websiteOrders = allOrdersForDateRange
+                    .filter(order => order.orderType === 'فاتورة موقع')
+                    .sort((a, b) => b.timestamp - a.timestamp);
 
                 const ordersByDeliverer = allOrdersForDateRange.filter(order => order.orderType !== 'فاتورة موقع').reduce((acc, order) => {
                     if (order.delivererName) {
@@ -3821,42 +3835,27 @@
                     return acc;
                 }, {});
 
-                let firstPage = true;
+                let hasAnyPage = false;
+
+                if (websiteOrders.length > 0) {
+                    await generateConsolidatedWebsiteOrdersPdf(doc, dateMeta.titleLabel, websiteOrders);
+                    hasAnyPage = true;
+                }
+
                 for (const delivererName in ordersByDeliverer) {
                     if (ordersByDeliverer[delivererName].length > 0) {
-                        if (!firstPage) doc.addPage();
+                        if (hasAnyPage) doc.addPage();
                         const sortedDelivererOrders = ordersByDeliverer[delivererName].sort((a, b) => b.timestamp - a.timestamp);
-                        await generatePdfForDeliverer(doc, delivererName, selectedAccountingDate || currentFilterFromDate || getCurrentDateString(), sortedDelivererOrders, true);
-                        firstPage = false;
+                        await generatePdfForDeliverer(doc, delivererName, dateMeta.titleLabel, sortedDelivererOrders, true);
+                        hasAnyPage = true;
                     }
                 }
 
-                if (firstPage) {
-                    showMessageModal('لا توجد فواتير عادية أو اشتراكات أو شحن أو استلام من فرع لإنشاء تقارير المناديب لهذا التاريخ.');
+                if (!hasAnyPage) {
+                    showMessageModal('لا توجد طلبات لهذا التاريخ أو التصفية لإنشاء كشف PDF.');
                     return;
                 }
-                const fileName = `كشف حساب المناديب (فواتير عادية واشتراكات وشحن واستلام من فرع) بتاريخ ${selectedAccountingDate || currentFilterFromDate || getCurrentDateString()}.pdf`;
-                doc.save(fileName);
-            });
-
-            downloadWebsiteOrdersPdfBtn.addEventListener('click', async () => {
-                if (!selectedAccountingDate && !currentFilterFromDate) {
-                    showMessageModal('الرجاء اختيار تاريخ أو نطاق تاريخ.');
-                    return;
-                }
-                const { jsPDF } = window.jspdf;
-                const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-                const allOrdersForDateRange = await getOrdersForDateRange(currentFilterFromDate, currentFilterToDate, selectedAccountingDate);
-
-                const websiteOrders = allOrdersForDateRange.filter(order => order.orderType === 'فاتورة موقع');
-
-                if (websiteOrders.length === 0) {
-                    showMessageModal('لا توجد طلبات موقع (بيدو) لهذا التاريخ لإنشاء تقرير.');
-                    return;
-                }
-                const sortedWebsiteOrders = websiteOrders.sort((a, b) => b.timestamp - a.timestamp);
-                await generateConsolidatedWebsiteOrdersPdf(doc, selectedAccountingDate || currentFilterFromDate || getCurrentDateString(), sortedWebsiteOrders);
-                const fileName = `فواتير موقع بيدو بتاريخ ${selectedAccountingDate || currentFilterFromDate || getCurrentDateString()}.pdf`;
+                const fileName = `كشاف حساب ${dateMeta.fileLabel}.pdf`;
                 doc.save(fileName);
             });
 
