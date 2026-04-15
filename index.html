@@ -543,13 +543,14 @@
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         
         const defaultFirebaseConfig = {
-            apiKey: "AIzaSyAveMB7wW7bhywrm7oI25_uB5cA_h5ikEA",
-            authDomain: "orders-system-3382d.firebaseapp.com",
-            databaseURL: "https://orders-system-3382d-default-rtdb.firebaseio.com",
-            projectId: "orders-system-3382d",
-            storageBucket: "orders-system-3382d.firebasestorage.app",
-            messagingSenderId: "648046045688",
-            appId: "1:648046045688:web:a5938fdcbacdc15fdbce0d"
+            apiKey: "AIzaSyCH3h0xHNTrPLS0CSsUyqJLziWCsRa45pc",
+            authDomain: "orders-delivery-2c402.firebaseapp.com",
+            databaseURL: "https://orders-delivery-2c402-default-rtdb.firebaseio.com",
+            projectId: "orders-delivery-2c402",
+            storageBucket: "orders-delivery-2c402.firebasestorage.app",
+            messagingSenderId: "506220388510",
+            appId: "1:506220388510:web:1f979d535d8f870b07db8f",
+            measurementId: "G-EYM5LLHC9P"
         };
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : defaultFirebaseConfig;
         const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null; 
@@ -571,7 +572,28 @@
 
         const getFormattedDate = (date) => date.toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
         const getFormattedTime = (date) => date.toLocaleTimeString('ar-EG', { hour: 'numeric', minute: 'numeric', hour12: true });
-        const getCurrentDateString = () => new Date().toISOString().split('T')[0];
+        const getDateStringFromDate = (date) => {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        };
+        const getCurrentDateString = () => getDateStringFromDate(new Date());
+        const getOrderDateString = (order) => {
+            const timestamp = Number(order?.timestamp);
+            if (!Number.isNaN(timestamp) && timestamp > 0) return getDateStringFromDate(new Date(timestamp));
+            return (order?.date || '').toString().trim();
+        };
+        const doesDateMatchAccountingFilters = (orderDateString) => {
+            if (!orderDateString) return false;
+            if (currentFilterFromDate && currentFilterToDate) {
+                return orderDateString >= currentFilterFromDate && orderDateString <= currentFilterToDate;
+            }
+            if (currentFilterFromDate) return orderDateString >= currentFilterFromDate;
+            if (currentFilterToDate) return orderDateString <= currentFilterToDate;
+            if (selectedAccountingDate) return orderDateString === selectedAccountingDate;
+            return true;
+        };
 
         let currentUser = null;
         let isAuthReady = false;
@@ -754,7 +776,7 @@
         let normalCashInvoicesSection, normalLinkAndSubscriptionAndShippingInvoicesSection, websiteInvoicesSection, branchPickupInvoicesSection, signatureModalTitle, newOrderModalTitle;
 
         const employees = ['فاطمة', 'محمود', 'يوسف', 'ناهدة','ريان','صفوت', 'علي', 'رانيا فنون', 'احمد حلمي', 'سند', 'نجلاء', 'سلطان', 'رانيا دنديس', 'عاصم'];
-        const deliverers = ['خيري', 'ابو خالد', 'سمير رومية', 'ضياء محمد', 'رامو الهندي', 'استلام', 'حسين', 'محمد سعيد', 'محمد جمال', 'ياسر جمال', 'خالد السيد', 'عبيدة', 'محمود السيسي', 'محمد عبدالفتاح', 'خالد سعد', 'عتمان', 'رضا صابر', 'رضا', 'فاتورة اضافية مع بيدو', 'أحمد رزق', 'الأمير زين', 'ابو سالم', 'السيد فرج', 'هيثم','أبو عبد العزيز / جمال','محمد عبدالرؤوف','سريكانث', 'صبري' , 'أحمد دياب' ,  'محمد العيساوي','رفيق الهندي','أحمد السايح','مأمون نصر','شيخ شيك','مدحت','نبيل','عمران','محمد رشيد','عبد العزيز','حسام بنان', 'حسام عادل', 'رفيق المصري', 'شركة الجوهرة للشحن'];
+        const deliverers = ['خيري', 'ابو خالد', 'سمير رومية', 'ضياء محمد', 'رامو الهندي', 'استلام', 'حسين', 'محمد سعيد', 'محمد جمال', 'ياسر جمال', 'خالد السيد', 'عبيدة', 'محمود السيسي', 'محمد عبدالفتاح', 'خالد سعد', 'عتمان', 'رضا صابر', 'رضا', 'فاتورة اضافية مع بيدو', 'أحمد رزق', 'الأمير زين', 'ابو سالم', 'السيد فرج', 'هيثم','أبو عبد العزيز / جمال','سريكانث', 'صبري' , 'أحمد دياب' , 'رفيق الهندي','عبد العزيز','حسام بنان', 'حسام عادل', 'رفيق المصري', 'شركة الجوهرة للشحن'];
         
         const deliveryZones = {
             'fixed': {
@@ -1583,7 +1605,7 @@
                 const orders = [];
                 snapshot.forEach((childSnapshot) => {
                     const order = childSnapshot.val();
-                    if (order.date === getCurrentDateString()) {
+                    if (getOrderDateString(order) === getCurrentDateString()) {
                         orders.push({ key: childSnapshot.key, ...order });
                     }
                 });
@@ -2025,21 +2047,8 @@
             if (ordersSnapshot) {
                 ordersSnapshot.forEach(childSnapshot => {
                     const order = childSnapshot.val();
-                    const orderDateString = order.date;
-                    let dateMatches = false;
-
-                    if (currentFilterFromDate && currentFilterToDate) {
-                        const orderDate = new Date(orderDateString);
-                        const fromDate = new Date(currentFilterFromDate);
-                        const toDate = new Date(currentFilterToDate);
-                        toDate.setHours(23, 59, 59, 999);
-
-                        if (orderDate >= fromDate && orderDate <= toDate) dateMatches = true;
-                    } else if (selectedAccountingDate) {
-                        if (orderDateString === selectedAccountingDate) dateMatches = true;
-                    } else {
-                        dateMatches = true;
-                    }
+                    const orderDateString = getOrderDateString(order);
+                    const dateMatches = doesDateMatchAccountingFilters(orderDateString);
 
                     if (dateMatches && order.delivererName) {
                         deliverersWithOrders.add(order.delivererName);
@@ -2161,21 +2170,8 @@
                     snapshot.forEach((childSnapshot) => {
                         totalInvoicesCount += 1;
                         const order = childSnapshot.val();
-                        const orderDateString = order.date;
-                        let dateMatches = false;
-
-                        if (currentFilterFromDate && currentFilterToDate) {
-                            const orderDate = new Date(orderDateString);
-                            const fromDate = new Date(currentFilterFromDate);
-                            const toDate = new Date(currentFilterToDate);
-                            toDate.setHours(23, 59, 59, 999);
-
-                            if (orderDate >= fromDate && orderDate <= toDate) dateMatches = true;
-                        } else if (selectedAccountingDate) {
-                            if (orderDateString === selectedAccountingDate) dateMatches = true;
-                        } else {
-                            dateMatches = true;
-                        }
+                        const orderDateString = getOrderDateString(order);
+                        const dateMatches = doesDateMatchAccountingFilters(orderDateString);
 
                         let delivererMatches = true;
                         if (currentFilterDelivererOption === 'specific' && selectedDelivererForAccounting) {
@@ -2278,7 +2274,7 @@
                         <td>
                             ${order.signatureImage ? `<img src="${order.signatureImage}" alt="Signature" class="w-10 h-5 object-contain mx-auto">` : 'لا يوجد'}
                         </td>
-                        <td>${order.date || ''}</td>
+                        <td>${getOrderDateString(order) || ''}</td>
                         <td class="editable-cell" data-key="${order.key}" data-field="notes">${order.notes || ''}</td>
                         <td>
                             <button class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded-xl delete-order-btn-accounting" data-key="${order.key}">حذف</button>
@@ -2330,7 +2326,7 @@
                         <td>
                             ${order.signatureImage ? `<img src="${order.signatureImage}" alt="Signature" class="w-10 h-5 object-contain mx-auto">` : 'لا يوجد'}
                         </td>
-                        <td>${order.date || ''}</td>
+                        <td>${getOrderDateString(order) || ''}</td>
                         <td class="editable-cell" data-key="${order.key}" data-field="notes">${order.notes || ''}</td>
                         <td>
                             <button class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded-xl delete-order-btn-accounting" data-key="${order.key}">حذف</button>
@@ -2379,7 +2375,7 @@
                         <td>
                             ${order.signatureImage ? `<img src="${order.signatureImage}" alt="Signature" class="w-10 h-5 object-contain mx-auto">` : 'لا يوجد'}
                         </td>
-                        <td>${order.date || ''}</td>
+                        <td>${getOrderDateString(order) || ''}</td>
                         <td class="editable-cell" data-key="${order.key}" data-field="notes">${order.notes || ''}</td>
                         <td>
                             <button class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded-xl delete-order-btn-accounting" data-key="${order.key}">حذف</button>
@@ -2424,7 +2420,7 @@
                         <td>
                             ${order.signatureImage ? `<img src="${order.signatureImage}" alt="Signature" class="w-10 h-5 object-contain mx-auto">` : 'لا يوجد'}
                         </td>
-                        <td>${order.date || ''}</td>
+                        <td>${getOrderDateString(order) || ''}</td>
                         <td class="editable-cell" data-key="${order.key}" data-field="notes">${order.notes || ''}</td>
                         <td>
                             <button class="bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-3 rounded-xl delete-order-btn-accounting" data-key="${order.key}">حذف</button>
@@ -3793,19 +3789,8 @@
                 if (ordersSnapshot) {
                     ordersSnapshot.forEach(childSnapshot => {
                         const order = childSnapshot.val();
-                        const orderDateString = order.date;
-                        let dateMatches = false;
-                        if (currentFilterFromDate && currentFilterToDate) {
-                            const orderDate = new Date(orderDateString);
-                            const fromDate = new Date(currentFilterFromDate);
-                            const toDate = new Date(currentFilterToDate);
-                            toDate.setHours(23, 59, 59, 999);
-                            if (orderDate >= fromDate && orderDate <= toDate) dateMatches = true;
-                        } else if (selectedAccountingDate) {
-                            if (orderDateString === selectedAccountingDate) dateMatches = true;
-                        } else {
-                            dateMatches = true;
-                        }
+                        const orderDateString = getOrderDateString(order);
+                        const dateMatches = doesDateMatchAccountingFilters(orderDateString);
                         if (dateMatches) allOrdersForDateRange.push({ key: childSnapshot.key, ...order });
                     });
                 }
@@ -3849,19 +3834,8 @@
                 if (ordersSnapshot) {
                     ordersSnapshot.forEach(childSnapshot => {
                         const order = childSnapshot.val();
-                        const orderDateString = order.date;
-                        let dateMatches = false;
-                        if (currentFilterFromDate && currentFilterToDate) {
-                            const orderDate = new Date(orderDateString);
-                            const fromDate = new Date(currentFilterFromDate);
-                            const toDate = new Date(currentFilterToDate);
-                            toDate.setHours(23, 59, 59, 999);
-                            if (orderDate >= fromDate && orderDate <= toDate) dateMatches = true;
-                        } else if (selectedAccountingDate) {
-                            if (orderDateString === selectedAccountingDate) dateMatches = true;
-                        } else {
-                            dateMatches = true;
-                        }
+                        const orderDateString = getOrderDateString(order);
+                        const dateMatches = doesDateMatchAccountingFilters(orderDateString);
                         if (dateMatches) allOrdersForDateRange.push({ key: childSnapshot.key, ...order });
                     });
                 }
