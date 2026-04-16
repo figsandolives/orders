@@ -505,6 +505,7 @@
           <div class="guide-row" data-guide-key="customerName"><span>فاتورة باسم:</span><span class="check">○</span></div>
           <div class="guide-row" data-guide-key="phone"><span>رقم الهاتف:</span><span class="check">○</span></div>
           <div class="guide-row" data-guide-key="address"><span>العنوان: <small style="font-weight:700; color:#9a3412;">اذا كان الطلب استلام قل العنوان استلام</small></span><span class="check">○</span></div>
+          <div class="guide-row hidden" data-guide-key="pickupBranch"><span>فرع الاستلام:</span><span class="check">○</span></div>
           <div class="guide-row" data-guide-key="deliveryPrice"><span>سعر التوصيل:</span><span class="check">○</span></div>
           <div class="guide-row" data-guide-key="paymentMethod"><span>طريقة الدفع:</span><span class="check">○</span></div>
         </div>
@@ -514,7 +515,7 @@
           <div id="transcript" class="transcript"><span class="muted">سيظهر الكلام هنا أثناء التسجيل...</span></div>
         </div>
         <div style="margin-top: 16px;">
-          <textarea id="manualInput" oninput="updateVoiceGuideProgress()" placeholder="اكتب اسم العميل، الهاتف، العنوان، سعر التوصيل وطريقة الدفع فقط"></textarea>
+          <textarea id="manualInput" oninput="updateVoiceGuideProgress()" placeholder="اكتب اسم العميل، الهاتف، العنوان أو الاستلام، فرع الاستلام، سعر التوصيل وطريقة الدفع فقط"></textarea>
         </div>
         <div id="issuesBox" class="issue-box" style="margin-top: 12px;"></div>
         <button class="primary-btn" style="margin-top: 14px;" onclick="submitCommand()">تحليل البيانات والانتقال للمنتجات</button>
@@ -592,6 +593,14 @@
           <label style="display:block; margin-top:10px;">تفاصيل العنوان<textarea id="addressDetails" style="min-height:90px;"></textarea></label>
         </div>
 
+        <div id="pickupFields" class="hidden" style="margin-top: 14px;">
+          <label>فرع الاستلام
+            <select id="pickupBranch" onchange="currentOrder.pickupBranch = this.value;">
+              <option value="">اختر فرع الاستلام</option>
+            </select>
+          </label>
+        </div>
+
         <div class="summary" style="margin-top: 16px;">
           <div class="summary-line"><span>مجموع المنتجات</span><span id="checkoutSubTotal">0.000 د.ك</span></div>
           <div class="summary-line"><span>سعر التوصيل</span><span id="checkoutDeliveryTotal">0.000 د.ك</span></div>
@@ -637,15 +646,22 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    const areas = [
-      'السرة', 'الزهراء', 'السلام', 'حطين', 'الشهداء', 'الرميثية', 'عبدالله السالم', 'الجابرية', 'بيان', 'الصديق',
-      'الفروانية', 'خيطان', 'حولي', 'السالمية', 'صباح السالم', 'سلوى', 'العدان', 'الشعب', 'الجهراء', 'الفنطاس',
-      'سعد العبدالله', 'العقيلة', 'جابر العلي', 'جابر الاحمد', 'المهبولة', 'المنقف', 'الاحمدي', 'الصليبية',
-      'الصباحية', 'فهد الاحمد', 'صبحان', 'ابو فطيرة', 'ابو الحصانية', 'الفحيحيل', 'جليب الشيوخ', 'ام الهيمان',
-      'المطلاع', 'صباح الاحمد', 'الوفرة'
-    ];
+	    const areas = [
+	      'السرة', 'الزهراء', 'السلام', 'حطين', 'الشهداء', 'الرميثية', 'عبدالله السالم', 'الجابرية', 'بيان', 'الصديق',
+	      'الفروانية', 'خيطان', 'حولي', 'السالمية', 'صباح السالم', 'سلوى', 'العدان', 'الشعب', 'الجهراء', 'الفنطاس',
+	      'سعد العبدالله', 'العقيلة', 'جابر العلي', 'جابر الاحمد', 'المهبولة', 'المنقف', 'الاحمدي', 'الصليبية',
+	      'الصباحية', 'فهد الاحمد', 'صبحان', 'ابو فطيرة', 'ابو الحصانية', 'الفحيحيل', 'جليب الشيوخ', 'ام الهيمان',
+	      'المطلاع', 'صباح الاحمد', 'الوفرة'
+	    ];
 
-    const MAIN_BRANCH_NAME = 'الفرع الرئيسي';
+	    const MAIN_BRANCH_NAME = 'الفرع الرئيسي';
+	    const PICKUP_BRANCHES = ['الفرع الرئيسي', 'اليرموك', 'أبو الحصانية', 'المخزن الرئيسي'];
+	    const PICKUP_BRANCH_ALIASES = [
+	      { name: 'الفرع الرئيسي', aliases: ['الفرع الرئيسي', 'الرئيسي', 'فرع الرئيسي', 'المحل الرئيسي'] },
+	      { name: 'اليرموك', aliases: ['اليرموك', 'يرموك', 'فرع اليرموك'] },
+	      { name: 'أبو الحصانية', aliases: ['أبو الحصانية', 'ابو الحصانية', 'الحصانية', 'فرع أبو الحصانية', 'فرع ابو الحصانية'] },
+	      { name: 'المخزن الرئيسي', aliases: ['المخزن الرئيسي', 'مخزن رئيسي', 'فرع المخزن', 'المخزن'] }
+	    ];
 
     let allProducts = [];
     let allCustomers = [];
@@ -678,11 +694,12 @@
       return {
         items: [],
         customer: null,
-        deliveryPrice: 0,
-        orderType: 'delivery',
-        paymentMethod: 'cash',
-        selectedAddress: null,
-        discountType: 'none',
+	        deliveryPrice: 0,
+	        orderType: 'delivery',
+	        paymentMethod: 'cash',
+	        selectedAddress: null,
+	        pickupBranch: '',
+	        discountType: 'none',
         discountValue: 0,
         discountAmount: 0
       };
@@ -703,18 +720,28 @@
       });
       db.ref('registeredDevices').on('value', snapshot => {
         allRegisteredDevices = snapshot.val() ? Object.entries(snapshot.val()).map(([id, data]) => ({ id, ...data })) : [];
-      });
-      fillAreas();
-      initializeAiAccess();
-    }
+	      });
+	      fillAreas();
+	      fillPickupBranches();
+	      initializeAiAccess();
+	    }
 
-    function fillAreas() {
+	    function fillAreas() {
       const select = document.getElementById('deliveryArea');
       if (!select) return;
       select.innerHTML = '<option value="">اختر المنطقة</option>' +
-        areas.map(area => `<option value="${escapeHtml(area)}">${escapeHtml(area)}</option>`).join('') +
-        '<option value="أخرى">أخرى</option>';
-    }
+	        areas.map(area => `<option value="${escapeHtml(area)}">${escapeHtml(area)}</option>`).join('') +
+	        '<option value="أخرى">أخرى</option>';
+	    }
+
+	    function fillPickupBranches() {
+	      const select = document.getElementById('pickupBranch');
+	      if (!select) return;
+	      const selected = select.value || currentOrder.pickupBranch || '';
+	      select.innerHTML = '<option value="">اختر فرع الاستلام</option>' +
+	        PICKUP_BRANCHES.map(branch => `<option value="${escapeHtml(branch)}">${escapeHtml(branch)}</option>`).join('');
+	      if (PICKUP_BRANCHES.includes(selected)) select.value = selected;
+	    }
 
     function initializeAiAccess() {
       showStep('branchDetectStep');
@@ -1025,20 +1052,21 @@
       return /(?:^|\s)(?:و?المنتجات|و?منتجات|و?الاصناف|و?اصناف)(?:\s|$)/.test(normalized);
     }
 
-    function hasVoicePaymentMethod(text) {
-      return /(طريقة\s*الدفع|الدفع|كاش|نقد|كي\s*نت|كي-نت|اونلاين|أونلاين|رابط|لينك|online|knet)/i.test(normalizeVoiceText(text));
-    }
+	    function hasVoicePaymentMethod(text) {
+	      return /(طريقة\s*الدفع|الدفع|دفع|كاش|نقد|كي\s*نت|كي-نت|اون\s*لاين|اونلاين|أونلاين|رابط|الرابط|لينك|link|online|knet)/i.test(normalizeVoiceText(text));
+	    }
 
-    function getDetailsChecks(text) {
-      const address = extractVoiceAddress(text);
-      const isPickup = hasExplicitVoicePickup(text);
-      return {
-        customerName: Boolean(extractVoiceCustomerName(text)),
-        phone: Boolean(extractVoicePhone(text)),
-        address: Boolean(address) || isPickup,
-        deliveryPrice: isPickup || extractVoiceDeliveryPrice(text) > 0,
-        paymentMethod: hasVoicePaymentMethod(text)
-      };
+	    function getDetailsChecks(text) {
+	      const address = extractVoiceAddress(text);
+	      const isPickup = hasExplicitVoicePickup(text);
+	      return {
+	        customerName: Boolean(extractVoiceCustomerName(text)),
+	        phone: Boolean(extractVoicePhone(text)),
+	        address: isPickup || Boolean(address),
+	        pickupBranch: isPickup ? Boolean(extractVoicePickupBranch(text)) : true,
+	        deliveryPrice: isPickup || extractVoiceDeliveryPrice(text) > 0,
+	        paymentMethod: hasVoicePaymentMethod(text)
+	      };
     }
 
     function areDetailsChecksComplete(checks) {
@@ -1061,12 +1089,18 @@
       const checks = getDetailsChecks(text);
       const isPickup = hasExplicitVoicePickup(text);
 
-      Object.entries(checks).forEach(([key, done]) => {
-        const row = document.querySelector(`[data-guide-key="${key}"]`);
-        if (!row) return;
-        if (key === 'deliveryPrice') {
-          row.classList.toggle('hidden', isPickup);
-        }
+	      Object.entries(checks).forEach(([key, done]) => {
+	        const row = document.querySelector(`[data-guide-key="${key}"]`);
+	        if (!row) return;
+	        if (key === 'address') {
+	          row.classList.toggle('hidden', isPickup);
+	        }
+	        if (key === 'pickupBranch') {
+	          row.classList.toggle('hidden', !isPickup);
+	        }
+	        if (key === 'deliveryPrice') {
+	          row.classList.toggle('hidden', isPickup);
+	        }
         row.classList.toggle('done', done);
         const check = row.querySelector('.check');
         if (check) check.textContent = done ? '✓' : '○';
@@ -1621,9 +1655,9 @@
       return '(?:(?:سعر|رسوم|قيمه|قيمة|اجره|اجرة)\\s*)?(?:التوصيل|توصيل|الدليفري|دليفري)';
     }
 
-    function getVoiceMoneyAmountPattern() {
-      return '(?:[0-9٠-٩۰-۹]+(?:[\\.,][0-9٠-٩۰-۹]+)?|دينارين|دينار|واحده|واحد|ثنتين|اثنين|ثنين|نص|نصف|ربع|ثلاثه|ثلاث|اربعه|اربع|خمسه|خمس|سته|ست|سبعه|سبع|ثمانيه|ثماني|تسعه|تسع|عشره|عشر)';
-    }
+	    function getVoiceMoneyAmountPattern() {
+	      return '(?:[0-9٠-٩۰-۹]+(?:[\\.,][0-9٠-٩۰-۹]+)?|نصف\\s*دينار|نص\\s*دينار|ربع\\s*دينار|دينارين|دينار|واحده|واحد|ثنتين|اثنين|ثنين|نص|نصف|ربع|ثلاثه|ثلاث|اربعه|اربع|خمسه|خمس|سته|ست|سبعه|سبع|ثمانيه|ثماني|تسعه|تسع|عشره|عشر)';
+	    }
 
     function stripVoiceDeliveryPriceFromText(value) {
       const deliveryStop = getVoiceDeliveryStopPattern();
@@ -1658,14 +1692,36 @@
       return /^(استلام|استلم|استلام من الفرع|استلام فرع|استلام بالمحل|بالمحل|من الفرع|بيك اب|بيكاب|pickup)(?:\s|$)/.test(normalized);
     }
 
-    function hasExplicitVoicePickup(text) {
-      const normalized = normalizeVoiceText(text);
-      return isVoicePickupAddress(text)
-        || /(?:نوع الطلب|الطلب)\s*(?:استلام|استلم|بيك اب|بيكاب|pickup)/.test(normalized)
-        || /(?:عنوان(?:ه|ها)?|العنوان)\s*(?:استلام|استلم|من الفرع|بالمحل|بيك اب|بيكاب|pickup)(?:\s|$)/.test(normalized);
-    }
+	    function hasExplicitVoicePickup(text) {
+	      const normalized = normalizeVoiceText(text);
+	      return isVoicePickupAddress(text)
+	        || /(?:نوع الطلب|الطلب)\s*(?:استلام|استلم|بيك اب|بيكاب|pickup)/.test(normalized)
+	        || /(?:عنوان(?:ه|ها)?|العنوان)\s*(?:استلام|استلم|من الفرع|بالمحل|بيك اب|بيكاب|pickup)(?:\s|$)/.test(normalized);
+	    }
 
-    function extractVoiceOrderType(text, address = null) {
+	    function extractVoicePickupBranch(text) {
+	      if (!hasExplicitVoicePickup(text)) return '';
+	      const normalized = normalizeVoiceText(text);
+	      const branchSectionPatterns = [
+	        /(?:فرع\s*الاستلام|استلام\s*من\s*فرع|استلام\s*فرع|الاستلام\s*من)\s+(.+?)(?=\s+(?:طريقة\s*الدفع|الدفع|كاش|كي\s*نت|اون\s*لاين|اونلاين|رابط|لينك|المنتجات|والمنتجات)|$)/,
+	        /(?:عنوان(?:ه|ها)?|العنوان)\s*(?:استلام|استلم|من\s*الفرع|بالمحل|بيك\s*اب|بيكاب|pickup)\s+(.+?)(?=\s+(?:طريقة\s*الدفع|الدفع|كاش|كي\s*نت|اون\s*لاين|اونلاين|رابط|لينك|المنتجات|والمنتجات)|$)/
+	      ];
+
+	      const sections = branchSectionPatterns
+	        .map(pattern => normalized.match(pattern)?.[1] || '')
+	        .filter(Boolean);
+	      if (!sections.length) sections.push(normalized);
+
+	      for (const section of sections) {
+	        const matchedBranch = PICKUP_BRANCH_ALIASES.find(branch =>
+	          branch.aliases.some(alias => section.includes(normalizeVoiceText(alias)))
+	        );
+	        if (matchedBranch) return matchedBranch.name;
+	      }
+	      return '';
+	    }
+
+	    function extractVoiceOrderType(text, address = null) {
       const normalized = normalizeVoiceText(text);
       if (hasExplicitVoicePickup(text)) return 'pickup';
       if (address || /(?:توصيل|دليفري|عنوان(?:ه|ها)?|العنوان|منطقه|منطقة)/.test(normalized)) return 'delivery';
@@ -1695,34 +1751,35 @@
       const normalized = normalizeVoiceText(convertSpokenNumbersInText(value));
       const digitMatch = normalized.match(/\d+(?:\.\d+)?/);
       if (digitMatch) return parseFloat(digitMatch[0]);
-      const wordValues = [
-        ['عشره', 10], ['تسعه', 9], ['ثمانيه', 8], ['سبعه', 7], ['سته', 6],
-        ['خمسه', 5], ['اربعه', 4], ['ثلاثه', 3], ['ثنتين', 2], ['اثنين', 2],
-        ['ثنين', 2], ['دينارين', 2], ['واحده', 1], ['واحد', 1], ['دينار', 1],
-        ['نصف', 0.5], ['نص', 0.5], ['ربع', 0.25]
-      ];
+	      const wordValues = [
+	        ['نصف', 0.5], ['نص', 0.5], ['ربع', 0.25],
+	        ['عشره', 10], ['تسعه', 9], ['ثمانيه', 8], ['سبعه', 7], ['سته', 6],
+	        ['خمسه', 5], ['اربعه', 4], ['ثلاثه', 3], ['ثنتين', 2], ['اثنين', 2],
+	        ['ثنين', 2], ['دينارين', 2], ['واحده', 1], ['واحد', 1], ['دينار', 1]
+	      ];
       const found = wordValues.find(([word]) => normalized.includes(word));
       return found ? found[1] : NaN;
     }
 
-    function extractVoiceDeliveryPrice(text) {
-      const normalized = normalizeVoiceText(prepareVoiceCommandText(text));
-      const amountPattern = `(${getVoiceMoneyAmountPattern()})`;
-      const match = normalized.match(new RegExp(`(?:سعر|رسوم|قيمه|قيمة|اجره|اجرة)\\s*(?:التوصيل|توصيل|الدليفري|دليفري)?\\s*(?:هو|هي|ب|بـ|بسعر|=|:)?\\s*${amountPattern}`))
-        || normalized.match(new RegExp(`(?:التوصيل|توصيل|الدليفري|دليفري)\\s*(?:ب|بـ|بسعر|سعره|قيمته)?\\s*${amountPattern}`))
-        || normalized.match(new RegExp(`${amountPattern}\\s*(?:دك|دينار|دنانير)?\\s*(?:سعر\\s*)?(?:التوصيل|توصيل|دليفري)`))
-        || normalized.match(new RegExp(`${amountPattern}\\s*(?:دك|دينار|دنانير)?\\s*(?:سعر|رسوم|قيمه|قيمة|اجره|اجرة)(?=\\s+(?:والمنتجات|المنتجات|منتجات|والاصناف|والأصناف|الاصناف|الأصناف|اصناف|طريقة\\s*الدفع|الدفع|كاش|كي\\s*نت|اونلاين|أونلاين|رابط|لينك)|$)`));
+	    function extractVoiceDeliveryPrice(text) {
+	      const normalized = normalizeVoiceText(prepareVoiceCommandText(text));
+	      const amountPattern = `(${getVoiceMoneyAmountPattern()})`;
+	      const match = normalized.match(new RegExp(`(?:سعر|رسوم|قيمه|قيمة|اجره|اجرة)\\s*(?:التوصيل|توصيل|الدليفري|دليفري)?\\s*(?:هو|هي|ب|بـ|بسعر|=|:)?\\s*${amountPattern}`))
+	        || normalized.match(new RegExp(`(?:التوصيل|توصيل|الدليفري|دليفري)\\s*(?:ب|بـ|بسعر|سعره|قيمته)?\\s*${amountPattern}`))
+	        || normalized.match(new RegExp(`${amountPattern}\\s*(?:دك|دينار|دنانير)?\\s*(?:سعر\\s*)?(?:التوصيل|توصيل|دليفري)`))
+	        || normalized.match(new RegExp(`${amountPattern}\\s*(?:دك|دينار|دنانير)?\\s*(?:سعر|رسوم|قيمه|قيمة|اجره|اجرة)(?=\\s+(?:والمنتجات|المنتجات|منتجات|والاصناف|والأصناف|الاصناف|الأصناف|اصناف|طريقة\\s*الدفع|الدفع|كاش|كي\\s*نت|اون\\s*لاين|اونلاين|أونلاين|رابط|لينك)|$)`))
+	        || normalized.match(new RegExp(`(?:سعر|رسوم|قيمه|قيمة|اجره|اجرة)\\s*${amountPattern}(?=\\s*(?:دك|دينار|دنانير)?(?:\\s+(?:طريقة\\s*الدفع|الدفع|كاش|كي\\s*نت|اون\\s*لاين|اونلاين|أونلاين|رابط|لينك|والمنتجات|المنتجات)|$))`));
       if (!match) return 0;
       const deliveryPrice = parseVoiceMoneyAmount(match[1]);
       return Number.isFinite(deliveryPrice) && deliveryPrice >= 0 ? parseFloat(deliveryPrice.toFixed(3)) : 0;
     }
 
-    function extractVoicePaymentMethod(text) {
-      const normalized = normalizeVoiceText(text);
-      if (/(اونلاين|online|رابط|لينك)/i.test(normalized)) return 'online';
-      if (/(كي\s*نت|كي-نت|knet|كي نت)/i.test(normalized)) return 'knet';
-      if (/(كاش|نقد)/i.test(normalized)) return 'cash';
-      return 'cash';
+	    function extractVoicePaymentMethod(text) {
+	      const normalized = normalizeVoiceText(text);
+	      if (/(اون\s*لاين|اونلاين|online|رابط|الرابط|لينك|link)/i.test(normalized)) return 'online';
+	      if (/(كي\s*نت|كي-نت|knet|كي نت)/i.test(normalized)) return 'knet';
+	      if (/(كاش|نقد)/i.test(normalized)) return 'cash';
+	      return 'cash';
     }
 
     function parseVoiceQuantity(value) {
@@ -1953,18 +2010,20 @@
 
       const phone = extractVoicePhone(fullText);
       const address = extractVoiceAddress(fullText);
-      const deliveryPrice = extractVoiceDeliveryPrice(fullText);
-      const orderType = extractVoiceOrderType(fullText, address);
-      const existingCustomer = findCustomerByVoicePhone(phone);
-      const customerName = extractVoiceCustomerName(fullText) || existingCustomer?.name || '';
-      const isPickup = hasExplicitVoicePickup(fullText);
+	      const deliveryPrice = extractVoiceDeliveryPrice(fullText);
+	      const orderType = extractVoiceOrderType(fullText, address);
+	      const pickupBranch = extractVoicePickupBranch(fullText);
+	      const existingCustomer = findCustomerByVoicePhone(phone);
+	      const customerName = extractVoiceCustomerName(fullText) || existingCustomer?.name || '';
+	      const isPickup = hasExplicitVoicePickup(fullText);
 
       const issues = [];
       if (!phone) issues.push('رقم الهاتف غير واضح.');
-      if (!customerName && !existingCustomer) issues.push('اسم العميل غير واضح.');
-      if (!address && !isPickup) issues.push('العنوان غير واضح.');
-      if (!isPickup && deliveryPrice <= 0) issues.push('سعر التوصيل غير واضح.');
-      if (!hasVoicePaymentMethod(fullText)) issues.push('طريقة الدفع غير واضحة.');
+	      if (!customerName && !existingCustomer) issues.push('اسم العميل غير واضح.');
+	      if (!address && !isPickup) issues.push('العنوان غير واضح.');
+	      if (isPickup && !pickupBranch) issues.push('فرع الاستلام غير واضح.');
+	      if (!isPickup && deliveryPrice <= 0) issues.push('سعر التوصيل غير واضح.');
+	      if (!hasVoicePaymentMethod(fullText)) issues.push('طريقة الدفع غير واضحة.');
 
       if (issues.length) {
         renderIssues(issues);
@@ -1975,10 +2034,11 @@
 
       currentOrder = createEmptyOrder();
       currentOrder.customer = { name: customerName, phone: phone.full, existingId: existingCustomer?.id || '' };
-      currentOrder.selectedAddress = orderType === 'pickup' ? null : address;
-      currentOrder.deliveryPrice = orderType === 'pickup' ? 0 : deliveryPrice;
-      currentOrder.orderType = isPickup ? 'pickup' : 'delivery';
-      currentOrder.paymentMethod = extractVoicePaymentMethod(fullText);
+	      currentOrder.selectedAddress = orderType === 'pickup' ? null : address;
+	      currentOrder.deliveryPrice = orderType === 'pickup' ? 0 : deliveryPrice;
+	      currentOrder.orderType = isPickup ? 'pickup' : 'delivery';
+	      currentOrder.pickupBranch = isPickup ? pickupBranch : '';
+	      currentOrder.paymentMethod = extractVoicePaymentMethod(fullText);
 
       beginProductStage(true);
       isAnalyzing = false;
@@ -2124,22 +2184,31 @@
         alert('لا توجد منتجات في الفاتورة.');
         return;
       }
-      if (voiceStage === 'products' && isListening) stopListening(false);
-      document.getElementById('customerName').value = currentOrder.customer?.name || '';
-      const phone = convertToEnglishNumbers(currentOrder.customer?.phone || '').replace(/^965/, '');
-      document.getElementById('customerPhone').value = phone;
-      updateCashierBadges();
-      setOrderType(currentOrder.orderType || 'delivery');
-      setPaymentMethod(currentOrder.paymentMethod || 'cash');
-      fillAreas();
-      const area = currentOrder.selectedAddress?.area || '';
-      const areaSelect = document.getElementById('deliveryArea');
-      if (areaSelect) areaSelect.value = areas.includes(area) ? area : (area ? 'أخرى' : '');
-      document.getElementById('manualArea').value = areas.includes(area) ? '' : area;
-      document.getElementById('deliveryPrice').value = (parseFloat(currentOrder.deliveryPrice) || 0).toFixed(3);
-      document.getElementById('addressDetails').value = currentOrder.selectedAddress?.details || '';
-      toggleManualArea();
-      updateTotals();
+	      if (voiceStage === 'products' && isListening) stopListening(false);
+	      const orderType = currentOrder.orderType || 'delivery';
+	      const paymentMethod = currentOrder.paymentMethod || 'cash';
+	      const initialDeliveryPrice = parseFloat(currentOrder.deliveryPrice) || 0;
+	      const initialPickupBranch = currentOrder.pickupBranch || '';
+	      document.getElementById('customerName').value = currentOrder.customer?.name || '';
+	      const phone = convertToEnglishNumbers(currentOrder.customer?.phone || '').replace(/^965/, '');
+	      document.getElementById('customerPhone').value = phone;
+	      updateCashierBadges();
+	      fillAreas();
+	      fillPickupBranches();
+	      const area = currentOrder.selectedAddress?.area || '';
+	      const areaSelect = document.getElementById('deliveryArea');
+	      if (areaSelect) areaSelect.value = areas.includes(area) ? area : (area ? 'أخرى' : '');
+	      document.getElementById('manualArea').value = areas.includes(area) ? '' : area;
+	      document.getElementById('deliveryPrice').value = initialDeliveryPrice.toFixed(3);
+	      document.getElementById('addressDetails').value = currentOrder.selectedAddress?.details || '';
+	      const pickupBranchSelect = document.getElementById('pickupBranch');
+	      if (pickupBranchSelect) pickupBranchSelect.value = PICKUP_BRANCHES.includes(initialPickupBranch) ? initialPickupBranch : '';
+	      currentOrder.deliveryPrice = initialDeliveryPrice;
+	      currentOrder.pickupBranch = initialPickupBranch;
+	      setOrderType(orderType);
+	      setPaymentMethod(paymentMethod);
+	      toggleManualArea();
+	      updateTotals();
       voiceStage = 'checkout';
       updateMicButton();
       showStep('checkoutStep');
@@ -2157,11 +2226,12 @@
 
     function setOrderType(type) {
       currentOrder.orderType = type;
-      document.getElementById('deliveryTypeBtn')?.classList.toggle('active', type === 'delivery');
-      document.getElementById('pickupTypeBtn')?.classList.toggle('active', type === 'pickup');
-      document.getElementById('deliveryFields')?.classList.toggle('hidden', type !== 'delivery');
-      updateTotals();
-    }
+	      document.getElementById('deliveryTypeBtn')?.classList.toggle('active', type === 'delivery');
+	      document.getElementById('pickupTypeBtn')?.classList.toggle('active', type === 'pickup');
+	      document.getElementById('deliveryFields')?.classList.toggle('hidden', type !== 'delivery');
+	      document.getElementById('pickupFields')?.classList.toggle('hidden', type !== 'pickup');
+	      updateTotals();
+	    }
 
     function setPaymentMethod(method) {
       currentOrder.paymentMethod = method;
@@ -2242,23 +2312,32 @@
       if (currentOrder.items.length === 0) {
         alert('لا توجد منتجات.');
         return;
-      }
+	      }
 
-      let selectedAddress = null;
-      if (currentOrder.orderType === 'delivery') {
-        let area = document.getElementById('deliveryArea')?.value || '';
-        if (area === 'أخرى') area = (document.getElementById('manualArea')?.value || '').trim();
-        const details = (document.getElementById('addressDetails')?.value || '').trim();
+	      let selectedAddress = null;
+	      let pickupBranch = '';
+	      if (currentOrder.orderType === 'delivery') {
+	        let area = document.getElementById('deliveryArea')?.value || '';
+	        if (area === 'أخرى') area = (document.getElementById('manualArea')?.value || '').trim();
+	        const details = (document.getElementById('addressDetails')?.value || '').trim();
         if (!area || !details) {
           alert('أدخل المنطقة وتفاصيل العنوان.');
           return;
-        }
-        selectedAddress = { area, details };
-      }
+	        }
+	        selectedAddress = { area, details };
+	        currentOrder.pickupBranch = '';
+	      } else {
+	        pickupBranch = (document.getElementById('pickupBranch')?.value || currentOrder.pickupBranch || '').trim();
+	        if (!pickupBranch) {
+	          alert('اختر فرع الاستلام.');
+	          return;
+	        }
+	        currentOrder.pickupBranch = pickupBranch;
+	      }
 
       updateTotals();
-      const branch = currentBranch || MAIN_BRANCH_NAME;
-      const invoiceNumber = await generateInvoiceNumber(branch);
+	      const branch = currentOrder.orderType === 'pickup' && pickupBranch ? pickupBranch : (currentBranch || MAIN_BRANCH_NAME);
+	      const invoiceNumber = await generateInvoiceNumber(branch);
       const totals = getTotals();
       const customer = { name, phone: phone.startsWith('965') ? phone : `965${phone.slice(-8)}` };
       await saveCustomerIfNeeded(customer, selectedAddress);
@@ -2266,15 +2345,17 @@
       const order = {
         invoiceNumber,
         timestamp: Date.now(),
-        cashier: currentCashier.name || '',
-        cashierCode: currentCashier.code || '',
-        createdByAi: true,
-        branch,
+	        cashier: currentCashier.name || '',
+	        cashierCode: currentCashier.code || '',
+	        createdByAi: true,
+	        branch,
+	        cashierBranch: currentBranch || '',
         customerName: customer.name,
         phoneNumber: customer.phone,
-        orderType: currentOrder.orderType,
-        paymentMethod: currentOrder.paymentMethod,
-        address: selectedAddress ? `${selectedAddress.area} - ${selectedAddress.details}` : '',
+	        orderType: currentOrder.orderType,
+	        paymentMethod: currentOrder.paymentMethod,
+	        pickupBranch,
+	        address: selectedAddress ? `${selectedAddress.area} - ${selectedAddress.details}` : (pickupBranch ? `استلام من فرع ${pickupBranch}` : ''),
         items: currentOrder.items.map(item => ({
           productId: item.productId || '',
           productName: item.productName || '',
@@ -2314,10 +2395,10 @@
       box.innerHTML = `
         <div style="text-align:center; font-weight:900; font-size:18px;">مطعم التين الطبيعي</div>
         <div style="text-align:center; margin-bottom:10px;">فاتورة رقم #${escapeHtml(order.invoiceNumber)}</div>
-        <div><strong>العميل:</strong> ${escapeHtml(order.customerName)}</div>
-        <div><strong>الهاتف:</strong> ${escapeHtml(order.phoneNumber.replace(/^965/, ''))}</div>
-        <div><strong>النوع:</strong> ${order.orderType === 'delivery' ? 'توصيل' : 'استلام'} - ${getPaymentLabel(order.paymentMethod)}</div>
-        ${order.address ? `<div><strong>العنوان:</strong> ${escapeHtml(order.address)}</div>` : ''}
+	        <div><strong>العميل:</strong> ${escapeHtml(order.customerName)}</div>
+	        <div><strong>الهاتف:</strong> ${escapeHtml(order.phoneNumber.replace(/^965/, ''))}</div>
+	        <div><strong>النوع:</strong> ${order.orderType === 'delivery' ? 'توصيل' : 'استلام'} - ${getPaymentLabel(order.paymentMethod)}</div>
+	        ${order.pickupBranch ? `<div><strong>فرع الاستلام:</strong> ${escapeHtml(order.pickupBranch)}</div>` : (order.address ? `<div><strong>العنوان:</strong> ${escapeHtml(order.address)}</div>` : '')}
         <hr>
         ${order.items.map(item => `
           <div style="display:flex; justify-content:space-between; gap:10px; margin:7px 0;">
