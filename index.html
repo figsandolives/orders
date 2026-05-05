@@ -132,6 +132,11 @@
                     قسم المحاسبة
                 </button>
             </div>
+            <div class="mt-6">
+                <button type="button" onclick="window.location.href='Ai.html'" class="bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold py-4 px-10 rounded-xl shadow-lg transition duration-300 ease-in-out transform hover:scale-105">
+                    🤖 فاتورة Ai
+                </button>
+            </div>
         </div>
 
         <!-- Secretariat Section -->
@@ -144,7 +149,7 @@
             </div>
             <p class="text-gray-600 mb-4" id="currentDateSecretariat"></p>
 
-            <div class="flex justify-between items-center mb-4">
+            <div class="flex flex-wrap justify-between items-center gap-3 mb-4">
                 <button id="searchOrderSecretariatBtn" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-xl transition duration-300 ease-in-out transform hover:scale-105">
                     البحث عن طلب
                 </button>
@@ -796,7 +801,7 @@
         let normalCashInvoicesSection, normalLinkAndSubscriptionAndShippingInvoicesSection, websiteInvoicesSection, branchPickupInvoicesSection, signatureModalTitle, newOrderModalTitle;
 
         const employees = ['فاطمة', 'محمود', 'يوسف', 'ناهدة','ريان','صفوت', 'علي', 'رانيا فنون', 'احمد حلمي', 'سند', 'نجلاء', 'سلطان', 'رانيا دنديس', 'عاصم'];
-        const deliverers = ['ابو خالد', 'سمير رومية', 'ضياء محمد', 'رامو الهندي', 'استلام', 'حسين', 'محمد جمال', 'ياسر جمال', 'خالد السيد','وليد محمد', 'أحمد حمدان', 'محمد عيسوي', 'عبيدة', 'محمود السيسي', 'محمد عبدالفتاح', 'عتمان', 'رضا', 'فاتورة اضافية مع بيدو', 'الأمير زين', 'ابو سالم', 'السيد فرج', 'هيثم محمد'  , 'رفيق الهندي','عبد العزيز','حسام بنان', 'حسام عادل', 'رفيق المصري', 'شركة الجوهرة للشحن'];
+        const deliverers = ['خيري', 'ابو خالد', 'سمير رومية', 'ضياء محمد', 'رامو الهندي', 'استلام', 'حسين', 'محمد سعيد', 'محمد جمال', 'ياسر جمال', 'خالد السيد', 'عبيدة', 'محمود السيسي', 'محمد عبدالفتاح', 'خالد سعد', 'عتمان', 'رضا صابر', 'رضا', 'فاتورة اضافية مع بيدو', 'أحمد رزق', 'الأمير زين', 'ابو سالم', 'السيد فرج', 'هيثم','أبو عبد العزيز / جمال','سريكانث', 'صبري' , 'أحمد دياب' ,'أحمد حمدان','وليد محمد', 'رفيق الهندي','عبد العزيز','حسام بنان', 'حسام عادل', 'رفيق المصري', 'شركة الجوهرة للشحن'];
         
         const deliveryZones = {
             'fixed': {
@@ -1577,7 +1582,7 @@
                     formData[question.id] = value;
                 }
             }
-            
+
             if (!isValid) return null;
 
             const finalOrderType = formData.orderType || getCurrentOrderTypeValue();
