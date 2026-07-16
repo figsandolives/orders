@@ -568,13 +568,14 @@
         const auth = getAuth(app); 
         const db = getDatabase(app);
         const cashierFirebaseConfig = {
-            apiKey: "AIzaSyAxjBBtAnpThJoliccuoq0NNIABGPv1dJg",
-            authDomain: "fawatir-b6119.firebaseapp.com",
-            databaseURL: "https://fawatir-b6119-default-rtdb.firebaseio.com",
-            projectId: "fawatir-b6119",
-            storageBucket: "fawatir-b6119.firebasestorage.app",
-            messagingSenderId: "575777677956",
-            appId: "1:575777677956:web:74794fdd3525f2693d18d1"
+            apiKey: "AIzaSyAZ4-dUBSKsHP3sTqRE8G9c2AjeclTlIik",
+            authDomain: "fawatir-f5a13.firebaseapp.com",
+            databaseURL: "https://fawatir-f5a13-default-rtdb.firebaseio.com",
+            projectId: "fawatir-f5a13",
+            storageBucket: "fawatir-f5a13.firebasestorage.app",
+            messagingSenderId: "334207827614",
+            appId: "1:334207827614:web:3c053434b04c1dd3ea858f",
+            measurementId: "G-W42ECQR0LW"
         };
         const cashierApp = initializeApp(cashierFirebaseConfig, 'cashierSite');
         const cashierDb = getDatabase(cashierApp);
@@ -848,7 +849,9 @@
             return str.replace(/[٠-٩]/g, d => englishNumerals[arabicNumerals.indexOf(d)]).replace(/،/g, ','); 
         };
 
-        const shouldUseCashierInvoiceSelector = (orderType) => !!orderType && orderType !== 'فاتورة موقع';
+        // All invoice types can use the synced invoice list. Website invoices are
+        // populated by the Paydo desktop companion, while manual entry remains available.
+        const shouldUseCashierInvoiceSelector = (orderType) => !!orderType;
         const MANUAL_INVOICE_MODE = 'manual';
         const CASHIER_INVOICE_MODE = 'cashier';
 
@@ -920,8 +923,8 @@
             return digits;
         };
 
-        async function loadCashierInvoiceOrders() {
-            if (cashierInvoicesLoaded) return cashierInvoiceOrders;
+        async function loadCashierInvoiceOrders(forceRefresh = false) {
+            if (cashierInvoicesLoaded && !forceRefresh) return cashierInvoiceOrders;
             if (cashierInvoicesLoadingPromise) return cashierInvoicesLoadingPromise;
 
             cashierInvoicesLoadingPromise = (async () => {
@@ -932,7 +935,10 @@
                         ordersSnapshot.forEach(childSnapshot => {
                             const order = childSnapshot.val();
                             const invoiceNumber = getCashierInvoiceDisplay(order);
-                            if (invoiceNumber && isMainCashierBranch(getCashierOrderBranch(order))) {
+                            // Paydo invoices do not have a cashier branch. Keep the old
+                            // main-branch filter for cashier data, but always accept Paydo.
+                            const isPaydoOrder = String(order?.source || '').toLowerCase() === 'paydo';
+                            if (invoiceNumber && (isPaydoOrder || !getCashierOrderBranch(order) || isMainCashierBranch(getCashierOrderBranch(order)))) {
                                 orders.push({ key: childSnapshot.key, ...order });
                             }
                         });
@@ -1024,7 +1030,7 @@
                 </div>
             `;
 
-            loadCashierInvoiceOrders().then(() => refreshCashierInvoiceList());
+            loadCashierInvoiceOrders(true).then(() => refreshCashierInvoiceList());
         }
 
         function updateCashierInvoiceSearch(value) {
@@ -1040,13 +1046,21 @@
                 return;
             }
 
+            const orderType = getCurrentOrderTypeValue();
+            const paydoOrders = cashierInvoiceOrders.filter(order => String(order?.source || '').toLowerCase() === 'paydo');
+            const nonPaydoOrders = cashierInvoiceOrders.filter(order => String(order?.source || '').toLowerCase() !== 'paydo');
+            // Prefer the matching source when it exists, while keeping compatibility
+            // with invoice databases that do not yet include a `source` field.
+            const sourceOrders = orderType === 'فاتورة موقع'
+                ? (paydoOrders.length ? paydoOrders : cashierInvoiceOrders)
+                : (nonPaydoOrders.length ? nonPaydoOrders : cashierInvoiceOrders);
             const searchTerm = cashierInvoiceSearchTerm.trim();
             const filtered = searchTerm
-                ? cashierInvoiceOrders.filter(order => {
+                ? sourceOrders.filter(order => {
                     const invoice = getCashierInvoiceDisplay(order);
                     return invoice.includes(searchTerm);
                 })
-                : cashierInvoiceOrders.slice(0, MAX_RECENT_CASHIER_INVOICES);
+                : sourceOrders.slice(0, MAX_RECENT_CASHIER_INVOICES);
 
             if (filtered.length === 0) {
                 listContainer.innerHTML = '<div class="p-2 text-gray-500">لا توجد نتائج.</div>';
