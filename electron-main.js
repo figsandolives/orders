@@ -7,6 +7,8 @@ const FIREBASE = {
   databaseURL: 'https://fawatir-f5a13-default-rtdb.firebaseio.com'
 };
 const SYNC_INTERVAL_MS = 60 * 1000;
+const PAYDO_RECENT_INVOICE_TARGET = 100;
+const PAYDO_BACKFILL_INVOICE_TARGET = 500;
 
 let paydoWindow;
 let ordersWindow;
@@ -14,6 +16,7 @@ let syncTimer;
 let firebaseIdToken = '';
 let isQuitting = false;
 let syncInProgress = false;
+let hasCompletedPaydoBackfill = false;
 
 function setPaydoTitle(status = '') {
   if (!paydoWindow || paydoWindow.isDestroyed()) return;
@@ -136,7 +139,7 @@ function createMenu() {
   Menu.setApplicationMenu(Menu.buildFromTemplate(template));
 }
 
-function paydoFetchScript() {
+function paydoFetchScript(targetCount = PAYDO_RECENT_INVOICE_TARGET) {
   return `
     (async () => {
       const token = localStorage.getItem('token');
@@ -154,11 +157,52 @@ function paydoFetchScript() {
         if (accountLogin) headers.account = accountLogin;
       }
 
-      const url = 'https://www.mypaydo.com/en/api/invoices/?limit=100&offset=0&fulfilment=true';
-      const response = await fetch(url, { headers, credentials: 'include' });
-      let data = null;
-      try { data = await response.json(); } catch (_) {}
-      return { loggedIn: true, ok: response.ok, status: response.status, data };
+      const extractPageItems = (payload) => {
+        if (!payload) return [];
+        if (Array.isArray(payload)) return payload;
+        for (const key of ['results', 'invoices', 'data', 'items', 'orders']) {
+          if (Array.isArray(payload[key])) return payload[key];
+          if (payload[key] && typeof payload[key] === 'object') {
+            const nested = extractPageItems(payload[key]);
+            if (nested.length) return nested;
+          }
+        }
+        return [];
+      };
+
+      const invoices = [];
+      const seen = new Set();
+      let offset = 0;
+      let status = 200;
+      const wanted = ${Number(targetCount) || PAYDO_RECENT_INVOICE_TARGET};
+
+      // Paydo currently caps a response below the requested limit. Walk through
+      // its pages so older, still-valid invoices remain searchable.
+      for (let page = 0; page < 30 && invoices.length < wanted; page += 1) {
+        const url = 'https://www.mypaydo.com/en/api/invoices/?limit=100&offset=' + offset + '&fulfilment=true';
+        const response = await fetch(url, { headers, credentials: 'include' });
+        status = response.status;
+        let data = null;
+        try { data = await response.json(); } catch (_) {}
+        if (!response.ok) return { loggedIn: true, ok: false, status, data };
+
+        const pageItems = extractPageItems(data);
+        if (!pageItems.length) break;
+
+        let added = 0;
+        for (const invoice of pageItems) {
+          const identity = String(invoice.id ?? invoice.invoice_no ?? invoice.invoice_number ?? JSON.stringify(invoice));
+          if (seen.has(identity)) continue;
+          seen.add(identity);
+          invoices.push(invoice);
+          added += 1;
+          if (invoices.length >= wanted) break;
+        }
+        if (!added) break;
+        offset += pageItems.length;
+      }
+
+      return { loggedIn: true, ok: true, status, data: { results: invoices } };
     })().catch(error => ({ loggedIn: true, ok: false, error: String(error) }));
   `;
 }
@@ -383,7 +427,10 @@ async function syncPaydoInvoices({ silent = true } = {}) {
   setPaydoTitle('جاري المزامنة…');
 
   try {
-    const result = await paydoWindow.webContents.executeJavaScript(paydoFetchScript(), true);
+    const targetCount = hasCompletedPaydoBackfill
+      ? PAYDO_RECENT_INVOICE_TARGET
+      : PAYDO_BACKFILL_INVOICE_TARGET;
+    const result = await paydoWindow.webContents.executeJavaScript(paydoFetchScript(targetCount), true);
     if (!result?.loggedIn) {
       setPaydoTitle('سجّل الدخول لبدء المزامنة');
       return;
@@ -392,6 +439,7 @@ async function syncPaydoInvoices({ silent = true } = {}) {
 
     const count = await syncInvoicePayload(result.data, { silent });
     if (!count) throw new Error('لم تُرجع Paydo أي فواتير قابلة للقراءة');
+    hasCompletedPaydoBackfill = true;
   } catch (error) {
     console.error('Paydo sync failed:', error);
     setPaydoTitle('تعذرت المزامنة — أعد المحاولة');
