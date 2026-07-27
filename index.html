@@ -640,6 +640,7 @@
         let cashierInvoicesLoaded = false;
         let cashierInvoicesLoadingPromise = null;
         let cashierInvoiceSearchTerm = '';
+        let cashierInvoicesUnsubscribe = null;
         let accountingOrdersUnsubscribe = null;
         const MAX_RECENT_CASHIER_INVOICES = 20;
         const MAIN_CASHIER_BRANCH_NAME = 'الفرع الرئيسي';
@@ -810,7 +811,7 @@
     'السرة': 0.5,
     'الزهراء': 1, 'السلام': 1, 'حطين': 1, 'الفيحاء': 1, 'القادسية': 1, 'مشرف': 1, 'كيفان': 1, 'الروضة': 1, 'العديلية': 1, 'الخالدية': 1, 'النزهة': 1, 'الدعية': 1, 'المنصورية': 1, 'قرطبة': 1, 'الشامية': 1, 'الرميثية': 1, 'عبدالله السالم': 1, 'الجابرية': 1, 'بيان': 1, 'الصديق': 1, 'الشهداء': 1, 'اليرموك': 1,
     'الفروانية': 2, 'خيطان': 2, 'بنيد القار': 2, 'الدسمة': 2, 'حولي': 2, 'ميدان حولي': 2, 'مبارك الكبير': 2, 'القصور': 2, 'الرابية': 2, 'العمرية': 2, 'الرقعي': 2, 'غرناطة': 2, 'القرين': 2, 'الشويخ': 2, 'المسيلة': 2, 'الكويت': 2, 'اشبيليا': 2, 'السالمية': 2, 'شرق': 2, 'الرحاب': 2, 'المرقاب': 2, 'صباح السالم': 2, 'الفردوس': 2, 'صباح الناصر': 2, 'المسايل': 2, 'الاندلس': 2, 'العارضية': 2, 'سلوى': 2, 'العدان': 2, 'الشعب': 2,
-    'هدية': 3, 'الصليبيخات': 3, 'الجهراء': 3, 'الفنطاس': 3, 'سعد العبدالله': 3, 'الفنيطيس': 3, 'الدوحة': 3, 'العقيلة': 3, 'جابر العلي': 3, 'جابر الاحمد': 3, 'عبدالله مبارك': 3, 'المهبولة': 3, 'المنقف': 3, 'الاحمدي': 3, 'الصليبية': 3, 'الصباحية': 3, 'فهد الاحمد': 3, 'صبحان': 3, 'ابو فطيرة': 3, 'ابو الحصانية': 3, 'الظهر': 3, 'ابو حليفة': 3, 'الفحيحيل': 3, 'جليب الشيوخ': 3,
+    'هدية': 3, 'الصليبيخات': 3, 'الجهراء': 3, 'الفنطاس': 3, 'سعد العبدالله': 3, 'الفنيطيس': 3, 'الدوحة': 3, 'العقيلة': 3, 'جابر العلي': 3, 'جابر الاحمد': 3, 'عبدالله مبارك': 3, 'المهبولة': 3, 'المنقف': 3, 'الاحمدي': 3, 'الصليبية': 3, 'الصباحية': 3, 'فهد الاحمد': 3, 'صبحان': 3, 'ابو فطيرة': 3, 'ابو الحصانية': 3, 'الظهر': 3, 'ابو حليفة': 3, 'الفحيحيل': 3, 'جليب الشيوخ': 3, 'النسيم': 3, 'العيون': 3,
     'ام الهيمان': 4,
     'المطلاع': 5,
     'صباح الاحمد': 6,
@@ -882,56 +883,134 @@
 
         const getCashierInvoiceDisplay = (order) => convertArabicToEnglishNumerals(String(order?.invoiceNumber || '').trim());
         const PAYDO_AREA_ALIASES = {
+            'addan': 'العدان',
+            'ad dan': 'العدان',
+            'ahmadi': 'الاحمدي',
+            'andalous': 'الاندلس',
             'mansouriyah': 'المنصورية',
+            'mansouriya': 'المنصورية',
             'jaber al ali': 'جابر العلي',
             'jaber al ahmad': 'جابر الاحمد',
             'abdullah al salem': 'عبدالله السالم',
+            'abdulla al salem': 'عبدالله السالم',
             'west abdullah almubarak': 'عبدالله مبارك',
             'west abdullah al mubarak': 'عبدالله مبارك',
+            'abdullah al mubarak': 'عبدالله مبارك',
+            'abdulla al mubarak': 'عبدالله مبارك',
             'al mubarak': 'عبدالله مبارك',
             'andalus': 'الاندلس',
             'jahra': 'الجهراء',
             'hawally': 'حولي',
+            'hawalli': 'حولي',
+            'maidan hawally': 'ميدان حولي',
             'fintas': 'الفنطاس',
             'hadiyah': 'هدية',
             'salmiya': 'السالمية',
             'jabriya': 'الجابرية',
+            'jabriyah': 'الجابرية',
             'mishref': 'مشرف',
             'mishrif': 'مشرف',
             'qurtuba': 'قرطبة',
             'qortuba': 'قرطبة',
+            'qurtoba': 'قرطبة',
             'kaifan': 'كيفان',
+            'keifan': 'كيفان',
             'rawda': 'الروضة',
             'adailiya': 'العديلية',
             'khaldiya': 'الخالدية',
+            'khaldiyah': 'الخالدية',
             'nuzha': 'النزهة',
             'daiya': 'الدعية',
             'rumaitheya': 'الرميثية',
             'rumaithiya': 'الرميثية',
             'bayan': 'بيان',
             'siddiq': 'الصديق',
+            'siddeeq': 'الصديق',
             'shaab': 'الشعب',
             'surra': 'السرة',
             'zahra': 'الزهراء',
             'salam': 'السلام',
             'hittin': 'حطين',
+            'hutteen': 'حطين',
+            'faiha': 'الفيحاء',
+            'fayha': 'الفيحاء',
+            'qadsia': 'القادسية',
+            'qadsiya': 'القادسية',
+            'qadsiyah': 'القادسية',
+            'shamiya': 'الشامية',
+            'shuhada': 'الشهداء',
+            'yarmouk': 'اليرموك',
             'farwaniya': 'الفروانية',
             'khaitan': 'خيطان',
+            'kheitan': 'خيطان',
             'bneid al qar': 'بنيد القار',
+            'bneid al gar': 'بنيد القار',
             'dasma': 'الدسمة',
+            'qosour': 'القصور',
+            'qusour': 'القصور',
+            'rabia': 'الرابية',
+            'rabiya': 'الرابية',
+            'omariya': 'العمرية',
+            'omariyah': 'العمرية',
+            'riggae': 'الرقعي',
+            'riqqai': 'الرقعي',
+            'gharnata': 'غرناطة',
+            'ghurnata': 'غرناطة',
+            'granada': 'غرناطة',
+            'qurain': 'القرين',
+            'shuwaikh': 'الشويخ',
+            'maseela': 'المسيلة',
+            'messila': 'المسيلة',
+            'kuwait': 'الكويت',
+            'kuwait city': 'الكويت',
+            'ishbiliya': 'اشبيليا',
+            'sharq': 'شرق',
+            'rehab': 'الرحاب',
+            'mirqab': 'المرقاب',
             'sabah al salem': 'صباح السالم',
+            'firdous': 'الفردوس',
+            'sabah al nasser': 'صباح الناصر',
+            'masayel': 'المسايل',
+            'masayil': 'المسايل',
+            'ardiyah': 'العارضية',
+            'ardhiya': 'العارضية',
+            'salwa': 'سلوى',
             'mubarak al kabeer': 'مبارك الكبير',
+            'mubarak al kabir': 'مبارك الكبير',
             'mahboula': 'المهبولة',
             'mangaf': 'المنقف',
             'fahaheel': 'الفحيحيل',
             'abu halifa': 'ابو حليفة',
             'abu fatira': 'ابو فطيرة',
             'abu ftaira': 'ابو فطيرة',
+            'abu hasaniya': 'ابو الحصانية',
+            'abu al hasaniya': 'ابو الحصانية',
             'sulaibiya': 'الصليبية',
             'sulaibikhat': 'الصليبيخات',
+            'saad al abdallah': 'سعد العبدالله',
+            'funaitees': 'الفنيطيس',
+            'doha': 'الدوحة',
+            'egaila': 'العقيلة',
+            'aqeela': 'العقيلة',
+            'sabahiya': 'الصباحية',
+            'fahad al ahmad': 'فهد الاحمد',
+            'subhan': 'صبحان',
+            'dhaher': 'الظهر',
+            'dhahr': 'الظهر',
+            'jleeb al shuyoukh': 'جليب الشيوخ',
+            'umm al hayman': 'ام الهيمان',
             'mutlaa': 'المطلاع',
             'sabah al ahmad': 'صباح الاحمد',
-            'wafra': 'الوفرة'
+            'wafra': 'الوفرة',
+            'naseem': 'النسيم',
+            'oyoon': 'العيون',
+            'uyoun': 'العيون',
+            'saudi arabia': 'السعودية',
+            'qatar': 'قطر',
+            'oman': 'عمان',
+            'uae': 'الامارات',
+            'united arab emirates': 'الامارات',
+            'bahrain': 'البحرين'
         };
         const normalizePaydoAreaKey = (value) => String(value || '')
             .toLowerCase()
@@ -984,6 +1063,36 @@
             return digits;
         };
 
+        function applyCashierInvoiceSnapshot(ordersSnapshot) {
+            const orders = [];
+            if (ordersSnapshot?.exists()) {
+                ordersSnapshot.forEach(childSnapshot => {
+                    const order = childSnapshot.val();
+                    const invoiceNumber = getCashierInvoiceDisplay(order);
+                    // Paydo invoices do not have a cashier branch. Keep the old
+                    // main-branch filter for cashier data, but always accept Paydo.
+                    const isPaydoOrder = String(order?.source || '').toLowerCase() === 'paydo';
+                    if (invoiceNumber && (isPaydoOrder || !getCashierOrderBranch(order) || isMainCashierBranch(getCashierOrderBranch(order)))) {
+                        orders.push({ key: childSnapshot.key, ...order });
+                    }
+                });
+            }
+            orders.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+            cashierInvoiceOrders = orders;
+            cashierInvoicesLoaded = true;
+            refreshCashierInvoiceList();
+            return cashierInvoiceOrders;
+        }
+
+        function startCashierInvoiceLiveSync() {
+            if (cashierInvoicesUnsubscribe) return;
+            cashierInvoicesUnsubscribe = onValue(
+                ref(cashierDb, 'orders'),
+                applyCashierInvoiceSnapshot,
+                error => console.error('Cashier invoice live sync failed:', error)
+            );
+        }
+
         async function loadCashierInvoiceOrders(forceRefresh = false) {
             if (cashierInvoicesLoaded && !forceRefresh) return cashierInvoiceOrders;
             if (cashierInvoicesLoadingPromise) return cashierInvoicesLoadingPromise;
@@ -991,23 +1100,7 @@
             cashierInvoicesLoadingPromise = (async () => {
                 try {
                     const ordersSnapshot = await get(ref(cashierDb, 'orders'));
-                    const orders = [];
-                    if (ordersSnapshot.exists()) {
-                        ordersSnapshot.forEach(childSnapshot => {
-                            const order = childSnapshot.val();
-                            const invoiceNumber = getCashierInvoiceDisplay(order);
-                            // Paydo invoices do not have a cashier branch. Keep the old
-                            // main-branch filter for cashier data, but always accept Paydo.
-                            const isPaydoOrder = String(order?.source || '').toLowerCase() === 'paydo';
-                            if (invoiceNumber && (isPaydoOrder || !getCashierOrderBranch(order) || isMainCashierBranch(getCashierOrderBranch(order)))) {
-                                orders.push({ key: childSnapshot.key, ...order });
-                            }
-                        });
-                    }
-                    orders.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-                    cashierInvoiceOrders = orders;
-                    cashierInvoicesLoaded = true;
-                    return cashierInvoiceOrders;
+                    return applyCashierInvoiceSnapshot(ordersSnapshot);
                 } catch (error) {
                     console.error('Error loading cashier invoices:', error);
                     showMessageModal('تعذر جلب فواتير موقع الكاشير حالياً.');
@@ -3980,6 +4073,7 @@
         
         window.onload = () => {
             initApp();
+            startCashierInvoiceLiveSync();
             checkSessionAndDisplayScreen();
 
             // START: Embedded Fonts

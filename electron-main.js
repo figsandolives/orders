@@ -17,6 +17,8 @@ let firebaseIdToken = '';
 let isQuitting = false;
 let syncInProgress = false;
 let hasCompletedPaydoBackfill = false;
+let paydoRequestHeaders = {};
+let paydoInvoicesApiUrl = 'https://www.mypaydo.com/en/api/invoices/';
 
 function setPaydoTitle(status = '') {
   if (!paydoWindow || paydoWindow.isDestroyed()) return;
@@ -39,8 +41,8 @@ function createPaydoWindow() {
     }
   });
 
-  paydoWindow.loadURL(PAYDO_URL);
   attachPaydoNetworkCapture();
+  paydoWindow.loadURL(PAYDO_URL);
   paydoWindow.on('close', event => {
     if (!isQuitting) {
       event.preventDefault();
@@ -62,6 +64,23 @@ function createPaydoWindow() {
 
 function attachPaydoNetworkCapture() {
   const debuggerClient = paydoWindow.webContents.debugger;
+  const invoiceRequestIds = new Set();
+
+  const captureRequestHeaders = incomingHeaders => {
+    const filtered = {};
+    for (const [name, value] of Object.entries(incomingHeaders || {})) {
+      const normalized = name.toLowerCase();
+      if (normalized === 'authorization') filtered.Authorization = value;
+      else if (normalized === 'account') filtered.account = value;
+      else if (normalized === 'accept') filtered.Accept = value;
+      else if (normalized === 'content-type') filtered['Content-Type'] = value;
+      else if (normalized.startsWith('x-')) filtered[normalized] = value;
+    }
+    if (Object.keys(filtered).length) {
+      paydoRequestHeaders = { ...paydoRequestHeaders, ...filtered };
+    }
+  };
+
   try {
     if (!debuggerClient.isAttached()) debuggerClient.attach('1.3');
     debuggerClient.sendCommand('Network.enable');
@@ -71,6 +90,27 @@ function attachPaydoNetworkCapture() {
   }
 
   debuggerClient.on('message', async (_event, method, params) => {
+    if (method === 'Network.requestWillBeSent') {
+      const requestUrl = params?.request?.url || '';
+      if (!requestUrl.includes('/en/api/invoices/')) return;
+      if (String(params?.request?.method || '').toUpperCase() !== 'GET') return;
+      try {
+        const parsedUrl = new URL(requestUrl);
+        paydoInvoicesApiUrl = `${parsedUrl.origin}${parsedUrl.pathname}`;
+      } catch (_) {}
+      invoiceRequestIds.add(params.requestId);
+      captureRequestHeaders(params?.request?.headers);
+      return;
+    }
+
+    // Chromium reports sensitive request headers (including Authorization) in
+    // this companion event rather than requestWillBeSent.
+    if (method === 'Network.requestWillBeSentExtraInfo') {
+      if (!invoiceRequestIds.has(params?.requestId)) return;
+      captureRequestHeaders(params?.headers);
+      return;
+    }
+
     if (method !== 'Network.responseReceived') return;
     const responseUrl = params?.response?.url || '';
     if (!responseUrl.includes('/en/api/invoices/')) return;
@@ -81,6 +121,10 @@ function attachPaydoNetworkCapture() {
         : result.body;
       const payload = JSON.parse(text);
       await syncInvoicePayload(payload, { silent: true });
+      invoiceRequestIds.delete(params.requestId);
+      if (!hasCompletedPaydoBackfill) {
+        setTimeout(() => syncPaydoInvoices({ silent: true }), 250);
+      }
     } catch (error) {
       // Some cached/redirected responses do not expose a body; the timed API sync
       // remains active as the primary path.
@@ -139,22 +183,34 @@ function createMenu() {
   Menu.setApplicationMenu(Menu.buildFromTemplate(template));
 }
 
-function paydoFetchScript(targetCount = PAYDO_RECENT_INVOICE_TARGET) {
+function paydoFetchScript(
+  targetCount = PAYDO_RECENT_INVOICE_TARGET,
+  capturedHeaders = {},
+  invoicesApiUrl = paydoInvoicesApiUrl
+) {
   return `
     (async () => {
       const token = localStorage.getItem('token');
       const tokenLogin = localStorage.getItem('token_login');
       const account = localStorage.getItem('account');
       const accountLogin = localStorage.getItem('account_login');
-      if (!token && !tokenLogin) return { loggedIn: false };
+      const headers = {
+        'Content-Type': 'application/json',
+        ...${JSON.stringify(capturedHeaders || {})}
+      };
 
-      const headers = { 'Content-Type': 'application/json' };
-      if (token) {
+      // Prefer the authorization/account values captured from Paydo's own
+      // successful request. Older builds replaced a valid captured header with
+      // "Bearer null" when Paydo stopped storing token_login in localStorage.
+      if (!headers.Authorization && token) {
         headers.Authorization = 'Token ' + token;
-        if (account) headers.account = account;
-      } else {
+      } else if (!headers.Authorization && tokenLogin) {
         headers.Authorization = 'Bearer ' + tokenLogin;
-        if (accountLogin) headers.account = accountLogin;
+      }
+      if (!headers.account && account) {
+        headers.account = account;
+      } else if (!headers.account && accountLogin) {
+        headers.account = accountLogin;
       }
 
       const extractPageItems = (payload) => {
@@ -175,16 +231,29 @@ function paydoFetchScript(targetCount = PAYDO_RECENT_INVOICE_TARGET) {
       let offset = 0;
       let status = 200;
       const wanted = ${Number(targetCount) || PAYDO_RECENT_INVOICE_TARGET};
+      const apiUrl = ${JSON.stringify(invoicesApiUrl)};
 
       // Paydo currently caps a response below the requested limit. Walk through
       // its pages so older, still-valid invoices remain searchable.
       for (let page = 0; page < 30 && invoices.length < wanted; page += 1) {
-        const url = 'https://www.mypaydo.com/en/api/invoices/?limit=100&offset=' + offset + '&fulfilment=true';
-        const response = await fetch(url, { headers, credentials: 'include' });
+        const separator = apiUrl.includes('?') ? '&' : '?';
+        const url = apiUrl + separator + 'limit=100&offset=' + offset + '&fulfilment=true';
+        // Paydo's API responds with Access-Control-Allow-Origin: *. Browsers
+        // reject that response when credentials are included, so token-based
+        // requests must omit cookies. Cookie-only requests still use include.
+        const credentials = headers.Authorization ? 'omit' : 'include';
+        const response = await fetch(url, { headers, credentials });
         status = response.status;
         let data = null;
         try { data = await response.json(); } catch (_) {}
-        if (!response.ok) return { loggedIn: true, ok: false, status, data };
+        if (!response.ok) {
+          return {
+            loggedIn: response.status !== 401 && response.status !== 403,
+            ok: false,
+            status,
+            data
+          };
+        }
 
         const pageItems = extractPageItems(data);
         if (!pageItems.length) break;
@@ -239,56 +308,134 @@ function normalizePayment(value) {
 }
 
 const PAYDO_AREA_ALIASES = {
+  'addan': 'العدان',
+  'ad dan': 'العدان',
+  'ahmadi': 'الاحمدي',
+  'andalous': 'الاندلس',
   'mansouriyah': 'المنصورية',
+  'mansouriya': 'المنصورية',
   'jaber al ali': 'جابر العلي',
   'jaber al ahmad': 'جابر الاحمد',
   'abdullah al salem': 'عبدالله السالم',
+  'abdulla al salem': 'عبدالله السالم',
   'west abdullah almubarak': 'عبدالله مبارك',
   'west abdullah al mubarak': 'عبدالله مبارك',
+  'abdullah al mubarak': 'عبدالله مبارك',
+  'abdulla al mubarak': 'عبدالله مبارك',
   'al mubarak': 'عبدالله مبارك',
   'andalus': 'الاندلس',
   'jahra': 'الجهراء',
   'hawally': 'حولي',
+  'hawalli': 'حولي',
+  'maidan hawally': 'ميدان حولي',
   'fintas': 'الفنطاس',
   'hadiyah': 'هدية',
   'salmiya': 'السالمية',
   'jabriya': 'الجابرية',
+  'jabriyah': 'الجابرية',
   'mishref': 'مشرف',
   'mishrif': 'مشرف',
   'qurtuba': 'قرطبة',
   'qortuba': 'قرطبة',
+  'qurtoba': 'قرطبة',
   'kaifan': 'كيفان',
+  'keifan': 'كيفان',
   'rawda': 'الروضة',
   'adailiya': 'العديلية',
   'khaldiya': 'الخالدية',
+  'khaldiyah': 'الخالدية',
   'nuzha': 'النزهة',
   'daiya': 'الدعية',
   'rumaitheya': 'الرميثية',
   'rumaithiya': 'الرميثية',
   'bayan': 'بيان',
   'siddiq': 'الصديق',
+  'siddeeq': 'الصديق',
   'shaab': 'الشعب',
   'surra': 'السرة',
   'zahra': 'الزهراء',
   'salam': 'السلام',
   'hittin': 'حطين',
+  'hutteen': 'حطين',
+  'faiha': 'الفيحاء',
+  'fayha': 'الفيحاء',
+  'qadsia': 'القادسية',
+  'qadsiya': 'القادسية',
+  'qadsiyah': 'القادسية',
+  'shamiya': 'الشامية',
+  'shuhada': 'الشهداء',
+  'yarmouk': 'اليرموك',
   'farwaniya': 'الفروانية',
   'khaitan': 'خيطان',
+  'kheitan': 'خيطان',
   'bneid al qar': 'بنيد القار',
+  'bneid al gar': 'بنيد القار',
   'dasma': 'الدسمة',
+  'qosour': 'القصور',
+  'qusour': 'القصور',
+  'rabia': 'الرابية',
+  'rabiya': 'الرابية',
+  'omariya': 'العمرية',
+  'omariyah': 'العمرية',
+  'riggae': 'الرقعي',
+  'riqqai': 'الرقعي',
+  'gharnata': 'غرناطة',
+  'ghurnata': 'غرناطة',
+  'granada': 'غرناطة',
+  'qurain': 'القرين',
+  'shuwaikh': 'الشويخ',
+  'maseela': 'المسيلة',
+  'messila': 'المسيلة',
+  'kuwait': 'الكويت',
+  'kuwait city': 'الكويت',
+  'ishbiliya': 'اشبيليا',
+  'sharq': 'شرق',
+  'rehab': 'الرحاب',
+  'mirqab': 'المرقاب',
   'sabah al salem': 'صباح السالم',
+  'firdous': 'الفردوس',
+  'sabah al nasser': 'صباح الناصر',
+  'masayel': 'المسايل',
+  'masayil': 'المسايل',
+  'ardiyah': 'العارضية',
+  'ardhiya': 'العارضية',
+  'salwa': 'سلوى',
   'mubarak al kabeer': 'مبارك الكبير',
+  'mubarak al kabir': 'مبارك الكبير',
   'mahboula': 'المهبولة',
   'mangaf': 'المنقف',
   'fahaheel': 'الفحيحيل',
   'abu halifa': 'ابو حليفة',
   'abu fatira': 'ابو فطيرة',
   'abu ftaira': 'ابو فطيرة',
+  'abu hasaniya': 'ابو الحصانية',
+  'abu al hasaniya': 'ابو الحصانية',
   'sulaibiya': 'الصليبية',
   'sulaibikhat': 'الصليبيخات',
+  'saad al abdallah': 'سعد العبدالله',
+  'funaitees': 'الفنيطيس',
+  'doha': 'الدوحة',
+  'egaila': 'العقيلة',
+  'aqeela': 'العقيلة',
+  'sabahiya': 'الصباحية',
+  'fahad al ahmad': 'فهد الاحمد',
+  'subhan': 'صبحان',
+  'dhaher': 'الظهر',
+  'dhahr': 'الظهر',
+  'jleeb al shuyoukh': 'جليب الشيوخ',
+  'umm al hayman': 'ام الهيمان',
   'mutlaa': 'المطلاع',
   'sabah al ahmad': 'صباح الاحمد',
-  'wafra': 'الوفرة'
+  'wafra': 'الوفرة',
+  'naseem': 'النسيم',
+  'oyoon': 'العيون',
+  'uyoun': 'العيون',
+  'saudi arabia': 'السعودية',
+  'qatar': 'قطر',
+  'oman': 'عمان',
+  'uae': 'الامارات',
+  'united arab emirates': 'الامارات',
+  'bahrain': 'البحرين'
 };
 
 function normalizePaydoArea(value) {
@@ -430,7 +577,10 @@ async function syncPaydoInvoices({ silent = true } = {}) {
     const targetCount = hasCompletedPaydoBackfill
       ? PAYDO_RECENT_INVOICE_TARGET
       : PAYDO_BACKFILL_INVOICE_TARGET;
-    const result = await paydoWindow.webContents.executeJavaScript(paydoFetchScript(targetCount), true);
+    const result = await paydoWindow.webContents.executeJavaScript(
+      paydoFetchScript(targetCount, paydoRequestHeaders, paydoInvoicesApiUrl),
+      true
+    );
     if (!result?.loggedIn) {
       setPaydoTitle('سجّل الدخول لبدء المزامنة');
       return;
