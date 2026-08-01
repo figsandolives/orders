@@ -568,19 +568,22 @@
         const auth = getAuth(app); 
         const db = getDatabase(app);
         const cashierFirebaseConfig = {
-            apiKey: "AIzaSyA0XQJ9fqlWeYQ5NV4CT6GdxvM_Uztnoio",
-            authDomain: "menassafigs.firebaseapp.com",
-            databaseURL: "https://menassafigs-default-rtdb.firebaseio.com",
-            projectId: "menassafigs",
-            storageBucket: "menassafigs.firebasestorage.app",
-            messagingSenderId: "260400277192",
-            appId: "1:260400277192:web:de209362fdbe86e5d827fd"
+            apiKey: "AIzaSyAZ4-dUBSKsHP3sTqRE8G9c2AjeclTlIik",
+            authDomain: "fawatir-f5a13.firebaseapp.com",
+            databaseURL: "https://fawatir-f5a13-default-rtdb.firebaseio.com",
+            projectId: "fawatir-f5a13",
+            storageBucket: "fawatir-f5a13.firebasestorage.app",
+            messagingSenderId: "334207827614",
+            appId: "1:334207827614:web:3c053434b04c1dd3ea858f",
+            measurementId: "G-W42ECQR0LW"
         };
         const cashierApp = initializeApp(cashierFirebaseConfig, 'cashierSite');
-        const cashierAuth = getAuth(cashierApp);
         const cashierDb = getDatabase(cashierApp);
-        const cashierAuthReady = new Promise(resolve => onAuthStateChanged(cashierAuth, user => { if (user) resolve(user); }));
-        signInAnonymously(cashierAuth).catch(error => console.error('Platform orders sign-in failed:', error));
+        const platformApp = initializeApp({ apiKey:"AIzaSyA0XQJ9fqlWeYQ5NV4CT6GdxvM_Uztnoio", authDomain:"menassafigs.firebaseapp.com", databaseURL:"https://menassafigs-default-rtdb.firebaseio.com", projectId:"menassafigs", storageBucket:"menassafigs.firebasestorage.app", messagingSenderId:"260400277192", appId:"1:260400277192:web:de209362fdbe86e5d827fd" }, 'orderingPlatform');
+        const platformAuth = getAuth(platformApp);
+        const platformDb = getDatabase(platformApp);
+        const platformAuthReady = new Promise(resolve => onAuthStateChanged(platformAuth, user => { if (user) resolve(user); }));
+        signInAnonymously(platformAuth).catch(error => console.error('Platform orders sign-in failed:', error));
 
         const getFormattedDate = (date) => date.toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
         const getFormattedTime = (date) => date.toLocaleTimeString('ar-EG', { hour: 'numeric', minute: 'numeric', hour12: true });
@@ -1093,9 +1096,8 @@
 
         async function startCashierInvoiceLiveSync() {
             if (cashierInvoicesUnsubscribe) return;
-            await cashierAuthReady;
             cashierInvoicesUnsubscribe = onValue(
-                ref(cashierDb, 'orderingPlatform/onlineOrders'),
+                ref(cashierDb, 'orders'),
                 applyCashierInvoiceSnapshot,
                 error => console.error('Cashier invoice live sync failed:', error)
             );
@@ -1107,8 +1109,9 @@
 
             cashierInvoicesLoadingPromise = (async () => {
                 try {
-                    await cashierAuthReady;
-                    const ordersSnapshot = await get(ref(cashierDb, 'orderingPlatform/onlineOrders'));
+                    const isWebsite = getCurrentOrderTypeValue() === 'فاتورة موقع';
+                    if (isWebsite) await platformAuthReady;
+                    const ordersSnapshot = await get(ref(isWebsite ? platformDb : cashierDb, isWebsite ? 'orderingPlatform/onlineOrders' : 'orders'));
                     return applyCashierInvoiceSnapshot(ordersSnapshot);
                 } catch (error) {
                     console.error('Error loading cashier invoices:', error);
