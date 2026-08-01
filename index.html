@@ -1040,6 +1040,7 @@
             }
             const address = (order?.address || '').toString().trim();
             if (address) return address.split('-')[0].trim();
+            if (order?.area) return String(order.area).trim();
             return getCashierOrderBranch(order);
         };
 
@@ -1220,13 +1221,16 @@
             const sourceOrders = orderType === 'فاتورة موقع'
                 ? (paydoOrders.length ? paydoOrders : cashierInvoiceOrders)
                 : (nonPaydoOrders.length ? nonPaydoOrders : cashierInvoiceOrders);
+            const eligibleOrders = orderType === 'فاتورة عادية'
+                ? sourceOrders.filter(order => isMainCashierBranch(getCashierOrderBranch(order)))
+                : sourceOrders;
             const searchTerm = cashierInvoiceSearchTerm.trim();
             const filtered = searchTerm
-                ? sourceOrders.filter(order => {
+                ? eligibleOrders.filter(order => {
                     const invoice = getCashierInvoiceDisplay(order);
                     return invoice.includes(searchTerm);
                 })
-                : sourceOrders.slice(0, MAX_RECENT_CASHIER_INVOICES);
+                : eligibleOrders.slice(0, MAX_RECENT_CASHIER_INVOICES);
 
             if (filtered.length === 0) {
                 listContainer.innerHTML = '<div class="p-2 text-gray-500">لا توجد نتائج.</div>';
@@ -1286,7 +1290,8 @@
             currentOrderData.phoneNumber = getPhoneWithoutKuwaitCode(order.phoneNumber || '');
             currentOrderData.area = extractAreaFromCashierOrder(order);
             const isPaydoOrder = String(order?.source || '').toLowerCase() === 'paydo';
-            currentOrderData.deliveryValue = isPaydoOrder ? '' : (Number(order.deliveryPrice) || 0);
+            const isPlatformOrder = String(order?.source || '').toLowerCase() === 'platform';
+            currentOrderData.deliveryValue = isPaydoOrder ? '' : (isPlatformOrder ? (Number(order.deliveryFee) || 0) : (Number(order.deliveryPrice) || 0));
             currentOrderData.invoiceValue = Number(order.total) || 0;
             currentOrderData.paymentMethod = mapCashierOrderPaymentMethod(order.paymentMethod);
 
@@ -1316,6 +1321,7 @@
             handleAreaChange();
             if (deliveryInput) {
                 if (isPaydoOrder) currentOrderData.deliveryValue = Number(deliveryInput.value) || 0;
+                else if (isPlatformOrder) deliveryInput.value = currentOrderData.deliveryValue;
                 else deliveryInput.value = currentOrderData.deliveryValue;
             }
 
