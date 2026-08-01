@@ -577,7 +577,10 @@
             appId: "1:260400277192:web:de209362fdbe86e5d827fd"
         };
         const cashierApp = initializeApp(cashierFirebaseConfig, 'cashierSite');
+        const cashierAuth = getAuth(cashierApp);
         const cashierDb = getDatabase(cashierApp);
+        const cashierAuthReady = new Promise(resolve => onAuthStateChanged(cashierAuth, user => { if (user) resolve(user); }));
+        signInAnonymously(cashierAuth).catch(error => console.error('Platform orders sign-in failed:', error));
 
         const getFormattedDate = (date) => date.toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
         const getFormattedTime = (date) => date.toLocaleTimeString('ar-EG', { hour: 'numeric', minute: 'numeric', hour12: true });
@@ -1085,8 +1088,9 @@
             return cashierInvoiceOrders;
         }
 
-        function startCashierInvoiceLiveSync() {
+        async function startCashierInvoiceLiveSync() {
             if (cashierInvoicesUnsubscribe) return;
+            await cashierAuthReady;
             cashierInvoicesUnsubscribe = onValue(
                 ref(cashierDb, 'orderingPlatform/onlineOrders'),
                 applyCashierInvoiceSnapshot,
@@ -1100,6 +1104,7 @@
 
             cashierInvoicesLoadingPromise = (async () => {
                 try {
+                    await cashierAuthReady;
                     const ordersSnapshot = await get(ref(cashierDb, 'orderingPlatform/onlineOrders'));
                     return applyCashierInvoiceSnapshot(ordersSnapshot);
                 } catch (error) {
