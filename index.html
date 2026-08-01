@@ -1029,6 +1029,9 @@
         const isMainCashierBranch = (branch) => normalizeBranchName(branch) === normalizeBranchName(MAIN_CASHIER_BRANCH_NAME);
 
         const extractAreaFromCashierOrder = (order) => {
+            if (String(order?.source || '').toLowerCase() === 'platform') {
+                return (order?.areaName || '').toString().trim() || getCashierOrderBranch(order);
+            }
             if (String(order?.source || '').toLowerCase() === 'paydo') {
                 return normalizePaydoArea(order?.area || '');
             }
