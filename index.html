@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
     <title>نظام إدارة الفواتير</title>
     <!-- Tailwind CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
@@ -20,11 +20,14 @@
             background-color: #f3f4f6;
             direction: rtl; /* Set default direction to RTL */
             text-align: right; /* Align text to the right by default */
+            -webkit-text-size-adjust: 100%;
+            touch-action: pan-x pan-y;
         }
         /* منع Safari من تكبير صفحة الهاتف عند لمس حقول الإدخال. */
         @media (max-width: 768px) {
             input, select, textarea {
                 font-size: 16px !important;
+                -webkit-text-size-adjust: 100%;
             }
         }
         /* Custom styles for signature pad */
@@ -554,6 +557,12 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getDatabase, ref, push, set, onValue, update, remove, get, query, orderByChild, equalTo, startAt, endAt } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js";
+
+        // منع تكبير Safari بالإيماءات أو بالنقر المزدوج داخل نموذج الهاتف.
+        document.addEventListener('gesturestart', event => event.preventDefault(), { passive: false });
+        document.addEventListener('gesturechange', event => event.preventDefault(), { passive: false });
+        document.addEventListener('gestureend', event => event.preventDefault(), { passive: false });
+        document.addEventListener('dblclick', event => event.preventDefault(), { passive: false });
 
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         
