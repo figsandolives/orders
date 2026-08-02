@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>نظام إدارة الفواتير</title>
     <!-- Tailwind CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
@@ -20,6 +20,12 @@
             background-color: #f3f4f6;
             direction: rtl; /* Set default direction to RTL */
             text-align: right; /* Align text to the right by default */
+        }
+        /* منع Safari من تكبير صفحة الهاتف عند لمس حقول الإدخال. */
+        @media (max-width: 768px) {
+            input, select, textarea {
+                font-size: 16px !important;
+            }
         }
         /* Custom styles for signature pad */
         #signatureCanvas {
@@ -1349,7 +1355,6 @@
             document.getElementById('currentDateSecretariat').textContent = `اليوم والتاريخ: ${getFormattedDate(new Date())}`;
             listenForOrders();
         }
-
         function renderPersonSearchField(question, div) {
             const inputWrap = document.createElement('div');
             inputWrap.className = 'flex gap-2 items-start';
