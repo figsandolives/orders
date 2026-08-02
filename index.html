@@ -807,8 +807,12 @@
         let searchOrderModal, searchQueryInput, executeSearchBtn, searchResultsDiv, searchResultsTableBody, searchTableActionsHeader;
         let normalCashInvoicesSection, normalLinkAndSubscriptionAndShippingInvoicesSection, websiteInvoicesSection, branchPickupInvoicesSection, signatureModalTitle, newOrderModalTitle;
 
-        const employees = ['فاطمة', 'محمود', 'يوسف', 'ناهدة','ريان','صفوت', 'علي', 'رانيا فنون', 'احمد حلمي', 'سند', 'نجلاء', 'سلطان', 'رانيا دنديس', 'عاصم'];
-        const deliverers = ['خيري', 'ابو خالد', 'سمير رومية', 'ضياء محمد', 'رامو الهندي', 'استلام', 'حسين', 'محمد سعيد', 'محمد جمال', 'ياسر جمال', 'خالد السيد', 'عبيدة', 'محمود السيسي', 'محمد عبدالفتاح', 'خالد سعد', 'عتمان', 'رضا صابر', 'رضا', 'فاتورة اضافية مع بيدو', 'أحمد رزق', 'الأمير زين', 'ابو سالم', 'السيد فرج', 'هيثم','أبو عبد العزيز / جمال','سريكانث', 'صبري' , 'سوخو الهندي', 'بيانت الهندي', 'اندريا الهندي', 'وليد عبد الرحمن', 'رجب عبد القوي', 'أحمد دياب' ,'أحمد حمدان','وليد محمد', 'ميرزا' , 'رفيق الهندي','عبد العزيز','حسام بنان', 'حسام عادل', 'رفيق المصري', 'شركة الجوهرة للشحن'];
+        const getSavedPeople = (key) => {
+            try { return JSON.parse(localStorage.getItem(key) || '[]'); } catch { return []; }
+        };
+        const savePeople = (key, values) => localStorage.setItem(key, JSON.stringify(values));
+        let employees = [...new Set(['فاطمة', 'محمود', 'يوسف', 'ناهدة','ريان','صفوت', 'علي', 'رانيا فنون', 'احمد حلمي', 'سند', 'نجلاء', 'سلطان', 'رانيا دنديس', 'عاصم', ...getSavedPeople('customEmployees')])];
+        let deliverers = [...new Set(['خيري', 'ابو خالد', 'سمير رومية', 'ضياء محمد', 'رامو الهندي', 'استلام', 'حسين', 'محمد سعيد', 'محمد جمال', 'ياسر جمال', 'خالد السيد', 'عبيدة', 'محمود السيسي', 'محمد عبدالفتاح', 'خالد سعد', 'عتمان', 'رضا صابر', 'رضا', 'فاتورة اضافية مع بيدو', 'أحمد رزق', 'الأمير زين', 'ابو سالم', 'السيد فرج', 'هيثم','أبو عبد العزيز / جمال','سريكانث', 'صبري' , 'سوخو الهندي', 'بيانت الهندي', 'اندريا الهندي', 'وليد عبد الرحمن', 'رجب عبد القوي', 'أحمد دياب' ,'أحمد حمدان','وليد محمد', 'ميرزا' , 'رفيق الهندي','عبد العزيز','حسام بنان', 'حسام عادل', 'رفيق المصري', 'شركة الجوهرة للشحن', ...getSavedPeople('customDeliverers')])];
         
         const deliveryZones = {
             'fixed': {
@@ -841,8 +845,8 @@
             { id: 'deliveryValue', label: 'قيمة التوصيل', type: 'text', required: true }, 
             { id: 'invoiceValue', label: 'قيمة الفاتورة الاجمالية (شاملة التوصيل)', type: 'text', required: true }, 
             { id: 'paymentMethod', label: 'طريقة الدفع', type: 'select', options: ['رابط', 'كي-نت', 'كاش'], required: true },
-            { id: 'employeeName', label: 'اسم الموظف', type: 'select', options: employees, required: true },
-            { id: 'delivererName', label: 'اسم المندوب', type: 'select', options: deliverers, required: true },
+            { id: 'employeeName', label: 'اسم الموظف', type: 'personSearch', peopleType: 'employee', required: true },
+            { id: 'delivererName', label: 'اسم المندوب', type: 'personSearch', peopleType: 'deliverer', required: true },
             { id: 'freeWorks', label: 'الاعمال المجانية', type: 'radio', options: ['يوجد', 'لا يوجد'], required: true },
             { id: 'notes', label: 'ملاحظات', type: 'textarea', optional: true }
         ];
@@ -1346,9 +1350,84 @@
             listenForOrders();
         }
 
+        function renderPersonSearchField(question, div) {
+            const inputWrap = document.createElement('div');
+            inputWrap.className = 'flex gap-2 items-start';
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.id = question.id;
+            input.autocomplete = 'off';
+            input.className = 'p-3 border border-gray-300 rounded-xl w-full';
+            input.placeholder = `اكتب ${question.label}`;
+            input.value = currentOrderData[question.id] || '';
+
+            const addButton = document.createElement('button');
+            addButton.type = 'button';
+            addButton.title = `إضافة ${question.label}`;
+            addButton.className = 'bg-red-500 hover:bg-red-600 text-white font-bold text-2xl leading-none w-12 h-12 rounded-xl flex-none';
+            addButton.textContent = '+';
+            inputWrap.append(input, addButton);
+
+            const results = document.createElement('div');
+            results.className = 'hidden mt-1 border border-gray-200 bg-white rounded-xl shadow-lg overflow-hidden max-h-48 overflow-y-auto';
+            const getPeople = () => question.peopleType === 'employee' ? employees : deliverers;
+            const showMatches = () => {
+                const term = input.value.trim().toLocaleLowerCase('ar');
+                const matches = getPeople().filter(name => !term || name.toLocaleLowerCase('ar').includes(term)).slice(0, 12);
+                results.innerHTML = '';
+                if (!matches.length) { results.classList.add('hidden'); return; }
+                matches.forEach(name => {
+                    const result = document.createElement('button');
+                    result.type = 'button';
+                    result.className = 'block w-full text-right px-4 py-3 hover:bg-green-50 font-semibold border-b border-gray-100 last:border-0';
+                    result.textContent = name;
+                    result.addEventListener('click', () => { input.value = name; results.classList.add('hidden'); input.focus(); });
+                    results.appendChild(result);
+                });
+                results.classList.remove('hidden');
+            };
+            input.addEventListener('input', showMatches);
+            input.addEventListener('focus', showMatches);
+            input.addEventListener('blur', () => setTimeout(() => results.classList.add('hidden'), 150));
+
+            addButton.addEventListener('click', () => {
+                const addWrap = document.createElement('div');
+                addWrap.className = 'flex gap-2 mt-2';
+                const addInput = document.createElement('input');
+                addInput.type = 'text';
+                addInput.className = 'p-3 border border-red-300 rounded-xl w-full';
+                addInput.placeholder = `اكتب اسم ${question.peopleType === 'employee' ? 'الموظف' : 'المندوب'} الجديد`;
+                const saveButton = document.createElement('button');
+                saveButton.type = 'button';
+                saveButton.className = 'bg-red-500 hover:bg-red-600 text-white font-bold px-4 rounded-xl';
+                saveButton.textContent = 'إضافة';
+                const saveNewPerson = () => {
+                    const name = addInput.value.trim();
+                    if (!name) return;
+                    const list = getPeople();
+                    if (!list.includes(name)) {
+                        list.push(name);
+                        const storageKey = question.peopleType === 'employee' ? 'customEmployees' : 'customDeliverers';
+                        savePeople(storageKey, [...new Set([...getSavedPeople(storageKey), name])]);
+                    }
+                    input.value = name;
+                    addWrap.remove();
+                    results.classList.add('hidden');
+                    input.focus();
+                };
+                saveButton.addEventListener('click', saveNewPerson);
+                addInput.addEventListener('keydown', event => { if (event.key === 'Enter') { event.preventDefault(); saveNewPerson(); } });
+                addWrap.append(addInput, saveButton);
+                div.appendChild(addWrap);
+                addInput.focus();
+            });
+            div.append(inputWrap, results);
+        }
+
         function renderAllQuestions() {
             orderFormContent.innerHTML = ''; 
             orderFormQuestions.forEach(question => {
+                if (question.id === 'freeWorks' && currentOrderData.skipFreeWorks) return;
                 const div = document.createElement('div');
                 div.className = 'mb-4';
                 const label = document.createElement('label');
@@ -1369,7 +1448,9 @@
 
                 if (question.id !== 'invoiceNumber') div.appendChild(label);
 
-                if (question.type === 'select') {
+                if (question.type === 'personSearch') {
+                    renderPersonSearchField(question, div);
+                } else if (question.type === 'select') {
                     const select = document.createElement('select');
                     select.id = question.id;
                     select.className = 'p-3 border border-gray-300 rounded-xl w-full';
@@ -1779,6 +1860,12 @@
             }
 
             if (!isValid) return null;
+
+            // الأعمال المجانية تخص أول طلب فقط في دفعة المندوب نفسها.
+            if (currentOrderData.skipFreeWorks) {
+                formData.freeWorks = 'لا يوجد';
+                formData.freeWorksDetails = [];
+            }
 
             const finalOrderType = formData.orderType || getCurrentOrderTypeValue();
             const finalInvoiceMode = shouldUseCashierInvoiceSelector(finalOrderType)
@@ -3655,7 +3742,11 @@
                         if (confirmed) {
                             const currentDeliverer = formData.delivererName;
                             const currentEmployee = formData.employeeName;
-                            currentOrderData = { delivererName: currentDeliverer, employeeName: currentEmployee }; 
+                            currentOrderData = {
+                                delivererName: currentDeliverer,
+                                employeeName: currentEmployee,
+                                skipFreeWorks: true
+                            };
                             renderAllQuestions(); 
                             newOrderModal.scrollTop = 0; 
                         } else {
