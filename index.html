@@ -1072,12 +1072,14 @@
             return digits;
         };
 
-        function applyCashierInvoiceSnapshot(ordersSnapshot) {
+        function applyCashierInvoiceSnapshot(ordersSnapshot, defaultSource = 'cashier') {
             const orders = [];
             if (ordersSnapshot?.exists()) {
                 ordersSnapshot.forEach(childSnapshot => {
                     const rawOrder = childSnapshot.val();
-                    const order = { ...rawOrder, invoiceNumber: rawOrder?.invoiceNumber || rawOrder?.orderId, timestamp: rawOrder?.timestamp || rawOrder?.createdAt, phoneNumber: rawOrder?.phoneNumber || rawOrder?.phone, branch: rawOrder?.branch || rawOrder?.branchId, source: rawOrder?.source || 'platform' };
+                    // Keep invoices from the cashier database as cashier invoices.
+                    // Only records read from the platform path are platform invoices.
+                    const order = { ...rawOrder, invoiceNumber: rawOrder?.invoiceNumber || rawOrder?.orderId, timestamp: rawOrder?.timestamp || rawOrder?.createdAt, phoneNumber: rawOrder?.phoneNumber || rawOrder?.phone, branch: rawOrder?.branch || rawOrder?.branchId, source: rawOrder?.source || defaultSource };
                     const invoiceNumber = getCashierInvoiceDisplay(order);
                     // Paydo invoices do not have a cashier branch. Keep the old
                     // main-branch filter for cashier data, but always accept Paydo.
@@ -1099,7 +1101,7 @@
             if (cashierInvoicesUnsubscribe) return;
             cashierInvoicesUnsubscribe = onValue(
                 ref(cashierDb, 'orders'),
-                applyCashierInvoiceSnapshot,
+                snapshot => applyCashierInvoiceSnapshot(snapshot, 'cashier'),
                 error => console.error('Cashier invoice live sync failed:', error)
             );
         }
@@ -1113,7 +1115,7 @@
                     const isWebsite = getCurrentOrderTypeValue() === 'فاتورة موقع';
                     if (isWebsite) await platformAuthReady;
                     const ordersSnapshot = await get(ref(isWebsite ? platformDb : cashierDb, isWebsite ? 'orderingPlatform/onlineOrders' : 'orders'));
-                    return applyCashierInvoiceSnapshot(ordersSnapshot);
+                    return applyCashierInvoiceSnapshot(ordersSnapshot, isWebsite ? 'platform' : 'cashier');
                 } catch (error) {
                     console.error('Error loading cashier invoices:', error);
                     showMessageModal('تعذر جلب فواتير موقع الكاشير حالياً.');
