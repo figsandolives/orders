@@ -1041,7 +1041,7 @@
             const address = (order?.address || '').toString().trim();
             if (address) return address.split('-')[0].trim();
             if (order?.area) return String(order.area).trim();
-            return getCashierOrderBranch(order);
+            return '';
         };
 
         const getRegisteredOrderCashierBranch = (order) => (order?.cashierBranch || order?.branch || '').toString().trim();
