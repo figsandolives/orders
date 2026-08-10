@@ -1790,6 +1790,10 @@
 
             for (const question of orderFormQuestions) {
                 if (!isValid) break; 
+                // الأعمال المجانية لا تُسجل إلا مع أول طلب في دفعة المندوب.
+                // في الطلبات الإضافية يكون الحقل مخفياً، لذا لا يجب اعتباره
+                // حقلاً مطلوباً أثناء التحقق.
+                if (question.id === 'freeWorks' && currentOrderData.skipFreeWorks) continue;
                 const element = document.getElementById(question.id);
                 
                 if (question.type === 'dynamicText') {
