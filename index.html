@@ -1873,6 +1873,13 @@
                         showMessageModal(`الرجاء إدخال ${question.label}.`);
                         isValid = false;
                     }
+                    if (question.type === 'personSearch') {
+                        const availablePeople = question.peopleType === 'employee' ? employees : deliverers;
+                        if (!availablePeople.includes(value)) {
+                            showMessageModal('الرجاء اختيار ' + question.label + ' من القائمة المتاحة.');
+                            isValid = false;
+                        }
+                    }
                     formData[question.id] = value;
                 }
             }
