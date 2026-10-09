@@ -594,11 +594,22 @@
         };
         const cashierApp = initializeApp(cashierFirebaseConfig, 'cashierSite');
         const cashierDb = getDatabase(cashierApp);
-        const platformApp = initializeApp({ apiKey:"AIzaSyA0XQJ9fqlWeYQ5NV4CT6GdxvM_Uztnoio", authDomain:"menassafigs.firebaseapp.com", databaseURL:"https://menassafigs-default-rtdb.firebaseio.com", projectId:"menassafigs", storageBucket:"menassafigs.firebasestorage.app", messagingSenderId:"260400277192", appId:"1:260400277192:web:de209362fdbe86e5d827fd" }, 'orderingPlatform');
-        const platformAuth = getAuth(platformApp);
-        const platformDb = getDatabase(platformApp);
-        const platformAuthReady = new Promise(resolve => onAuthStateChanged(platformAuth, user => { if (user) resolve(user); }));
-        signInAnonymously(platformAuth).catch(error => console.error('Platform orders sign-in failed:', error));
+        const PLATFORM_API_BASE = 'https://162-35-27-249.sslip.io/platform-api';
+        let platformAccountingToken = sessionStorage.getItem('figsAccountingPlatformSession') || '';
+        async function connectPlatformAccounting(code) {
+            const response = await fetch(`${PLATFORM_API_BASE}/auth/employee`, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify({ code }) });
+            const result = await response.json().catch(() => ({}));
+            if (!response.ok || !result.sessionToken) throw new Error(result.error || 'تعذر الاتصال بسيرفر المنصة');
+            platformAccountingToken = result.sessionToken;
+            sessionStorage.setItem('figsAccountingPlatformSession', platformAccountingToken);
+        }
+        async function getPlatformOnlineInvoices() {
+            if (!platformAccountingToken) throw new Error('يلزم تسجيل الدخول لقسم المحاسبة');
+            const response = await fetch(`${PLATFORM_API_BASE}/accounting/online-orders`, { headers: { Authorization: `Bearer ${platformAccountingToken}`, Accept: 'application/json' } });
+            const result = await response.json().catch(() => ({}));
+            if (!response.ok || !Array.isArray(result)) throw new Error(result.error || 'تعذر جلب فواتير الموقع من السيرفر');
+            return result;
+        }
 
         const getFormattedDate = (date) => date.toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
         const getFormattedTime = (date) => date.toLocaleTimeString('ar-EG', { hour: 'numeric', minute: 'numeric', hour12: true });
@@ -1093,9 +1104,10 @@
 
         function applyCashierInvoiceSnapshot(ordersSnapshot, defaultSource = 'cashier') {
             const orders = [];
-            if (ordersSnapshot?.exists()) {
-                ordersSnapshot.forEach(childSnapshot => {
-                    const rawOrder = childSnapshot.val();
+            const records = Array.isArray(ordersSnapshot)
+                ? ordersSnapshot.map(order => [order.key || order.orderId || order.invoiceNumber, order])
+                : (ordersSnapshot?.exists() ? (() => { const values = []; ordersSnapshot.forEach(child => values.push([child.key, child.val()])); return values; })() : []);
+            for (const [recordKey, rawOrder] of records) {
                     // Keep invoices from the cashier database as cashier invoices.
                     // Only records read from the platform path are platform invoices.
                     const order = { ...rawOrder, invoiceNumber: rawOrder?.invoiceNumber || rawOrder?.orderId, timestamp: rawOrder?.timestamp || rawOrder?.createdAt, phoneNumber: rawOrder?.phoneNumber || rawOrder?.phone, branch: rawOrder?.branch || rawOrder?.branchId, source: rawOrder?.source || defaultSource };
@@ -1105,9 +1117,8 @@
                     const isPaydoOrder = String(order?.source || '').toLowerCase() === 'paydo';
                     const isPlatformOrder = String(order?.source || '').toLowerCase() === 'platform';
                     if (invoiceNumber && (isPaydoOrder || isPlatformOrder || !getCashierOrderBranch(order) || isMainCashierBranch(getCashierOrderBranch(order)))) {
-                        orders.push({ key: childSnapshot.key, ...order });
+                        orders.push({ key: recordKey, ...order });
                     }
-                });
             }
             orders.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
             cashierInvoiceOrders = orders;
@@ -1126,15 +1137,15 @@
         }
 
         async function loadCashierInvoiceOrders(forceRefresh = false) {
-            if (cashierInvoicesLoaded && !forceRefresh) return cashierInvoiceOrders;
+            if (cashierInvoicesLoaded && !forceRefresh && getCurrentOrderTypeValue() !== 'فاتورة موقع') return cashierInvoiceOrders;
             if (cashierInvoicesLoadingPromise) return cashierInvoicesLoadingPromise;
 
             cashierInvoicesLoadingPromise = (async () => {
                 try {
                     const isWebsite = getCurrentOrderTypeValue() === 'فاتورة موقع';
-                    if (isWebsite) await platformAuthReady;
-                    const ordersSnapshot = await get(ref(isWebsite ? platformDb : cashierDb, isWebsite ? 'orderingPlatform/onlineOrders' : 'orders'));
-                    return applyCashierInvoiceSnapshot(ordersSnapshot, isWebsite ? 'platform' : 'cashier');
+                    if (isWebsite) return applyCashierInvoiceSnapshot(await getPlatformOnlineInvoices(), 'platform');
+                    const ordersSnapshot = await get(ref(cashierDb, 'orders'));
+                    return applyCashierInvoiceSnapshot(ordersSnapshot, 'cashier');
                 } catch (error) {
                     console.error('Error loading cashier invoices:', error);
                     showMessageModal('تعذر جلب فواتير موقع الكاشير حالياً.');
@@ -3920,12 +3931,21 @@
                 showModal('searchOrderModal');
             });
 
-            accountingLoginBtn.addEventListener('click', () => {
-                if (accountingPasswordInput.value === ACCOUNTING_PASSWORD) {
-                    showAccountingSection();
-                } else {
+            accountingLoginBtn.addEventListener('click', async () => {
+                const code = accountingPasswordInput.value;
+                if (code !== ACCOUNTING_PASSWORD) {
                     showMessageModal('رمز الدخول غير صحيح.');
                     accountingPasswordInput.value = '';
+                    return;
+                }
+                accountingLoginBtn.disabled = true;
+                try {
+                    await connectPlatformAccounting(code);
+                    showAccountingSection();
+                } catch (error) {
+                    showMessageModal(error.message || 'تعذر الاتصال بسيرفر المنصة.');
+                } finally {
+                    accountingLoginBtn.disabled = false;
                 }
             });
 
