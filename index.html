@@ -594,6 +594,7 @@
         };
         const cashierApp = initializeApp(cashierFirebaseConfig, 'cashierSite');
         const cashierDb = getDatabase(cashierApp);
+        const CASHIER_ORDERS_URL = 'https://fawatir-f5a13-default-rtdb.firebaseio.com/orders.json';
         const PLATFORM_API_BASE = 'https://162-35-27-249.sslip.io/platform-api';
         let platformAccountingToken = sessionStorage.getItem('figsAccountingPlatformSession') || '';
         async function connectPlatformAccounting(code) {
@@ -604,11 +605,17 @@
             sessionStorage.setItem('figsAccountingPlatformSession', platformAccountingToken);
         }
         async function getPlatformOnlineInvoices() {
-            if (!platformAccountingToken) throw new Error('يلزم تسجيل الدخول لقسم المحاسبة');
-            const response = await fetch(`${PLATFORM_API_BASE}/accounting/online-orders`, { headers: { Authorization: `Bearer ${platformAccountingToken}`, Accept: 'application/json' } });
+            const response = await fetch(`${PLATFORM_API_BASE}/tracker/orders`, { headers: { Accept: 'application/json' } });
             const result = await response.json().catch(() => ({}));
             if (!response.ok || !Array.isArray(result)) throw new Error(result.error || 'تعذر جلب فواتير الموقع من السيرفر');
             return result;
+        }
+
+        async function getCashierInvoices() {
+            const response = await fetch(CASHIER_ORDERS_URL, { headers: { Accept: 'application/json' } });
+            const result = await response.json().catch(() => ({}));
+            if (!response.ok || !result || typeof result !== 'object') throw new Error('تعذر جلب فواتير موقع الكاشير حالياً.');
+            return Object.entries(result).map(([key, order]) => ({ key, ...order }));
         }
 
         const getFormattedDate = (date) => date.toLocaleDateString('ar-EG', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
@@ -1146,8 +1153,7 @@
             cashierInvoicesLoadingPromise = (async () => {
                 try {
                     if (source === 'platform') return applyCashierInvoiceSnapshot(await getPlatformOnlineInvoices(), 'platform');
-                    const ordersSnapshot = await get(ref(cashierDb, 'orders'));
-                    return applyCashierInvoiceSnapshot(ordersSnapshot, 'cashier');
+                    return applyCashierInvoiceSnapshot(await getCashierInvoices(), 'cashier');
                 } catch (error) {
                     console.error('Error loading cashier invoices:', error);
                     showMessageModal('تعذر جلب فواتير موقع الكاشير حالياً.');
