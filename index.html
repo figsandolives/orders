@@ -670,6 +670,7 @@
         let cashierInvoiceOrders = [];
         let cashierInvoicesLoaded = false;
         let cashierInvoicesLoadingPromise = null;
+        let loadedCashierInvoiceSource = '';
         let cashierInvoiceSearchTerm = '';
         let cashierInvoicesUnsubscribe = null;
         let accountingOrdersUnsubscribe = null;
@@ -1123,6 +1124,7 @@
             orders.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
             cashierInvoiceOrders = orders;
             cashierInvoicesLoaded = true;
+            loadedCashierInvoiceSource = defaultSource;
             refreshCashierInvoiceList();
             return cashierInvoiceOrders;
         }
@@ -1137,13 +1139,13 @@
         }
 
         async function loadCashierInvoiceOrders(forceRefresh = false) {
-            if (cashierInvoicesLoaded && !forceRefresh && getCurrentOrderTypeValue() !== 'فاتورة موقع') return cashierInvoiceOrders;
+            const source = getCurrentOrderTypeValue() === 'فاتورة موقع' ? 'platform' : 'cashier';
+            if (cashierInvoicesLoaded && !forceRefresh && loadedCashierInvoiceSource === source) return cashierInvoiceOrders;
             if (cashierInvoicesLoadingPromise) return cashierInvoicesLoadingPromise;
 
             cashierInvoicesLoadingPromise = (async () => {
                 try {
-                    const isWebsite = getCurrentOrderTypeValue() === 'فاتورة موقع';
-                    if (isWebsite) return applyCashierInvoiceSnapshot(await getPlatformOnlineInvoices(), 'platform');
+                    if (source === 'platform') return applyCashierInvoiceSnapshot(await getPlatformOnlineInvoices(), 'platform');
                     const ordersSnapshot = await get(ref(cashierDb, 'orders'));
                     return applyCashierInvoiceSnapshot(ordersSnapshot, 'cashier');
                 } catch (error) {
