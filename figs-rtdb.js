@@ -14,7 +14,8 @@
   const TOKEN_KEY = 'figsRtdbSession';
 
   const isObject = value => value !== null && typeof value === 'object' && !Array.isArray(value);
-  const clone = value => value === undefined || value === null ? null : JSON.parse(JSON.stringify(value));
+  const clone = value => value === undefined || value === null ? null : typeof value !== 'object' ? value
+    : typeof structuredClone === 'function' ? structuredClone(value) : JSON.parse(JSON.stringify(value));
   const splitPath = path => String(path ?? '').split('/').filter(Boolean);
   const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -35,17 +36,18 @@
     for (const [key, item] of Object.entries(value)) { const normalized = normalize(item); if (normalized !== null) result[key] = normalized; }
     return Object.keys(result).length ? result : null;
   }
+  // Copy-on-write: copies only the objects along `parts` and shares the rest,
+  // so one change to a 9,000-invoice list costs a few small copies, not a
+  // copy of the whole list. Cached values are never changed in place.
+  // `value` must already be normalized.
   function setIn(root, parts, value) {
-    if (!parts.length) return clone(value);
-    const base = root !== null && typeof root === 'object' ? clone(root) : {};
-    let cursor = base;
-    for (let index = 0; index < parts.length - 1; index++) {
-      const next = cursor[parts[index]];
-      cursor[parts[index]] = next !== null && typeof next === 'object' ? next : {};
-      cursor = cursor[parts[index]];
-    }
-    if (value === null) delete cursor[parts.at(-1)]; else cursor[parts.at(-1)] = clone(value);
-    return normalize(base);
+    if (!parts.length) return value ?? null;
+    const [head, ...rest] = parts;
+    const base = root !== null && typeof root === 'object' ? (Array.isArray(root) ? root.slice() : { ...root }) : {};
+    const next = setIn(base[head] ?? null, rest, value);
+    if (next === null) { if (Array.isArray(base)) base[head] = null; else delete base[head]; } else base[head] = next;
+    if (Array.isArray(base)) return base.some(item => item !== null && item !== undefined) ? base : null;
+    return Object.keys(base).length ? base : null;
   }
   // Local stand-in for {".sv": ...} until the server's echo arrives.
   function resolveLocal(value, current) {
@@ -152,6 +154,8 @@
       this.connected = false;
       this.connectedListeners = new Set();
       this.queue = Promise.resolve();
+      this.inflight = new Set();
+      this.openBatch = null;
       this.pendingWrites = 0;
       this.disconnectOps = new Map();
       this.loginPromise = null;
@@ -239,7 +243,7 @@
       const id = `${parts.join('/')}?${query ? JSON.stringify(query) : ''}`;
       const live = this.entries.get(id);
       if (live?.ready && (this.connected || this.pendingWrites)) return { value: clone(live.value), order: live.order() };
-      if (this.pendingWrites) await this.queue.catch(() => {});
+      if (this.pendingWrites) await Promise.all([this.queue, ...this.inflight]).catch(() => {});
       const entry = new Entry(this, parts, query);
       const result = await this.request('GET', this.queryString(entry));
       return { value: normalize(result.value), order: query ? sortedEntries(normalize(result.value), query).map(([key]) => key) : null };
@@ -267,11 +271,11 @@
     fireInitial(entry, callbacks) {
       for (const item of callbacks) {
         if (!entry.callbacks.includes(item)) continue;
-        if (item.event === 'value') item.fn(new Snapshot(item.ref, clone(entry.value), entry.order()));
+        if (item.event === 'value') item.fn(new Snapshot(item.ref, entry.value, entry.order()));
         else if (item.event === 'child_added') {
           let previous = null;
           for (const key of entry.order() || sortedEntries(entry.value, null).map(([key]) => key)) {
-            item.fn(new Snapshot(item.ref.child(key), clone(entry.value[key])), previous);
+            item.fn(new Snapshot(item.ref.child(key), entry.value[key]), previous);
             previous = key;
           }
         }
@@ -313,21 +317,21 @@
     }
     async reload(entry) {
       const before = JSON.stringify(entry.value);
-      const order = entry.order();
       await this.load(entry).catch(() => {});
-      if (JSON.stringify(entry.value) !== before) this.fire(entry, new Set(Object.keys({ ...(isObject(JSON.parse(before)) ? JSON.parse(before) : {}), ...(isObject(entry.value) ? entry.value : {}) })), JSON.parse(before), order);
+      if (JSON.stringify(entry.value) !== before) { const old = JSON.parse(before); this.fire(entry, new Set([...Object.keys({ ...(isObject(old) ? old : {}), ...(isObject(entry.value) ? entry.value : {}) }), '']), old); }
     }
+    // All changes of one batch are applied first; each listener then fires
+    // once (a sale is ~10 path changes; firing per path froze big pages).
     applyChanges(changes, { local = false } = {}) {
-      for (const change of changes) {
-        if (!local) { this.recent.push(change); if (this.recent.length > 5000) this.recent.shift(); }
-        for (const entry of this.entries.values()) {
-          if (!entry.ready) continue;
-          const before = entry.value, order = entry.order();
-          const touched = new Set();
-          const outcome = this.applyToEntry(entry, change, touched);
-          if (outcome === 'reload') { this.reload(entry); continue; }
-          if (touched.size) this.fire(entry, touched, before, order);
-        }
+      if (!local) for (const change of changes) { this.recent.push(change); if (this.recent.length > 5000) this.recent.shift(); }
+      for (const entry of this.entries.values()) {
+        if (!entry.ready) continue;
+        const before = entry.value;
+        const touched = new Set();
+        let reload = false;
+        for (const change of changes) if (this.applyToEntry(entry, change, touched) === 'reload') reload = true;
+        if (reload) { this.reload(entry); continue; }
+        if (touched.size) this.fire(entry, touched, before);
       }
     }
     // Returns 'reload' when the entry must be fetched again.
@@ -357,45 +361,54 @@
           // A deep change to a child outside the window: fetch that child.
           this.request('GET', `${this.path}/value?path=${encodeURIComponent([...base, key].join('/'))}`).then(result => {
             if (!matches(entry.query, key, normalize(result.value))) return;
-            const before = entry.value, order = entry.order();
+            const before = entry.value;
             entry.value = setIn(entry.value, [key], normalize(result.value));
-            this.fire(entry, new Set([key]), before, order);
+            this.fire(entry, new Set([key]), before);
           }, () => {});
           return null;
         }
-        const next = normalize(setIn(current, rel.slice(1), change.value));
+        const next = setIn(current, rel.slice(1), normalize(change.value));
         entry.value = setIn(entry.value, [key], matches(entry.query, key, next) ? next : null);
       } else {
-        entry.value = setIn(entry.value, rel, change.value);
+        entry.value = setIn(entry.value, rel, normalize(change.value));
       }
       touched.add(key);
       return null;
     }
-    fire(entry, touched, before, beforeOrder) {
+    // Copy-on-write keeps unchanged children identical, so `!==` finds what
+    // changed without comparing whole lists. Snapshots copy only on val().
+    fire(entry, touched, before) {
       const keys = [...touched].filter(Boolean);
-      const changed = keys.filter(key => JSON.stringify(before?.[key] ?? null) !== JSON.stringify(entry.value?.[key] ?? null));
-      const whole = touched.has('') && JSON.stringify(before) !== JSON.stringify(entry.value);
+      const changed = keys.filter(key => (before?.[key] ?? null) !== (entry.value?.[key] ?? null) && JSON.stringify(before?.[key] ?? null) !== JSON.stringify(entry.value?.[key] ?? null));
+      const whole = touched.has('') && before !== entry.value && JSON.stringify(before) !== JSON.stringify(entry.value);
       if (!changed.length && !whole) return;
-      const order = entry.order();
+      let order;
+      const getOrder = () => order === undefined ? (order = entry.order()) : order;
+      let keyOrder;
+      const getKeyOrder = () => keyOrder || (keyOrder = getOrder() || sortedEntries(entry.value, null).map(([k]) => k));
       for (const item of entry.callbacks.slice()) {
-        if (item.event === 'value') { item.fn(new Snapshot(item.ref, clone(entry.value), order)); continue; }
+        if (item.event === 'value') { item.fn(new Snapshot(item.ref, entry.value, entry.query ? getOrder() : null)); continue; }
         for (const key of changed) {
           const was = before?.[key] ?? null, now = entry.value?.[key] ?? null;
           const type = was === null ? 'child_added' : now === null ? 'child_removed' : 'child_changed';
           if (item.event !== type) continue;
-          const keyOrder = order || sortedEntries(entry.value, null).map(([k]) => k);
-          const previous = type === 'child_removed' ? null : keyOrder[keyOrder.indexOf(key) - 1] ?? null;
-          item.fn(new Snapshot(item.ref.child(key), clone(type === 'child_removed' ? was : now)), previous);
+          const list = type === 'child_removed' ? null : getKeyOrder();
+          const previous = list ? list[list.indexOf(key) - 1] ?? null : null;
+          item.fn(new Snapshot(item.ref.child(key), type === 'child_removed' ? was : now), previous);
         }
       }
     }
 
     // ---- writing ----
-    // Writes run one after another in call order, like Firebase. They show
-    // locally at once; a refused write reloads what it touched.
+    // Writes keep their call order, like Firebase, and show locally at once.
+    // Writes made while an earlier one is still on its way are sent together
+    // in one request (each request is a ~0.2 s round trip from Kuwait, so a
+    // 20-item voucher used to wait ~8 s). Transactions run side by side.
+    // A refused write reloads what it touched.
     enqueue(task) {
       this.pendingWrites++;
-      const run = this.queue.then(task, task);
+      const waitFor = [this.queue, ...this.inflight];
+      const run = Promise.all(waitFor).then(task, task);
       this.queue = run.catch(() => {}).finally(() => { this.pendingWrites--; });
       return run;
     }
@@ -406,13 +419,33 @@
         return { path: op.path, value: normalize(resolveLocal(clone(op.value), current)) };
       });
       this.applyChanges(local, { local: true });
-      return this.enqueue(async () => {
+      const paths = ops.map(op => splitPath(op.path));
+      let batch = this.openBatch;
+      if (!batch || batch.ops.length + ops.length > 500 || batch.paths.some(a => paths.some(b => related(a, b)))) {
+        batch = this.openBatch = { ops: [], paths: [], waiters: [] };
+        this.enqueue(() => this.flush(batch));
+      }
+      batch.ops.push(...ops);
+      batch.paths.push(...paths);
+      return new Promise((resolve, reject) => batch.waiters.push({ ops, resolve, reject }));
+    }
+    async flush(batch) {
+      if (this.openBatch === batch) this.openBatch = null;
+      const send = async ops => {
         try { await this.request('POST', `${this.path}/write`, { ops }); }
         catch (error) {
           for (const entry of this.entries.values()) if (ops.some(op => related(splitPath(op.path), entry.parts))) this.reload(entry);
           throw error;
         }
-      });
+      };
+      try {
+        await send(batch.ops);
+        batch.waiters.forEach(waiter => waiter.resolve());
+      } catch (error) {
+        // One refused write must not sink the others: send them one by one.
+        if (batch.waiters.length === 1 || !(error.status >= 400 && error.status < 500)) { batch.waiters.forEach(waiter => waiter.reject(error)); return; }
+        for (const waiter of batch.waiters) await send(waiter.ops).then(waiter.resolve, waiter.reject);
+      }
     }
     localValue(parts) {
       for (const entry of this.entries.values()) {
@@ -422,7 +455,10 @@
       return null;
     }
     transaction(parts, update) {
-      return this.enqueue(async () => {
+      // Waits for earlier writes, then runs alongside other transactions
+      // (each one is safe on its own: the server checks the value it read).
+      this.pendingWrites++;
+      const run = this.queue.then(async () => {
         const path = parts.join('/');
         let current = await this.request('GET', `${this.path}/value?path=${encodeURIComponent(path)}`);
         for (let attempt = 0; attempt < 25; attempt++) {
@@ -437,6 +473,24 @@
           current = result;
         }
         throw Object.assign(new Error('maxretry'), { code: 'maxretry' });
+      });
+      const settled = run.catch(() => {}).finally(() => { this.inflight.delete(settled); this.pendingWrites--; });
+      this.inflight.add(settled);
+      return run;
+    }
+    // Resolves once nothing has been waiting to be saved for `quietMs`
+    // (used to keep a save button locked until its whole save is done).
+    whenIdle(quietMs = 400, maxMs = 60000) {
+      const started = Date.now();
+      let quietSince = null;
+      return new Promise(resolve => {
+        const check = () => {
+          const busy = this.pendingWrites > 0 || this.inflight.size > 0;
+          if (busy) quietSince = null; else if (quietSince === null) quietSince = Date.now();
+          if ((quietSince !== null && Date.now() - quietSince >= quietMs) || Date.now() - started > maxMs) return resolve();
+          setTimeout(check, 50);
+        };
+        check();
       });
     }
     async registerDisconnect() {
