@@ -553,7 +553,7 @@
     </div>
 
     <!-- Firebase SDK -->
-    <script src="figs-rtdb.js?v=20261016-fix-save-v1"></script>
+    <script src="figs-rtdb.js?v=20261016-audit-v1"></script>
     <script type="module">
         // البيانات على سيرفرنا منذ 16 أكتوبر 2026 بدل Firebase. نفس دوال Firebase
         // (ref/onValue/get/...) لكنها تقرأ وتكتب عن طريق figs-rtdb.js.
@@ -3880,7 +3880,7 @@
                         }
                     });
                 } else {
-                    showMessageModal("الرجاء مراجعة البيانات المدخلة. هناك حقول مطلوبة لم يتم ملؤها بشكل صحيح.");
+                    if (document.getElementById('messageModal')?.style.display !== 'flex') showMessageModal("الرجاء مراجعة البيانات المدخلة. هناك حقول مطلوبة لم يتم ملؤها بشكل صحيح.");
                 }
             });
 
@@ -3949,7 +3949,7 @@
                         });
                     }
                 } else {
-                    showMessageModal("الرجاء مراجعة البيانات المدخلة. هناك حقول مطلوبة لم يتم ملؤها بشكل صحيح.");
+                    if (document.getElementById('messageModal')?.style.display !== 'flex') showMessageModal("الرجاء مراجعة البيانات المدخلة. هناك حقول مطلوبة لم يتم ملؤها بشكل صحيح.");
                 }
             });
 

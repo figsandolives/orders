@@ -251,6 +251,7 @@
     listen(parts, query, callback) {
       const id = `${parts.join('/')}?${query ? JSON.stringify(query) : ''}`;
       let entry = this.entries.get(id);
+      if (entry?.dropTimer) { clearTimeout(entry.dropTimer); entry.dropTimer = null; }
       if (!entry) {
         entry = new Entry(this, parts, query);
         this.entries.set(id, entry);
@@ -264,9 +265,15 @@
       entry.callbacks.push(callback);
       return entry;
     }
+    // Pages often stop and restart listening while redrawing; keep the data
+    // (still updated live) for 30 s, as Firebase does, instead of fetching it again.
     unlisten(entry, callback) {
       entry.callbacks = callback ? entry.callbacks.filter(item => item !== callback) : [];
-      if (!entry.callbacks.length) this.entries.delete(entry.id);
+      if (entry.callbacks.length || entry.dropTimer) return;
+      entry.dropTimer = setTimeout(() => {
+        entry.dropTimer = null;
+        if (!entry.callbacks.length && this.entries.get(entry.id) === entry) this.entries.delete(entry.id);
+      }, 30000);
     }
     fireInitial(entry, callbacks) {
       for (const item of callbacks) {
