@@ -553,7 +553,7 @@
     </div>
 
     <!-- Firebase SDK -->
-    <script src="figs-rtdb.js?v=20261016-audit-v1"></script>
+    <script src="figs-rtdb.js?v=20261016-picker-v1"></script>
     <script type="module">
         // البيانات على سيرفرنا منذ 16 أكتوبر 2026 بدل Firebase. نفس دوال Firebase
         // (ref/onValue/get/...) لكنها تقرأ وتكتب عن طريق figs-rtdb.js.
@@ -1145,6 +1145,10 @@
                     }
             }
             orders.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+            // Cashier invoices arrive live; while the user is picking a website
+            // invoice they must not replace that list (invoices vanished from it).
+            const wantedSource = getCurrentOrderTypeValue() === 'فاتورة موقع' ? 'platform' : 'cashier';
+            if (defaultSource !== wantedSource && cashierInvoicesLoaded && loadedCashierInvoiceSource === wantedSource) return orders;
             cashierInvoiceOrders = orders;
             cashierInvoicesLoaded = true;
             loadedCashierInvoiceSource = defaultSource;
