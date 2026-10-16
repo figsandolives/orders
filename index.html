@@ -553,20 +553,29 @@
     </div>
 
     <!-- Firebase SDK -->
-    <script src="figs-rtdb.js?v=20261016-perf-v1"></script>
+    <script src="figs-rtdb.js?v=20261016-fix-save-v1"></script>
     <script type="module">
         // البيانات على سيرفرنا منذ 16 أكتوبر 2026 بدل Firebase. نفس دوال Firebase
         // (ref/onValue/get/...) لكنها تقرأ وتكتب عن طريق figs-rtdb.js.
         const deliveryClient = new FigsRTDB._internal.Client({ path: '/delivery-db' });
         const cashierClient = new FigsRTDB._internal.Client({ path: '/rtdb' });
+        const stripPath = (database, path) => database.strip ? String(path).replace(/^artifacts\/[^/]+\/public\/data\/?/, '') : String(path);
         const ref = (database, path = '') => {
-            const clean = database.strip ? String(path).replace(/^artifacts\/[^/]+\/public\/data\/?/, '') : String(path);
-            return new FigsRTDB._internal.ServerRef(database.client, clean.split('/').filter(Boolean));
+            const target = new FigsRTDB._internal.ServerRef(database.client, stripPath(database, path).split('/').filter(Boolean));
+            target.figsDatabase = database;
+            return target;
         };
         const onValue = (target, callback, onError) => { target.on('value', callback, onError); return () => target.off('value', callback); };
         const get = target => target.once('value');
         const set = (target, value) => target.set(value);
-        const update = (target, value) => target.update(value);
+        // Root updates name full paths ("artifacts/<app>/public/data/orders/..."):
+        // they must be shortened like ref() paths, or they land outside `orders`.
+        const update = (target, value) => {
+            if (!target.path && target.figsDatabase?.strip) {
+                value = Object.fromEntries(Object.entries(value).map(([key, item]) => [stripPath(target.figsDatabase, key), item]));
+            }
+            return target.update(value);
+        };
         const remove = target => target.remove();
         const push = (target, value) => target.push(value);
         const query = (target, ...constraints) => constraints.reduce((current, constraint) => constraint(current), target);
@@ -678,6 +687,11 @@
         let batchOrders = []; 
         let signaturePad = null;
         let currentOrderKeyForEdit = null;
+        // Invoice numbers already handed to a driver (last 30 days), so the same
+        // invoice cannot be registered twice. Subscriptions repeat by design.
+        const UNIQUE_INVOICE_ORDER_TYPES = ['فاتورة عادية', 'فاتورة موقع', 'فاتورة استلام من فرع'];
+        let registeredInvoices = new Map();
+        let registeredInvoicesListening = false;
         const ACCOUNTING_PASSWORD = '5564';
         let selectedAccountingDate = getCurrentDateString(); 
         let selectedDelivererForAccounting = null;
@@ -1247,9 +1261,33 @@
             refreshCashierInvoiceList();
         }
 
+        function startRegisteredInvoicesSync() {
+            if (registeredInvoicesListening) return;
+            registeredInvoicesListening = true;
+            const since = getDateStringFromDate(new Date(Date.now() - 30 * 86400000));
+            onValue(query(ref(db, `artifacts/${appId}/public/data/orders`), orderByChild('date'), startAt(since)), snapshot => {
+                const next = new Map();
+                snapshot.forEach(child => {
+                    const order = child.val();
+                    if (!UNIQUE_INVOICE_ORDER_TYPES.includes(order?.orderType)) return;
+                    const numbers = Array.isArray(order.invoiceNumber) ? order.invoiceNumber : [order.invoiceNumber];
+                    numbers.filter(Boolean).forEach(number => next.set(String(number).trim(), { key: child.key, delivererName: order.delivererName || '', date: order.date || '', orderType: order.orderType }));
+                });
+                registeredInvoices = next;
+                refreshCashierInvoiceList();
+            }, error => console.error('Registered invoices sync failed:', error));
+        }
+
+        // The order a number is already registered on (not the one being edited).
+        function findRegisteredInvoice(number) {
+            const found = registeredInvoices.get(String(number || '').trim());
+            return found && found.key !== currentOrderKeyForEdit ? found : null;
+        }
+
         function refreshCashierInvoiceList() {
             const listContainer = document.getElementById('cashierInvoiceList');
             if (!listContainer) return;
+            startRegisteredInvoicesSync();
             if (!cashierInvoicesLoaded) {
                 listContainer.innerHTML = 'جاري تحميل الفواتير...';
                 return;
@@ -1263,9 +1301,12 @@
             const sourceOrders = orderType === 'فاتورة موقع'
                 ? (paydoOrders.length ? paydoOrders : cashierInvoiceOrders)
                 : (nonPaydoOrders.length ? nonPaydoOrders : cashierInvoiceOrders);
-            const eligibleOrders = orderType === 'فاتورة عادية'
+            const pendingNumbers = new Set(batchOrders.flatMap(order => (order.invoiceNumber || []).map(String)));
+            const eligibleOrders = (orderType === 'فاتورة عادية'
                 ? sourceOrders.filter(order => isMainCashierBranch(getCashierOrderBranch(order)))
-                : sourceOrders;
+                : sourceOrders)
+                // Invoices already with a driver (or in this batch) are not offered again.
+                .filter(order => !findRegisteredInvoice(getCashierInvoiceDisplay(order)) && !pendingNumbers.has(String(getCashierInvoiceDisplay(order))));
             const searchTerm = cashierInvoiceSearchTerm.trim();
             const filtered = searchTerm
                 ? eligibleOrders.filter(order => {
@@ -1919,6 +1960,26 @@
                 : MANUAL_INVOICE_MODE;
             formData.invoiceInputMode = finalInvoiceMode;
 
+            if (UNIQUE_INVOICE_ORDER_TYPES.includes(finalOrderType)) {
+                const numbers = (formData.invoiceNumber || []).map(number => String(number).trim()).filter(Boolean);
+                const inBatch = new Set(batchOrders.flatMap(order => (order.invoiceNumber || []).map(String)));
+                for (const number of numbers) {
+                    const existing = findRegisteredInvoice(number);
+                    if (existing) {
+                        showMessageModal(`الفاتورة رقم ${number} مسجلة مسبقاً للمندوب ${existing.delivererName || '-'} بتاريخ ${existing.date || '-'}. لا يمكن تسجيلها مرة ثانية.`);
+                        return null;
+                    }
+                    if (!currentOrderKeyForEdit && inBatch.has(number)) {
+                        showMessageModal(`الفاتورة رقم ${number} مضافة في هذه الدفعة مسبقاً.`);
+                        return null;
+                    }
+                }
+                if (new Set(numbers).size !== numbers.length) {
+                    showMessageModal('رقم الفاتورة مكرر في نفس الطلب.');
+                    return null;
+                }
+            }
+
             if (finalInvoiceMode === CASHIER_INVOICE_MODE) {
                 formData.linkedCashierOrderId = currentOrderData.linkedCashierOrderId || null;
                 const linkedCashierOrder = cashierInvoiceOrders.find(order => order.key === formData.linkedCashierOrderId);
@@ -1953,6 +2014,7 @@
 
         function listenForOrders() {
             if (!isAuthReady || !currentUser) return setTimeout(listenForOrders, 100);
+            startRegisteredInvoicesSync();
             // Today's orders only (the whole history is large).
             const ordersRef = query(ref(db, `artifacts/${appId}/public/data/orders`), orderByChild('date'), equalTo(getCurrentDateString()));
             onValue(ordersRef, (snapshot) => {
